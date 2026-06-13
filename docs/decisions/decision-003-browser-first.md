@@ -12,7 +12,8 @@ The recommended future technical direction is:
 
 - Node.js local server.
 - Express for serving pages.
-- Socket.IO or WebSocket for live updates.
+- Socket.IO for live updates.
+- HTTPS local serving.
 - HTML Canvas for map and fog rendering.
 - Plain HTML, CSS, and JavaScript at first.
 

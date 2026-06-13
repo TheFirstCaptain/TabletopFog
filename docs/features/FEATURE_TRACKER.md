@@ -21,6 +21,7 @@ Use this tracker to preserve feature state across sessions and agent handoffs. K
 - Use child features, such as `F-002A`, only when the work can be delegated, validated, or completed independently.
 - Keep small implementation steps inside the feature document instead of adding tracker rows.
 - Prefer outcome-oriented tracker entries over task lists.
+- For feature work, follow the mandatory SDLC subagent workflow in `docs/decisions/decision-004-mandatory-subagent-sdlc.md`.
 - Update `docs/acceptance-tests.md` when feature behavior changes.
 - Record major architecture or scope decisions in `docs/decisions/`.
 

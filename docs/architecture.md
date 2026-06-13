@@ -9,7 +9,8 @@ Recommended initial shape:
 - A Node.js local server runs on the GM machine.
 - Express serves static pages and lightweight API routes.
 - Separate GM and player pages are served from the same server.
-- Socket.IO or a plain WebSocket connection pushes live state changes from GM to player.
+- Socket.IO pushes live state changes from GM to player.
+- HTTPS is mandatory for the local server.
 - HTML Canvas renders the map and fog layers.
 - State is held in server memory for the first connectivity spike.
 
@@ -20,13 +21,13 @@ Local save/load can come after the connectivity MVP.
 The GM starts the server locally, then opens a GM URL such as:
 
 ```text
-http://localhost:3000/gm
+https://localhost:3000/gm
 ```
 
 The iPad opens a player URL using the GM machine's LAN IP address, such as:
 
 ```text
-http://192.168.1.42:3000/player
+https://192.168.1.42:3000/player
 ```
 
 Both pages connect to the same local server. The GM page can send state updates. The player page receives state updates and renders them read-only.
@@ -74,7 +75,8 @@ Recommended starting choices:
 
 - Node.js for the local server.
 - Express for serving pages.
-- Socket.IO or WebSocket for live updates.
+- Socket.IO for live updates.
+- HTTPS local serving.
 - HTML Canvas for map and fog rendering.
 - Plain HTML, CSS, and JavaScript at first.
 
@@ -85,6 +87,11 @@ Avoid React or a larger frontend framework unless a later milestone clearly bene
 The MVP assumes trusted devices on the same Wi-Fi network. It does not include login or authentication.
 
 The app should still avoid accidental write controls in the player view. Future hardening can add session codes, role-specific URLs, or simple local-only access controls if needed.
+
+The MVP role model is route-based:
+
+- `/gm` controls session state.
+- `/player` renders read-only session state.
 
 ## Non-Goals
 

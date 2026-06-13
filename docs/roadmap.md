@@ -32,7 +32,7 @@ Acceptance criteria:
 Implementation notes:
 
 - Use a simple shared state value before building map or fog features.
-- Prefer Node.js, Express, and Socket.IO or WebSocket.
+- Prefer Node.js, Express, Socket.IO, HTTPS, and plain browser code.
 - Do not add accounts, tokens, dice, sheets, or combat features.
 
 ## Milestone 2: Static Map Display

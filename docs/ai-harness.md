@@ -10,13 +10,43 @@ Before making code or documentation changes, read:
 - `docs/architecture.md`
 - `docs/roadmap.md`
 - `docs/acceptance-tests.md`
+- `docs/development.md`
+- `docs/definition-of-done.md`
+- `docs/network-troubleshooting.md`
 - `docs/features/FEATURE_TRACKER.md`
 - Relevant files in `docs/features/`
 - `docs/bugs/BUG_TRACKER.md`
 - Relevant files in `docs/bugs/`
+- `docs/subagent-output.md`
 - Relevant files in `docs/decisions/`
 
 Use these documents as the source of truth for scope and direction.
+
+## Mandatory Feature Workflow
+
+When the user asks to start or continue a feature, including prompts such as "let's do the next feature," the main agent must:
+
+1. Read `docs/features/FEATURE_TRACKER.md`.
+2. Select the next eligible feature or confirm the requested feature.
+3. Read the relevant `docs/features/F-NNN.md`.
+4. Ask clarification questions before implementation.
+5. Record the answers in the feature document.
+6. Run the mandatory SDLC subagent workflow from `docs/decisions/decision-004-mandatory-subagent-sdlc.md`.
+7. Integrate the work, run validation, update docs and trackers, and summarize the outcome.
+
+All of these stages are mandatory for feature work:
+
+- Clarification.
+- Architecture review.
+- Implementation design.
+- Test and validation design.
+- UX and workflow review.
+- Coding with Red/Green TDD where practical.
+- Code review.
+- Docs and tracker review.
+- Main-agent integration and final validation.
+
+The main agent owns the final result. Subagent findings must be reconciled against the vision, architecture, roadmap, acceptance tests, decisions, bugs, and feature docs before changes are accepted.
 
 ## Keep Scope Small
 
@@ -29,6 +59,8 @@ Do not expand project scope without also updating:
 - The relevant feature document in `docs/features/`
 - `docs/bugs/BUG_TRACKER.md` if the work discovers or fixes a defect
 - `docs/acceptance-tests.md`
+- `docs/development.md` if commands, runtime assumptions, ports, or certificate setup change
+- `docs/network-troubleshooting.md` if local connectivity setup or failure modes change
 - A decision record in `docs/decisions/` if the change affects architecture, product boundaries, or long-term direction.
 
 ## Prefer Simple Implementation
@@ -37,7 +69,8 @@ Default to simple, browser-first choices:
 
 - Local Node.js server.
 - Express for serving pages.
-- Socket.IO or WebSocket for live updates.
+- Socket.IO for live updates.
+- HTTPS for local serving.
 - HTML Canvas for map and fog rendering.
 - Plain HTML, CSS, and JavaScript unless there is a clear reason for more.
 
@@ -92,6 +125,7 @@ Before ending a coding session:
 
 - Run available validation commands.
 - If no automated tests exist yet, perform the relevant human-readable checks where possible.
+- Check `docs/definition-of-done.md` before marking a feature `Done`.
 - Report what was validated.
 - Report anything that could not be validated.
 

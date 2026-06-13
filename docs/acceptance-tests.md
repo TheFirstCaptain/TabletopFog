@@ -36,6 +36,7 @@ Expected result:
 
 - The GM page loads locally.
 - The player page loads from the Chromebook's LAN IP address.
+- Both pages are served over HTTPS.
 - No cloud hosting or external account is required.
 
 ## Milestone 1: iPad Connection on Same Wi-Fi
@@ -50,14 +51,43 @@ Prerequisites:
 Steps:
 
 1. On the iPad, open Safari.
-2. Navigate to the player URL using the GM machine's LAN IP address.
+2. Navigate to the HTTPS player URL using the GM machine's LAN IP address.
 3. Confirm the player page loads.
 
 Expected result:
 
 - The iPad displays the player page.
 - The player page connects to the local server.
+- The connection uses HTTPS.
 - No login is required.
+
+## Milestone 1: Manual Connectivity Script
+
+### Test: End-to-End HTTPS Local Sync
+
+Prerequisites:
+
+- GM machine has Node.js/npm installed.
+- Local HTTPS certificate setup is complete for the implementation milestone.
+- GM machine and iPad are on the same Wi-Fi network.
+
+Steps:
+
+1. Start the local HTTPS server.
+2. Open `https://localhost:3000/gm` on the GM machine.
+3. Find the GM machine's LAN IP address.
+4. Open `https://<LAN-IP>:3000/player` on the iPad.
+5. Accept or trust the local development certificate if the documented setup requires it.
+6. Trigger the simple GM state change.
+7. Confirm the player view updates without refresh.
+8. Repeat on a friend's Wi-Fi network.
+
+Expected result:
+
+- GM and player pages both load over HTTPS.
+- The iPad reaches the player view by LAN IP.
+- The player view receives live state updates.
+- Any LAN isolation or certificate failure is documented clearly.
 
 ## Milestone 1: Friend's Wi-Fi Test
 
