@@ -24,6 +24,8 @@ HTTPS is mandatory for the MVP local server.
 
 Milestone 1 should provide a practical local certificate workflow for home and friend Wi-Fi testing. Follow `docs/decisions/decision-007-local-https-certificates.md`.
 
+The first implementation spike may use `mkcert` on the MacBook Pro. Chromebook validation should confirm whether the same workflow is practical in the Linux development environment or whether project scripts need a separate fallback.
+
 Generated development private keys and certificates must not be committed to the repository.
 
 The default local server should serve both GM and player pages over HTTPS, for example:
