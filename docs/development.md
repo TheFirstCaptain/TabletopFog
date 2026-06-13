@@ -8,11 +8,14 @@ This document records baseline assumptions for local development before Mileston
 - The exact minimum Node.js version should be finalized during F-002, but prefer an active LTS release.
 - Chromebook development assumes the Linux development environment is available.
 - MacBook development assumes a normal terminal environment.
+- Initial development and primary early validation will be performed on a MacBook Pro hosting the local server.
+- Intended table use will still be validated on a Chromebook hosting the local server, with the iPad as the player client.
 
 ## Browser Targets
 
 - GM view: Chrome on Chromebook first, Chrome or Safari on MacBook acceptable.
-- Player view: Safari on iPad.
+- Primary development clients: Safari on iPhone and Safari on iPad connected to the MacBook Pro host.
+- Intended table client: Safari on iPad connected to the Chromebook host.
 - Player display path: iPad mirrored to a TV.
 
 ## Local HTTPS

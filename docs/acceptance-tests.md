@@ -16,6 +16,30 @@ Expected result:
 
 - The documentation structure exists and describes project scope, architecture, roadmap, acceptance tests, AI workflow, and decisions.
 
+## Milestone 1: MacBook Pro Hosting
+
+### Test: GM Can Host Locally from MacBook Pro
+
+Prerequisites:
+
+- MacBook Pro has the required runtime installed for the implementation milestone.
+- MacBook Pro, iPhone, and iPad are on the same Wi-Fi network.
+
+Steps:
+
+1. Start the local server on the MacBook Pro.
+2. Open the GM page in the MacBook browser.
+3. Identify the MacBook Pro's LAN IP address.
+4. Open the player URL from the iPhone using that LAN IP address.
+5. Open the player URL from the iPad using that LAN IP address.
+
+Expected result:
+
+- The GM page loads locally.
+- The player page loads from the MacBook Pro's LAN IP address on both iPhone and iPad.
+- Both pages are served over HTTPS.
+- No cloud hosting or external account is required.
+
 ## Milestone 1: Chromebook Hosting
 
 ### Test: GM Can Host Locally from Chromebook
@@ -45,13 +69,13 @@ Expected result:
 
 Prerequisites:
 
-- GM machine and iPad are connected to the same Wi-Fi network.
-- Local server is running on the GM machine.
+- GM host machine and iPad are connected to the same Wi-Fi network.
+- Local server is running on the GM host machine.
 
 Steps:
 
 1. On the iPad, open Safari.
-2. Navigate to the HTTPS player URL using the GM machine's LAN IP address.
+2. Navigate to the HTTPS player URL using the GM host machine's LAN IP address.
 3. Confirm the player page loads.
 
 Expected result:
@@ -69,24 +93,26 @@ Prerequisites:
 
 - GM machine has Node.js/npm installed.
 - Local HTTPS certificate setup is complete for the implementation milestone.
-- GM machine and iPad are on the same Wi-Fi network.
+- GM machine, iPhone, and iPad are on the same Wi-Fi network for primary MacBook Pro validation.
 
 Steps:
 
-1. Start the local HTTPS server.
+1. Start the local HTTPS server on the MacBook Pro.
 2. Open `https://localhost:3000/gm` on the GM machine.
 3. Find the GM machine's LAN IP address.
-4. Open `https://<LAN-IP>:3000/player` on the iPad.
+4. Open `https://<LAN-IP>:3000/player` on the iPhone and iPad.
 5. Accept or trust the local development certificate if the documented setup requires it.
 6. Trigger the simple GM state change.
-7. Confirm the player view updates without refresh.
-8. Repeat on a friend's Wi-Fi network.
+7. Confirm each player view updates without refresh.
+8. Repeat the core iPad flow with the Chromebook as host.
+9. Repeat on a friend's Wi-Fi network.
 
 Expected result:
 
 - GM and player pages both load over HTTPS.
-- The iPad reaches the player view by LAN IP.
-- The player view receives live state updates.
+- The iPhone and iPad reach the player view by LAN IP during MacBook Pro validation.
+- The iPad reaches the player view by LAN IP during Chromebook validation.
+- Player views receive live state updates.
 - Any LAN isolation or certificate failure is documented clearly.
 
 ## Milestone 1: Friend's Wi-Fi Test
