@@ -1,0 +1,99 @@
+# Architecture
+
+## MVP Architecture
+
+TabletopFog should begin as a browser-first local web app served from the GM machine.
+
+Recommended initial shape:
+
+- A Node.js local server runs on the GM machine.
+- Express serves static pages and lightweight API routes.
+- Separate GM and player pages are served from the same server.
+- Socket.IO or a plain WebSocket connection pushes live state changes from GM to player.
+- HTML Canvas renders the map and fog layers.
+- State is held in server memory for the first connectivity spike.
+
+Local save/load can come after the connectivity MVP.
+
+## Runtime Model
+
+The GM starts the server locally, then opens a GM URL such as:
+
+```text
+http://localhost:3000/gm
+```
+
+The iPad opens a player URL using the GM machine's LAN IP address, such as:
+
+```text
+http://192.168.1.42:3000/player
+```
+
+Both pages connect to the same local server. The GM page can send state updates. The player page receives state updates and renders them read-only.
+
+## View Responsibilities
+
+### GM View
+
+The GM view owns control actions:
+
+- Load or select a map image when that feature exists.
+- Change revealed fog state.
+- Reset or clear fog when that feature exists.
+- Save or load local state when that feature exists.
+- Display the current player URL or QR code when that feature exists.
+
+### Player View
+
+The player view is display-only:
+
+- Render the currently visible map state.
+- Render only revealed areas.
+- Avoid controls that mutate session state.
+- Support fullscreen display on iPad where possible.
+
+The player view should not expose hidden map data through visible UI. Later implementation should also avoid sending unnecessary hidden state to the player when practical, but the MVP may first prove behavior before hardening transport-level data minimization.
+
+## State Model
+
+Initial state can be small and explicit:
+
+- Current map identity or image source.
+- Map viewport/scaling information.
+- Fog mode.
+- Reveal shapes or rasterized fog mask.
+- Last update timestamp or version number.
+
+For Milestone 1, a simple shared state value is enough to prove connectivity and live updates.
+
+For Milestone 3, fog state should be represented in a way that can be saved later and replayed consistently. Simple reveal shapes are acceptable before a more advanced brush system.
+
+## Technology Direction
+
+Recommended starting choices:
+
+- Node.js for the local server.
+- Express for serving pages.
+- Socket.IO or WebSocket for live updates.
+- HTML Canvas for map and fog rendering.
+- Plain HTML, CSS, and JavaScript at first.
+
+Avoid React or a larger frontend framework unless a later milestone clearly benefits from it.
+
+## Security and Network Assumptions
+
+The MVP assumes trusted devices on the same Wi-Fi network. It does not include login or authentication.
+
+The app should still avoid accidental write controls in the player view. Future hardening can add session codes, role-specific URLs, or simple local-only access controls if needed.
+
+## Non-Goals
+
+The architecture should not optimize for:
+
+- Internet-hosted play.
+- Cloud accounts.
+- Marketplace asset management.
+- Combat automation.
+- Rules engine behavior.
+- Token movement.
+- Multi-user editing.

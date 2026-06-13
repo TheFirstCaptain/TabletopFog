@@ -1,0 +1,34 @@
+# Bug Tracker
+
+Use this tracker for known defects, regressions, build failures, browser/device compatibility issues, local-network issues, and scope blockers.
+
+## Statuses
+
+- `Open`: Confirmed or suspected issue that has not been fixed.
+- `Investigating`: Reproduction, scope, or cause is being researched.
+- `Fixing`: A fix is in progress.
+- `Validating`: The fix is being tested.
+- `Resolved`: Fix is complete and validated.
+- `Deferred`: Issue is accepted for later work.
+- `Won't Fix`: Issue is intentionally not being addressed.
+
+## Priorities
+
+- `P0`: Blocks all useful development or prevents the app from running.
+- `P1`: Blocks a major MVP workflow, such as local connectivity or player display.
+- `P2`: Important but does not block broad progress.
+- `P3`: Minor, cosmetic, or documentation-only.
+
+## Tracking Conventions
+
+- Use one bug entry for one reproducible defect, build failure, compatibility issue, or blocker.
+- Use a blocker entry when an issue affects multiple future features and cannot be cleanly assigned to one feature.
+- Keep investigation notes in linked bug documents instead of expanding the tracker table.
+- Link bugs to affected feature docs when a defect blocks or is found during feature work.
+- Prefer `Deferred` over deleting known issues that are intentionally postponed.
+- Record same-Wi-Fi, device, browser, and OS details for connectivity or display bugs.
+
+## Tracker
+
+| ID | Title | Status | Priority | Bug Doc | Last Updated | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
