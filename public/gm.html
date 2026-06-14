@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TabletopFog GM</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="page-header">
+        <p class="eyebrow">TabletopFog</p>
+        <h1>GM</h1>
+        <p id="connection-status" class="status" aria-live="polite">Connecting...</p>
+      </header>
+
+      <section class="panel" aria-labelledby="counter-heading">
+        <h2 id="counter-heading">Shared Counter</h2>
+        <p id="counter-value" class="counter" aria-live="polite">0</p>
+        <p id="updated-at" class="muted">Waiting for state.</p>
+        <div class="actions">
+          <button id="increment-button" type="button">Increment</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/gm.js"></script>
+  </body>
+</html>

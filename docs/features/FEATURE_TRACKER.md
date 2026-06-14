@@ -30,8 +30,9 @@ Use this tracker to preserve feature state across sessions and agent handoffs. K
 | ID | Title | Status | Phase | Feature Doc | Last Updated | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | F-001 | Documentation Harness and Repo Structure | Complete | Done | [F-001.md](./F-001.md) | 2026-06-13 | Initial docs, acceptance tests, decisions, AI harness, and contributor guide created. |
-| F-002 | Local Connectivity Spike | Clarifying | Clarifying | [F-002.md](./F-002.md) | 2026-06-13 | Primary early validation will use a MacBook Pro host with iPhone/iPad clients; intended-use validation will repeat with Chromebook host and iPad client. |
+| F-002 | Local Connectivity Spike | In Progress | Validating | [F-002.md](./F-002.md) | 2026-06-14 | Minimal HTTPS Express/Socket.IO counter sync is implemented and locally verified; physical iPhone, iPad, Chromebook, and friend Wi-Fi validation remains. |
 | F-003 | Static Map Display | Proposed | Proposed | [F-003.md](./F-003.md) | 2026-06-13 | Load or choose a map and display it consistently on GM/player views. |
 | F-004 | Basic Fog of War | Proposed | Proposed | [F-004.md](./F-004.md) | 2026-06-13 | Full fog layer and simple GM reveal shapes, with player seeing only revealed areas. |
 | F-005 | Save and Load State | Proposed | Proposed | [F-005.md](./F-005.md) | 2026-06-13 | Persist current map and fog state locally, then reload a previous session. |
 | F-006 | Table Quality-of-Life Improvements | Proposed | Proposed | [F-006.md](./F-006.md) | 2026-06-13 | Better reveal brush, undo, reset, fullscreen player view, and shareable player URL. |
+| F-007 | Streamlined Local Startup and Chromebook Validation | Proposed | Proposed | [F-007.md](./F-007.md) | 2026-06-14 | Follow-up to F-002: reduce startup friction with a single local command and validate the intended Chromebook host to iPad flow. |

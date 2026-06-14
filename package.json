@@ -1,0 +1,22 @@
+{
+  "name": "tabletopfog",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local HTTPS tabletop fog-of-war display spike.",
+  "main": "server/index.js",
+  "scripts": {
+    "cert": "node scripts/create-dev-cert.js",
+    "dev": "node server/index.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.1"
+  }
+}

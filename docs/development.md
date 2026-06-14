@@ -1,11 +1,13 @@
 # Development Environment
 
-This document records baseline assumptions for local development before Milestone 1 implementation begins.
+This document records baseline assumptions and commands for local development.
 
 ## Required Runtime
 
-- Node.js and npm are expected for the local server.
-- The exact minimum Node.js version should be finalized during F-002, but prefer an active LTS release.
+- Node.js 22 or newer is required for the local server.
+- npm is used for dependency installation, development scripts, and tests.
+- OpenSSL is required for the local development certificate helper.
+- F-002 was locally verified on Node.js `v24.14.0` and npm `11.9.0`.
 - Chromebook development assumes the Linux development environment is available.
 - MacBook development assumes a normal terminal environment.
 - Initial development and primary early validation will be performed on a MacBook Pro hosting the local server.
@@ -22,11 +24,28 @@ This document records baseline assumptions for local development before Mileston
 
 HTTPS is mandatory for the MVP local server.
 
-Milestone 1 should provide a practical local certificate workflow for home and friend Wi-Fi testing. Follow `docs/decisions/decision-007-local-https-certificates.md`.
-
-The first implementation spike may use `mkcert` on the MacBook Pro. Chromebook validation should confirm whether the same workflow is practical in the Linux development environment or whether project scripts need a separate fallback.
+Milestone 1 provides a development-only self-signed certificate workflow for home and friend Wi-Fi testing. Follow `docs/decisions/decision-007-local-https-certificates.md`.
 
 Generated development private keys and certificates must not be committed to the repository.
+
+Generate or regenerate local HTTPS files with:
+
+```sh
+npm run cert -- --ip=<LAN-IP>
+```
+
+The script writes ignored files to `certs/dev-key.pem` and `certs/dev-cert.pem`. It includes `localhost`, `127.0.0.1`, detected LAN IPv4 addresses, and any explicit `--ip=` values in the certificate SANs.
+
+Regenerate the certificate whenever the GM machine changes Wi-Fi networks or LAN IP addresses.
+
+Initial iPhone/iPad trust workflow for validation:
+
+1. Transfer `certs/dev-cert.pem` to the iPhone or iPad being tested.
+2. Install the certificate profile when prompted by iOS or iPadOS.
+3. Enable full trust for the installed certificate in device certificate trust settings.
+4. Open `https://<LAN-IP>:3000/player` in Safari.
+
+Record the exact observed iOS or iPadOS settings path and any Safari warning text in `docs/features/F-002.md` or `docs/network-troubleshooting.md` during physical device validation.
 
 The default local server should serve both GM and player pages over HTTPS, for example:
 
@@ -37,15 +56,31 @@ https://192.168.1.42:3000/player
 
 ## Validation Commands
 
-No application commands exist yet. When implementation begins, add concrete commands here and to `AGENTS.md`, such as:
+Install dependencies:
+
+```sh
+npm install
+```
+
+Generate local HTTPS files:
+
+```sh
+npm run cert -- --ip=<LAN-IP>
+```
+
+Start the HTTPS server:
 
 ```sh
 npm run dev
-npm test
-npm run lint
 ```
 
-Every feature should leave behind the commands needed to run, test, and validate the changed behavior.
+Run automated tests:
+
+```sh
+npm test
+```
+
+The dev server binds to `0.0.0.0` on port `3000` by default so same-Wi-Fi devices can reach it by LAN IP.
 
 ## Troubleshooting
 

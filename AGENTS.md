@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-TabletopFog is in the documentation and validation-harness phase. No application source code exists yet.
+TabletopFog is in the first local-connectivity implementation phase.
 
 - `docs/vision.md`: purpose, users, MVP boundaries.
 - `docs/architecture.md`: technical direction and view responsibilities.
@@ -14,27 +14,26 @@ TabletopFog is in the documentation and validation-harness phase. No application
 - `docs/definition-of-done.md`: completion checklist.
 - `docs/ai-harness.md`: rules for future AI-assisted development.
 - `docs/decisions/`: architecture and product decision records.
-
-When app code begins, prefer `server/`, `public/`, and `tests/`.
+- `server/`: HTTPS Express and Socket.IO server code.
+- `public/`: browser pages and client-side JavaScript.
+- `scripts/`: local development helper scripts.
+- `test/`: Node test suite.
 
 ## Build, Test, and Development Commands
 
-No build system is present yet. Current validation commands:
+Current validation commands:
 
 ```sh
 rg --files
 git status --short
-```
-
-Use `rg --files` to confirm files. Use `git status --short` before and after changes.
-
-When Milestone 1 starts, add local HTTPS server commands here, for example:
-
-```sh
 npm install
+npm run cert -- --ip=<LAN-IP>
 npm run dev
 npm test
 ```
+
+Use `rg --files` to confirm files. Use `git status --short` before and after changes.
+Use `npm run cert -- --ip=<LAN-IP>` whenever the host machine changes Wi-Fi networks or LAN IP addresses.
 
 ## Coding Style & Naming Conventions
 

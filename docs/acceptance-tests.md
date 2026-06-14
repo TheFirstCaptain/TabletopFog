@@ -22,22 +22,28 @@ Expected result:
 
 Prerequisites:
 
-- MacBook Pro has the required runtime installed for the implementation milestone.
+- MacBook Pro has Node.js 22 or newer, npm, and OpenSSL installed.
 - MacBook Pro, iPhone, and iPad are on the same Wi-Fi network.
+- Local HTTPS certificate files have been generated with `npm run cert -- --ip=<LAN-IP>`.
 
 Steps:
 
-1. Start the local server on the MacBook Pro.
-2. Open the GM page in the MacBook browser.
-3. Identify the MacBook Pro's LAN IP address.
-4. Open the player URL from the iPhone using that LAN IP address.
-5. Open the player URL from the iPad using that LAN IP address.
+1. Run `npm install` if dependencies are not installed.
+2. Run `npm run cert -- --ip=<LAN-IP>` if the LAN IP has changed.
+3. Start the local server on the MacBook Pro with `npm run dev`.
+4. Open `https://localhost:3000/gm` in the MacBook browser.
+5. Identify the MacBook Pro's LAN IP address.
+6. Install and fully trust the local development certificate on iPhone and iPad if required.
+7. Open `https://<LAN-IP>:3000/player` from the iPhone.
+8. Open `https://<LAN-IP>:3000/player` from the iPad.
+9. Click `Increment` in the GM page.
 
 Expected result:
 
 - The GM page loads locally.
 - The player page loads from the MacBook Pro's LAN IP address on both iPhone and iPad.
 - Both pages are served over HTTPS.
+- The counter update appears on the iPhone and iPad without manual refresh.
 - No cloud hosting or external account is required.
 
 ## Milestone 1: Chromebook Hosting
@@ -46,21 +52,27 @@ Expected result:
 
 Prerequisites:
 
-- Chromebook has the required runtime installed for the implementation milestone.
+- Chromebook has Linux development environment enabled with Node.js 22 or newer, npm, and OpenSSL installed.
 - Chromebook and iPad are on the same Wi-Fi network.
+- Local HTTPS certificate files have been generated with `npm run cert -- --ip=<LAN-IP>`.
 
 Steps:
 
-1. Start the local server on the Chromebook.
-2. Open the GM page in the Chromebook browser.
-3. Identify the Chromebook's LAN IP address.
-4. Open the player URL from another browser tab or device using that LAN IP address.
+1. Run `npm install` if dependencies are not installed.
+2. Run `npm run cert -- --ip=<LAN-IP>` if the LAN IP has changed.
+3. Start the local server on the Chromebook with `npm run dev`.
+4. Open `https://localhost:3000/gm` in the Chromebook browser.
+5. Identify the Chromebook's LAN IP address.
+6. Install and fully trust the local development certificate on the iPad if required.
+7. Open `https://<LAN-IP>:3000/player` from the iPad.
+8. Click `Increment` in the GM page.
 
 Expected result:
 
 - The GM page loads locally.
 - The player page loads from the Chromebook's LAN IP address.
 - Both pages are served over HTTPS.
+- The counter update appears on the iPad without manual refresh.
 - No cloud hosting or external account is required.
 
 ## Milestone 1: iPad Connection on Same Wi-Fi
@@ -71,12 +83,14 @@ Prerequisites:
 
 - GM host machine and iPad are connected to the same Wi-Fi network.
 - Local server is running on the GM host machine.
+- The local development certificate includes the GM host machine's LAN IP address.
 
 Steps:
 
 1. On the iPad, open Safari.
 2. Navigate to the HTTPS player URL using the GM host machine's LAN IP address.
-3. Confirm the player page loads.
+3. Install and fully trust the local development certificate if required.
+4. Confirm the player page loads.
 
 Expected result:
 
@@ -97,15 +111,17 @@ Prerequisites:
 
 Steps:
 
-1. Start the local HTTPS server on the MacBook Pro.
-2. Open `https://localhost:3000/gm` on the GM machine.
-3. Find the GM machine's LAN IP address.
-4. Open `https://<LAN-IP>:3000/player` on the iPhone and iPad.
-5. Accept or trust the local development certificate if the documented setup requires it.
-6. Trigger the simple GM state change.
-7. Confirm each player view updates without refresh.
-8. Repeat the core iPad flow with the Chromebook as host.
-9. Repeat on a friend's Wi-Fi network.
+1. Run `npm install`.
+2. Find the GM machine's LAN IP address.
+3. Run `npm run cert -- --ip=<LAN-IP>`.
+4. Start the local HTTPS server with `npm run dev`.
+5. Open `https://localhost:3000/gm` on the GM machine.
+6. Install and fully trust the local development certificate on the iPhone and iPad if the documented setup requires it.
+7. Open `https://<LAN-IP>:3000/player` on the iPhone and iPad.
+8. Trigger the simple GM counter increment.
+9. Confirm each player view updates without refresh.
+10. Repeat the core iPad flow with the Chromebook as host.
+11. Repeat on a friend's Wi-Fi network.
 
 Expected result:
 
@@ -126,11 +142,13 @@ Prerequisites:
 
 Steps:
 
-1. Start the local server on the GM machine.
-2. Find the GM machine's LAN IP address on the friend's Wi-Fi.
-3. Open the GM page on the GM machine.
-4. Open the player URL on the iPad using the LAN IP address.
-5. Trigger a simple GM state change.
+1. Find the GM machine's LAN IP address on the friend's Wi-Fi.
+2. Regenerate the certificate with `npm run cert -- --ip=<LAN-IP>`.
+3. Start the local server on the GM machine with `npm run dev`.
+4. Open `https://localhost:3000/gm` on the GM machine.
+5. Install and fully trust the local development certificate if required.
+6. Open `https://<LAN-IP>:3000/player` on the iPad.
+7. Trigger a simple GM counter increment.
 
 Expected result:
 
@@ -144,9 +162,9 @@ Expected result:
 
 Steps:
 
-1. Open the GM view.
-2. Open the player view from another device or browser.
-3. Use the GM view to trigger a simple state change.
+1. Open `https://localhost:3000/gm`.
+2. Open `https://<LAN-IP>:3000/player` from another device or browser.
+3. Click `Increment` in the GM view.
 
 Expected result:
 

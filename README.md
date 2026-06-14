@@ -6,7 +6,7 @@ This project is intentionally not a full virtual tabletop. The MVP excludes toke
 
 ## Current Status
 
-TabletopFog is in the planning and validation-harness phase. No application code has been built yet.
+TabletopFog is in the first local connectivity spike. A minimal HTTPS app now serves separate GM and player pages and syncs a neutral counter over Socket.IO.
 
 The first implementation milestone is a local connectivity spike:
 
@@ -49,9 +49,15 @@ Before marking a feature done, check `docs/definition-of-done.md`.
 
 ## Current Validation Commands
 
-There is no build system yet. Current checks are documentation-oriented:
+Current setup and validation commands:
 
 ```sh
 rg --files
 git status --short
+npm install
+npm run cert -- --ip=<LAN-IP>
+npm run dev
+npm test
 ```
+
+The certificate helper requires OpenSSL on the host machine.
