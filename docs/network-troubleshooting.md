@@ -28,6 +28,30 @@ The GM machine may block incoming connections until the user allows the Node.js 
 
 Document the exact prompt and action required for Chromebook or MacBook once observed.
 
+### Chromebook Linux Port Forwarding
+
+On Chromebook, `npm run dev` runs inside the Linux development environment. The Chromebook browser may be able to reach the server locally while other devices on the Wi-Fi network cannot.
+
+If `https://localhost:3000/player` works on the Chromebook but `https://<CHROMEBOOK-WIFI-LAN-IP>:3000/player` reports that the IP refused to connect, check ChromeOS Linux port forwarding for TCP port `3000`.
+
+If the GM page works on the Chromebook but the iPad or another Chromebook cannot open the player page, check the same ChromeOS Linux port forwarding setting.
+
+`https://penguin.linux.test:3000/player` working confirms the server is reachable through ChromeOS's Linux hostname, but it does not prove the service is reachable from other Wi-Fi devices. Test the Chromebook Wi-Fi LAN IP from a separate device on the same network.
+
+If the iPad can open `https://<CHROMEBOOK-WIFI-LAN-IP>:3000/player` but the Chromebook itself cannot open that same Wi-Fi IP URL, treat the Chromebook-local failure as a ChromeOS loopback limitation. Use `https://localhost:3000/player` or `https://penguin.linux.test:3000/player` on the Chromebook, and use the Wi-Fi LAN IP from separate player devices.
+
+To inspect the listening port while `npm run dev` is running, open a second Linux terminal tab or window and run:
+
+```sh
+ss -ltnp | grep ':3000'
+```
+
+Also confirm the URL and certificate use the Chromebook's Wi-Fi LAN IP address, not the Linux container IP. Regenerate the certificate with the Chromebook Wi-Fi LAN IP:
+
+```sh
+npm run cert -- --ip=<CHROMEBOOK-WIFI-LAN-IP>
+```
+
 ### Certificate Trust Failure
 
 Because HTTPS is mandatory, iPad Safari may warn about or reject a local development certificate. Follow the certificate setup documented during F-002.

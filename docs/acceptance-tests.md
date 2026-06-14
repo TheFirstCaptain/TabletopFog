@@ -63,9 +63,10 @@ Steps:
 3. Start the local server on the Chromebook with `npm run dev`.
 4. Open `https://localhost:3000/gm` in the Chromebook browser.
 5. Identify the Chromebook's LAN IP address.
-6. Install and fully trust the local development certificate on the iPad if required.
-7. Open `https://<LAN-IP>:3000/player` from the iPad.
-8. Click `Increment` in the GM page.
+6. Enable ChromeOS Linux port forwarding for TCP port `3000` if it is not already enabled.
+7. Install and fully trust the local development certificate on the iPad if required.
+8. Open `https://<LAN-IP>:3000/player` from the iPad.
+9. Click `Increment` in the GM page.
 
 Expected result:
 
@@ -74,6 +75,7 @@ Expected result:
 - Both pages are served over HTTPS.
 - The counter update appears on the iPad without manual refresh.
 - No cloud hosting or external account is required.
+- If the Chromebook cannot open its own Wi-Fi LAN IP URL while the iPad can, use `https://localhost:3000/...` or `https://penguin.linux.test:3000/...` for Chromebook-local testing and treat the Wi-Fi IP failure as a ChromeOS local loopback limitation.
 
 ## Milestone 1: iPad Connection on Same Wi-Fi
 
