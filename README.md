@@ -55,9 +55,23 @@ Current setup and validation commands:
 rg --files
 git status --short
 npm install
-npm run cert -- --ip=<LAN-IP>
-npm run dev
+npm run local
 npm test
 ```
 
-The certificate helper requires OpenSSL on the host machine.
+`npm run local` detects LAN IP addresses, checks or regenerates the local HTTPS certificate when needed, starts the server, and prints the GM URL, player URL candidates, certificate path, and Chromebook notes.
+
+If automatic LAN IP detection reports the wrong address, pass the Wi-Fi LAN IP explicitly:
+
+```sh
+npm run local -- --ip=<LAN-IP>
+```
+
+The lower-level commands remain available when needed:
+
+```sh
+npm run cert -- --ip=<LAN-IP>
+npm run dev
+```
+
+The certificate helper and streamlined local startup require OpenSSL on the host machine.

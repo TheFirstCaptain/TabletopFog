@@ -12,6 +12,7 @@ Use this checklist before marking a feature `Done` in `docs/features/FEATURE_TRA
 - Relevant manual validation is performed or documented as not possible.
 - `docs/acceptance-tests.md` is updated when user-visible behavior changes.
 - `docs/development.md` is updated when commands, runtime assumptions, ports, HTTPS setup, or validation commands change.
+- `README.md` has been swept for stale commands, setup steps, current status, and user-facing workflow notes; update it when needed or record that no change was required.
 - `docs/bugs/BUG_TRACKER.md` is updated for discovered or fixed defects.
 - New major architecture or product decisions are recorded in `docs/decisions/`.
 - `docs/features/FEATURE_TRACKER.md` has current status, phase, date, and notes.

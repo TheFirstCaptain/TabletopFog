@@ -54,6 +54,7 @@ Make the smallest useful change for the current milestone.
 
 Do not expand project scope without also updating:
 
+- `README.md` if commands, setup, current status, validation workflow, or user-facing behavior changed
 - `docs/roadmap.md`
 - `docs/features/FEATURE_TRACKER.md`
 - The relevant feature document in `docs/features/`
@@ -96,6 +97,8 @@ If a future change touches one of these areas, stop and update roadmap and decis
 When adding or changing behavior, update `docs/acceptance-tests.md` with human-readable validation steps.
 
 Also update the relevant feature document in `docs/features/` with acceptance notes, affected systems, validation plan, and current status.
+
+During docs and tracker review, sweep `README.md` for stale setup commands, validation commands, current-status language, and user-facing workflow notes. Update it when needed; if it remains accurate, record that no README change was necessary in the feature document or final handoff.
 
 If the change fixes a defect, update `docs/bugs/BUG_TRACKER.md` and the relevant bug document in `docs/bugs/`.
 

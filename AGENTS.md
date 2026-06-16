@@ -71,3 +71,5 @@ Pull requests should include a brief summary, files changed, validation performe
 Future AI sessions must read the docs before editing. Do not expand MVP scope without updating `docs/roadmap.md`, `docs/features/`, `docs/acceptance-tests.md`, and, for major changes, `docs/decisions/`. Track defects in `docs/bugs/`.
 
 Feature work must follow the mandatory subagent SDLC in `docs/decisions/decision-004-mandatory-subagent-sdlc.md`. Keep changes small, prefer simple browser-first implementation, and preserve the core constraint: this is a local fog-of-war display tool, not a full VTT.
+
+When feature work changes commands, setup, validation steps, user-visible behavior, project status, or contributor workflow, sweep `README.md` during the docs and tracker review. Update it when it no longer matches the current workflow, or explicitly note that no README change was needed.
