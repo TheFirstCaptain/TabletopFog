@@ -52,6 +52,12 @@ Also confirm the URL and certificate use the Chromebook's Wi-Fi LAN IP address, 
 npm run cert -- --ip=<CHROMEBOOK-WIFI-LAN-IP>
 ```
 
+Or start with the streamlined local command and pass the Chromebook Wi-Fi LAN IP explicitly:
+
+```sh
+npm run local -- --ip=<CHROMEBOOK-WIFI-LAN-IP>
+```
+
 ### Certificate Trust Failure
 
 Because HTTPS is mandatory, iPad Safari may warn about or reject a local development certificate. Follow the certificate setup documented during F-002.

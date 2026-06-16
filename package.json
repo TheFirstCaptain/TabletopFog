@@ -7,6 +7,7 @@
   "scripts": {
     "cert": "node scripts/create-dev-cert.js",
     "dev": "node server/index.js",
+    "local": "node scripts/start-local.js",
     "test": "node --test"
   },
   "engines": {

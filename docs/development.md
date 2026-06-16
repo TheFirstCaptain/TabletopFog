@@ -38,6 +38,20 @@ The script writes ignored files to `certs/dev-key.pem` and `certs/dev-cert.pem`.
 
 Regenerate the certificate whenever the GM machine changes Wi-Fi networks or LAN IP addresses.
 
+For normal local startup, prefer the streamlined command:
+
+```sh
+npm run local
+```
+
+The command detects LAN IP addresses, reuses the existing certificate when it still covers the current addresses, regenerates it when needed, starts the HTTPS server on `0.0.0.0:3000`, and prints the GM URL, player URL candidates, certificate path, and Chromebook port-forwarding note.
+
+If automatic LAN IP detection reports the wrong address, pass the Wi-Fi LAN IP explicitly:
+
+```sh
+npm run local -- --ip=<LAN-IP>
+```
+
 Initial iPhone/iPad trust workflow for validation:
 
 1. Transfer `certs/dev-cert.pem` to the iPhone or iPad being tested.
@@ -72,6 +86,12 @@ Start the HTTPS server:
 
 ```sh
 npm run dev
+```
+
+Start the HTTPS server with LAN IP detection, certificate check, and printed player URLs:
+
+```sh
+npm run local
 ```
 
 Run automated tests:

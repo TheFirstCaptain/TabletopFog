@@ -84,7 +84,7 @@ function writeOpenSslConfig(configPath, ips) {
   );
 }
 
-function createCert(ips) {
+function createCert(ips, options = {}) {
   fs.mkdirSync(certDir, { recursive: true });
   const configPath = path.join(certDir, "dev-openssl.cnf");
   writeOpenSslConfig(configPath, ips);
@@ -109,13 +109,72 @@ function createCert(ips) {
     ],
     {
       encoding: "utf8",
-      stdio: "inherit"
+      stdio: options.stdio || "inherit"
     }
   );
 
   if (result.status !== 0) {
     throw new Error("OpenSSL failed to generate the development certificate.");
   }
+}
+
+function certIncludesIps(certPathToCheck, ips) {
+  const result = spawnSync("openssl", ["x509", "-in", certPathToCheck, "-noout", "-ext", "subjectAltName"], {
+    encoding: "utf8"
+  });
+
+  if (result.status !== 0) {
+    return false;
+  }
+
+  return ips.every((ip) => result.stdout.includes(`IP Address:${ip}`));
+}
+
+function certIsValidForAtLeast(certPathToCheck, seconds) {
+  const result = spawnSync("openssl", ["x509", "-checkend", String(seconds), "-noout", "-in", certPathToCheck], {
+    encoding: "utf8"
+  });
+
+  return result.status === 0;
+}
+
+function certificateNeedsRegeneration(options = {}) {
+  const ips = options.ips || [];
+  const certPathToCheck = options.certPath || certPath;
+  const keyPathToCheck = options.keyPath || keyPath;
+  const validForSeconds = options.validForSeconds || 24 * 60 * 60;
+
+  if (!fs.existsSync(certPathToCheck) || !fs.existsSync(keyPathToCheck)) {
+    return true;
+  }
+
+  if (!certIsValidForAtLeast(certPathToCheck, validForSeconds)) {
+    return true;
+  }
+
+  return !certIncludesIps(certPathToCheck, ips);
+}
+
+function ensureCertificate(ips, options = {}) {
+  ensureOpenSsl();
+
+  if (!certificateNeedsRegeneration({ ips })) {
+    return {
+      certPath,
+      keyPath,
+      status: "reused"
+    };
+  }
+
+  createCert(ips, {
+    stdio: options.stdio
+  });
+
+  return {
+    certPath,
+    keyPath,
+    status: "regenerated"
+  };
 }
 
 function main() {
@@ -131,4 +190,22 @@ function main() {
   console.log("Regenerate this certificate after switching Wi-Fi networks if the LAN IP changes.");
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  certDir,
+  certPath,
+  certIncludesIps,
+  certificateNeedsRegeneration,
+  createCert,
+  ensureCertificate,
+  ensureOpenSsl,
+  getLanIps,
+  keyPath,
+  main,
+  parseArgs,
+  unique,
+  writeOpenSslConfig
+};

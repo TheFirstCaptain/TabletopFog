@@ -101,25 +101,24 @@ Expected result:
 - The connection uses HTTPS.
 - No login is required.
 
-## Milestone 1: Manual Connectivity Script
+## Milestone 1: Streamlined Local Startup
 
 ### Test: End-to-End HTTPS Local Sync
 
 Prerequisites:
 
-- GM machine has Node.js/npm installed.
-- Local HTTPS certificate setup is complete for the implementation milestone.
+- GM machine has Node.js/npm and OpenSSL installed.
 - GM machine, iPhone, and iPad are on the same Wi-Fi network for primary MacBook Pro validation.
 
 Steps:
 
 1. Run `npm install`.
-2. Find the GM machine's LAN IP address.
-3. Run `npm run cert -- --ip=<LAN-IP>`.
-4. Start the local HTTPS server with `npm run dev`.
-5. Open `https://localhost:3000/gm` on the GM machine.
-6. Install and fully trust the local development certificate on the iPhone and iPad if the documented setup requires it.
-7. Open `https://<LAN-IP>:3000/player` on the iPhone and iPad.
+2. Run `npm run local`.
+3. If the printed player URL does not use the GM machine's Wi-Fi LAN IP, stop the server and run `npm run local -- --ip=<LAN-IP>`.
+4. Confirm the command prints the GM URL, player URL, certificate path, and Chromebook port-forwarding note.
+5. Open the printed GM URL on the GM machine.
+6. Install and fully trust the printed local development certificate on the iPhone and iPad if required.
+7. Open the printed player URL on the iPhone and iPad.
 8. Trigger the simple GM counter increment.
 9. Confirm each player view updates without refresh.
 10. Repeat the core iPad flow with the Chromebook as host.
@@ -131,6 +130,7 @@ Expected result:
 - The iPhone and iPad reach the player view by LAN IP during MacBook Pro validation.
 - The iPad reaches the player view by LAN IP during Chromebook validation.
 - Player views receive live state updates.
+- The local command reuses an existing trusted certificate when it still covers the current LAN IP, and regenerates it only when needed.
 - Any LAN isolation or certificate failure is documented clearly.
 
 ## Milestone 1: Friend's Wi-Fi Test
