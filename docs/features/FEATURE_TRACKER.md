@@ -31,7 +31,7 @@ Use this tracker to preserve feature state across sessions and agent handoffs. K
 | --- | --- | --- | --- | --- | --- | --- |
 | F-001 | Documentation Harness and Repo Structure | Complete | Done | [F-001.md](./F-001.md) | 2026-06-13 | Initial docs, acceptance tests, decisions, AI harness, and contributor guide created. |
 | F-002 | Local Connectivity Spike | Complete | Done | [F-002.md](./F-002.md) | 2026-06-14 | Minimal HTTPS Express/Socket.IO counter sync is implemented; Chromebook host to iPad player LAN path validated with ChromeOS Linux port forwarding. |
-| F-003 | Streamlined Local Startup and Chromebook Validation | In Progress | Validating | [F-003.md](./F-003.md) | 2026-06-16 | `npm run local` implemented and MacBook-to-iPhone validated; Chromebook-to-iPad validation remains. |
+| F-003 | Streamlined Local Startup and Chromebook Validation | Complete | Done | [F-003.md](./F-003.md) | 2026-06-17 | `npm run local` implemented and validated on MacBook/iPhone, MacBook/iPad, and Chromebook-host paths; Chromebook stale port forwarding workaround documented. |
 | F-004 | Static Map Display | Proposed | Proposed | [F-004.md](./F-004.md) | 2026-06-13 | Load or choose a map and display it consistently on GM/player views. |
 | F-005 | Basic Fog of War | Proposed | Proposed | [F-005.md](./F-005.md) | 2026-06-13 | Full fog layer and simple GM reveal shapes, with player seeing only revealed areas. |
 | F-006 | Save and Load State | Proposed | Proposed | [F-006.md](./F-006.md) | 2026-06-13 | Persist current map and fog state locally, then reload a previous session. |

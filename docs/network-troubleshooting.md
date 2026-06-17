@@ -36,6 +36,8 @@ If `https://localhost:3000/player` works on the Chromebook but `https://<CHROMEB
 
 If the GM page works on the Chromebook but the iPad or another Chromebook cannot open the player page, check the same ChromeOS Linux port forwarding setting.
 
+If ChromeOS Linux port forwarding for TCP port `3000` appears enabled but separate devices still report that Safari cannot connect to the server, remove the forwarded port entry completely and add it again. During F-003 validation, the iOS device could not reach the Chromebook until the stale port forwarding entry was deleted and recreated.
+
 `https://penguin.linux.test:3000/player` working confirms the server is reachable through ChromeOS's Linux hostname, but it does not prove the service is reachable from other Wi-Fi devices. Test the Chromebook Wi-Fi LAN IP from a separate device on the same network.
 
 If the iPad can open `https://<CHROMEBOOK-WIFI-LAN-IP>:3000/player` but the Chromebook itself cannot open that same Wi-Fi IP URL, treat the Chromebook-local failure as a ChromeOS loopback limitation. Use `https://localhost:3000/player` or `https://penguin.linux.test:3000/player` on the Chromebook, and use the Wi-Fi LAN IP from separate player devices.
@@ -61,6 +63,8 @@ npm run local -- --ip=<CHROMEBOOK-WIFI-LAN-IP>
 ### Certificate Trust Failure
 
 Because HTTPS is mandatory, iPad Safari may warn about or reject a local development certificate. Follow the certificate setup documented during F-002.
+
+During F-003 iPad validation, after tapping Safari's `Visit Website` link for the development certificate warning, Safari still needed a manual page reload before the player view loaded correctly.
 
 If the browser blocks the page:
 
