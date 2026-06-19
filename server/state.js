@@ -2,7 +2,7 @@
 
 function createInitialState() {
   return {
-    counter: 0,
+    campaign: null,
     version: 0,
     updatedAt: new Date(0).toISOString()
   };
@@ -12,12 +12,12 @@ function createStateStore() {
   let state = createInitialState();
 
   function snapshot() {
-    return { ...state };
+    return JSON.parse(JSON.stringify(state));
   }
 
-  function updateCounter(counter) {
+  function updateCampaign(campaign) {
     state = {
-      counter,
+      campaign,
       version: state.version + 1,
       updatedAt: new Date().toISOString()
     };
@@ -27,8 +27,8 @@ function createStateStore() {
 
   return {
     getState: snapshot,
-    increment() {
-      return updateCounter(state.counter + 1);
+    setCampaign(campaign) {
+      return updateCampaign(campaign);
     }
   };
 }

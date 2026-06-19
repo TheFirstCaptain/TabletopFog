@@ -7,19 +7,59 @@
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
-    <main class="shell">
+    <main class="shell gm-shell">
       <header class="page-header">
         <p class="eyebrow">TabletopFog</p>
-        <h1>GM</h1>
+        <h1>Campaign Library</h1>
         <p id="connection-status" class="status" aria-live="polite">Connecting...</p>
       </header>
 
-      <section class="panel" aria-labelledby="counter-heading">
-        <h2 id="counter-heading">Shared Counter</h2>
-        <p id="counter-value" class="counter" aria-live="polite">0</p>
-        <p id="updated-at" class="muted">Waiting for state.</p>
-        <div class="actions">
-          <button id="increment-button" type="button">Increment</button>
+      <section class="panel" aria-labelledby="library-heading">
+        <div class="section-heading">
+          <div>
+            <h2 id="library-heading">Campaigns</h2>
+            <p id="data-root" class="muted">Loading local data root.</p>
+          </div>
+        </div>
+
+        <form id="campaign-form" class="inline-form">
+          <label for="campaign-name">New campaign</label>
+          <input id="campaign-name" name="campaign-name" type="text" autocomplete="off" required>
+          <button type="submit">Create</button>
+        </form>
+
+        <p id="library-message" class="muted" aria-live="polite"></p>
+        <div id="campaign-list" class="campaign-list" aria-live="polite"></div>
+      </section>
+
+      <section id="campaign-panel" class="panel" aria-labelledby="campaign-heading" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Open Campaign</p>
+            <h2 id="campaign-heading">Campaign</h2>
+          </div>
+          <button id="back-to-library" class="secondary" type="button">Library</button>
+        </div>
+
+        <form id="map-form" class="inline-form">
+          <label for="map-file">Add map</label>
+          <input id="map-file" name="map-file" type="file" accept="image/*" required>
+          <button type="submit">Add</button>
+        </form>
+
+        <p id="campaign-message" class="muted" aria-live="polite"></p>
+
+        <div class="workspace-grid">
+          <div>
+            <h3>Maps</h3>
+            <div id="map-list" class="map-list" aria-live="polite"></div>
+          </div>
+
+          <div class="active-map-panel">
+            <h3>Active Map</h3>
+            <p id="active-map-message" class="muted">No active map selected.</p>
+            <img id="active-map-image" class="map-preview" alt="" hidden>
+          </div>
         </div>
       </section>
     </main>

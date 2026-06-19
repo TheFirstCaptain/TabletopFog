@@ -1,22 +1,42 @@
 (function () {
   const socket = io();
   const status = document.querySelector("#connection-status");
-  const counter = document.querySelector("#counter-value");
-  const updatedAt = document.querySelector("#updated-at");
+  const message = document.querySelector("#player-message");
+  const mapImage = document.querySelector("#player-map");
 
-  function renderState(state) {
-    counter.textContent = String(state.counter);
-    updatedAt.textContent = `Version ${state.version} updated ${state.updatedAt}`;
+  function setStatus(text, state) {
+    status.textContent = text;
+    status.dataset.state = state;
   }
 
+  function renderState(state) {
+    const activeMap = state.activeMap;
+
+    if (!activeMap) {
+      message.textContent = "Waiting for GM.";
+      mapImage.hidden = true;
+      mapImage.removeAttribute("src");
+      mapImage.alt = "";
+      return;
+    }
+
+    message.textContent = activeMap.name;
+    mapImage.src = activeMap.assetUrl;
+    mapImage.alt = activeMap.name;
+    mapImage.hidden = false;
+  }
+
+  mapImage.addEventListener("error", () => {
+    message.textContent = "Map image could not be loaded.";
+    mapImage.hidden = true;
+  });
+
   socket.on("connect", () => {
-    status.textContent = "Live";
-    status.dataset.state = "live";
+    setStatus("Live", "live");
   });
 
   socket.on("disconnect", () => {
-    status.textContent = "Reconnecting...";
-    status.dataset.state = "offline";
+    setStatus("Reconnecting...", "offline");
   });
 
   socket.on("state:sync", renderState);

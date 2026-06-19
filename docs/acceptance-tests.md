@@ -203,16 +203,20 @@ Steps:
 2. Create a campaign named `The Long Walk`.
 3. Confirm the campaign is stored as a local folder with inspectable metadata.
 4. Add two maps to the campaign.
-5. Confirm each map defaults to its original file name.
-6. Rename both maps.
-7. Reorder the maps manually.
-8. Select one map as the active map.
-9. Open the player view.
+5. Confirm each map display name defaults to its original file name without the extension.
+6. Add another map with the same original file name.
+7. Confirm both duplicate-named maps are retained with unique stored filenames.
+8. Rename both maps.
+9. Reorder the maps manually.
+10. Select one map as the active map.
+11. Open the player view.
+12. Restart or reload the app and reopen the campaign.
 
 Expected result:
 
 - The campaign exists as a local folder.
 - The campaign metadata records map names, file paths, order, active map, and empty fog state.
+- Stored map filenames are filesystem-safe and collision-safe.
 - The player view displays the active map.
 - The player view remains read-only.
 - No fog, initiative, notes, token, dice, or automation controls are present.

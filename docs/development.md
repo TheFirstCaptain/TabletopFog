@@ -68,6 +68,22 @@ https://localhost:3000/gm
 https://192.168.1.42:3000/player
 ```
 
+## Local Campaign Data
+
+Campaign and map library data defaults to:
+
+```text
+~/TabletopFog/tabletopfog-data/
+```
+
+Use `TABLETOPFOG_DATA_DIR` to point development or smoke tests at a temporary data root:
+
+```sh
+TABLETOPFOG_DATA_DIR=/private/tmp/tabletopfog-data npm run local
+```
+
+Campaign folders contain `campaign.json` and a `maps/` folder with copied map assets. These files are intended to be inspectable outside the app.
+
 ## Validation Commands
 
 Install dependencies:

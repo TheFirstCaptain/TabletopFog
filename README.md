@@ -6,17 +6,29 @@ This project is intentionally not a full virtual tabletop. V1 includes local cam
 
 ## Current Status
 
-TabletopFog has completed the first local connectivity spike. A minimal HTTPS app now serves separate GM and player pages and syncs a neutral counter over Socket.IO.
+TabletopFog has completed the first local connectivity spike and is validating the campaign/map library milestone. The HTTPS app serves separate GM and player pages, stores local campaign folders, lets the GM manage maps, and syncs the selected active map to the read-only player display over Socket.IO.
 
-Completed local-connectivity work proves:
+Completed local-connectivity work proved:
 
 - Run a local HTTPS server on the GM machine.
 - Serve separate `/gm` and `/player` browser views.
 - Connect an iPad over the same Wi-Fi using the GM machine's LAN IP address.
-- Trigger a simple GM state change.
+- Trigger a GM state change.
 - Update the read-only player view live.
 
-The next planned V1 work starts with local campaign and map library support. Campaigns are long-lived local folders, maps belong to campaigns, and maps start visible by default. Fog is added later to hide areas and then removed to reveal them during play.
+Current F-004 work adds local campaign and map library support. Campaigns are long-lived local folders, maps belong to campaigns, and maps start visible by default. Fog is added later to hide areas and then removed to reveal them during play.
+
+By default, campaign data is stored outside the repo at:
+
+```text
+~/TabletopFog/tabletopfog-data/
+```
+
+For development or smoke testing, override the data root with:
+
+```sh
+TABLETOPFOG_DATA_DIR=/private/tmp/tabletopfog-data npm run local
+```
 
 ## Documentation Map
 

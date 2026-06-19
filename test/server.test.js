@@ -11,9 +11,9 @@ const test = require("node:test");
 const { io: createClient } = require("socket.io-client");
 const { createTabletopFogServer, getRoleFromReferer } = require("../server");
 
-function getHttps(url) {
+function getHttps(url, options = {}) {
   return new Promise((resolve, reject) => {
-    const request = https.get(url, { rejectUnauthorized: false }, (response) => {
+    const request = https.get(url, { headers: options.headers, rejectUnauthorized: false }, (response) => {
       let body = "";
 
       response.setEncoding("utf8");
@@ -22,14 +22,64 @@ function getHttps(url) {
       });
       response.on("end", () => {
         resolve({
-          body,
-          statusCode: response.statusCode
+            body,
+            statusCode: response.statusCode
         });
       });
     });
 
     request.on("error", reject);
   });
+}
+
+function requestHttps(url, options = {}) {
+  return new Promise((resolve, reject) => {
+    const request = https.request(
+      url,
+      {
+        headers: options.headers,
+        method: options.method || "GET",
+        rejectUnauthorized: false
+      },
+      (response) => {
+        const chunks = [];
+
+        response.on("data", (chunk) => {
+          chunks.push(chunk);
+        });
+        response.on("end", () => {
+          const body = Buffer.concat(chunks).toString("utf8");
+
+          resolve({
+            body,
+            headers: response.headers,
+            json: parseJsonBody(body, response.headers),
+            statusCode: response.statusCode
+          });
+        });
+      }
+    );
+
+    request.on("error", reject);
+
+    if (options.body) {
+      request.write(options.body);
+    }
+
+    request.end();
+  });
+}
+
+function parseJsonBody(body, headers) {
+  if (!body || !String(headers["content-type"] || "").includes("application/json")) {
+    return null;
+  }
+
+  return JSON.parse(body);
+}
+
+function createTempRoot() {
+  return fs.mkdtempSync(path.join(os.tmpdir(), "tabletopfog-server-data-"));
 }
 
 function createTestCertificate() {
@@ -107,14 +157,17 @@ function close(server, io) {
   });
 }
 
-function waitForState(client, expectedCounter) {
+function waitForActiveMap(client, expectedMapId) {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
-      reject(new Error(`Timed out waiting for counter ${expectedCounter}`));
+      reject(new Error(`Timed out waiting for active map ${expectedMapId}`));
     }, 2000);
 
     client.on("state:sync", (state) => {
-      if (state.counter === expectedCounter) {
+      if (
+        (state.campaign && state.campaign.activeMapId === expectedMapId) ||
+        (state.activeMap && state.activeMap.id === expectedMapId)
+      ) {
         clearTimeout(timeout);
         resolve(state);
       }
@@ -122,9 +175,24 @@ function waitForState(client, expectedCounter) {
   });
 }
 
+function gmHeaders(port, extra = {}) {
+  return {
+    referer: `https://127.0.0.1:${port}/gm`,
+    ...extra
+  };
+}
+
+function playerHeaders(port, extra = {}) {
+  return {
+    referer: `https://127.0.0.1:${port}/player`,
+    ...extra
+  };
+}
+
 test("serves GM and player pages over HTTPS", async () => {
   const { server, io } = createTabletopFogServer({
-    credentials: createTestCertificate()
+    credentials: createTestCertificate(),
+    dataRoot: createTempRoot()
   });
   const port = await listen(server);
 
@@ -134,16 +202,50 @@ test("serves GM and player pages over HTTPS", async () => {
 
     assert.equal(gmResponse.statusCode, 200);
     assert.equal(playerResponse.statusCode, 200);
-    assert.match(gmResponse.body, /<h1>GM<\/h1>/);
-    assert.match(playerResponse.body, /<h1>Player<\/h1>/);
+    assert.match(gmResponse.body, /<h1>Campaign Library<\/h1>/);
+    assert.match(playerResponse.body, /<h1>Player Display<\/h1>/);
   } finally {
     await close(server, io);
   }
 });
 
-test("broadcasts GM counter changes to player clients", async () => {
+test("creates campaigns through GM API and lists them", async () => {
   const { server, io } = createTabletopFogServer({
-    credentials: createTestCertificate()
+    credentials: createTestCertificate(),
+    dataRoot: createTempRoot()
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+
+  try {
+    const created = await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: "The Long Walk" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const list = await requestHttps(`${url}/api/campaigns`, {
+      headers: gmHeaders(port)
+    });
+
+    assert.equal(created.statusCode, 201);
+    assert.equal(created.json.campaign.name, "The Long Walk");
+    assert.deepEqual(list.json.campaigns, [
+      {
+        id: "The Long Walk",
+        name: "The Long Walk",
+        activeMapName: null,
+        mapCount: 0
+      }
+    ]);
+  } finally {
+    await close(server, io);
+  }
+});
+
+test("manages maps and broadcasts active map state", async () => {
+  const { server, io, stateStore } = createTabletopFogServer({
+    credentials: createTestCertificate(),
+    dataRoot: createTempRoot()
   });
   const port = await listen(server);
   const url = `https://127.0.0.1:${port}`;
@@ -154,12 +256,6 @@ test("broadcasts GM counter changes to player clients", async () => {
     transports: ["websocket"]
   };
 
-  const gm = createClient(url, {
-    ...clientOptions,
-    extraHeaders: {
-      referer: `${url}/gm`
-    }
-  });
   const player = createClient(url, {
     ...clientOptions,
     extraHeaders: {
@@ -168,48 +264,101 @@ test("broadcasts GM counter changes to player clients", async () => {
   });
 
   try {
-    await Promise.all([waitForState(gm, 0), waitForState(player, 0)]);
-    const updated = waitForState(player, 1);
+    await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: "The Long Walk" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const first = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: Buffer.from("first-map"),
+      headers: gmHeaders(port, {
+        "content-length": "9",
+        "content-type": "image/png",
+        "x-file-name": "forest.png"
+      }),
+      method: "POST"
+    });
+    const second = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: Buffer.from("second-map"),
+      headers: gmHeaders(port, {
+        "content-length": "10",
+        "content-type": "image/png",
+        "x-file-name": "forest.png"
+      }),
+      method: "POST"
+    });
+    const renamed = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(first.json.map.id)}`,
+      {
+        body: JSON.stringify({ name: "Forest Ambush" }),
+        headers: gmHeaders(port, { "content-type": "application/json" }),
+        method: "PATCH"
+      }
+    );
+    const reordered = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/reorder`, {
+      body: JSON.stringify({ mapIds: [second.json.map.id, first.json.map.id] }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+    const active = waitForActiveMap(player, first.json.map.id);
+    const selected = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/active-map`, {
+      body: JSON.stringify({ mapId: first.json.map.id }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+    const gmAsset = await getHttps(`${url}${first.json.map.assetUrl}`, {
+      headers: gmHeaders(port)
+    });
+    const inactivePlayerAsset = await getHttps(`${url}${second.json.map.assetUrl}`, {
+      headers: playerHeaders(port)
+    });
+    const playerAsset = await getHttps(`${url}/api/player/active-map/asset`, {
+      headers: playerHeaders(port)
+    });
+    const playerState = await active;
 
-    gm.emit("gm:increment");
-
-    assert.equal((await updated).counter, 1);
+    assert.equal(first.statusCode, 201);
+    assert.equal(first.json.map.file, "maps/forest.png");
+    assert.equal(second.json.map.file, "maps/forest-2.png");
+    assert.equal(renamed.json.map.name, "Forest Ambush");
+    assert.deepEqual(reordered.json.campaign.maps.map((map) => [map.id, map.order]), [
+      [second.json.map.id, 1],
+      [first.json.map.id, 2]
+    ]);
+    assert.equal(selected.json.campaign.activeMapId, first.json.map.id);
+    assert.equal(playerState.activeMap.id, first.json.map.id);
+    assert.equal(playerState.campaign, undefined);
+    assert.equal(playerState.activeMap.assetUrl, "/api/player/active-map/asset");
+    assert.equal(gmAsset.statusCode, 200);
+    assert.equal(gmAsset.body, "first-map");
+    assert.equal(inactivePlayerAsset.statusCode, 403);
+    assert.equal(playerAsset.statusCode, 200);
+    assert.equal(playerAsset.body, "first-map");
+    assert.equal(stateStore.getState().campaign.activeMapId, first.json.map.id);
   } finally {
-    gm.close();
     player.close();
     await close(server, io);
   }
 });
 
-test("ignores mutation events from player clients", async () => {
+test("rejects player-originated API mutations", async () => {
   const { server, io, stateStore } = createTabletopFogServer({
-    credentials: createTestCertificate()
+    credentials: createTestCertificate(),
+    dataRoot: createTempRoot()
   });
   const port = await listen(server);
   const url = `https://127.0.0.1:${port}`;
-  const clientOptions = {
-    forceNew: true,
-    rejectUnauthorized: false,
-    reconnection: false,
-    transports: ["websocket"]
-  };
-
-  const player = createClient(url, {
-    ...clientOptions,
-    extraHeaders: {
-      referer: `${url}/player`
-    },
-    query: { role: "gm" }
-  });
 
   try {
-    await waitForState(player, 0);
-    player.emit("gm:increment");
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    const rejected = await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: "The Long Walk" }),
+      headers: playerHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
 
-    assert.equal(stateStore.getState().counter, 0);
+    assert.equal(rejected.statusCode, 403);
+    assert.equal(stateStore.getState().campaign, null);
   } finally {
-    player.close();
     await close(server, io);
   }
 });
@@ -224,7 +373,8 @@ test("derives socket write role from route referer", () => {
 
 test("player page exposes no mutating controls", async () => {
   const { server, io } = createTabletopFogServer({
-    credentials: createTestCertificate()
+    credentials: createTestCertificate(),
+    dataRoot: createTempRoot()
   });
   const port = await listen(server);
 

@@ -6,13 +6,19 @@ const path = require("node:path");
 const express = require("express");
 const { Server } = require("socket.io");
 
+const { createCampaignStorage } = require("./campaign-storage");
 const { loadHttpsCredentials } = require("./certs");
 const { createStateStore } = require("./state");
 
 const publicDir = path.resolve(__dirname, "..", "public");
 
-function createApp() {
+function createApp(options = {}) {
   const app = express();
+  const campaignStorage = options.campaignStorage || createCampaignStorage(options);
+  const stateStore = options.stateStore || createStateStore();
+  const onStateChange = options.onStateChange || (() => {});
+
+  app.use(express.json());
 
   app.get("/", (_request, response) => {
     response.redirect("/gm");
@@ -26,32 +32,165 @@ function createApp() {
     response.sendFile(path.join(publicDir, "player.html"));
   });
 
+  app.get("/api/campaigns", requireGm, (_request, response, next) => {
+    try {
+      response.json({
+        campaigns: campaignStorage.listCampaigns(),
+        dataRoot: campaignStorage.dataRoot
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/campaigns", requireGm, (request, response, next) => {
+    try {
+      const campaign = withAssetUrls(campaignStorage, campaignStorage.createCampaign(request.body.name));
+      const state = stateStore.setCampaign(campaign);
+      onStateChange(state);
+      response.status(201).json({ campaign });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/campaigns/:campaignId", requireGm, (request, response, next) => {
+    try {
+      const campaign = withAssetUrls(campaignStorage, campaignStorage.getCampaign(request.params.campaignId));
+      const state = stateStore.setCampaign(campaign);
+      onStateChange(state);
+      response.json({ campaign });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post(
+    "/api/campaigns/:campaignId/maps",
+    requireGm,
+    express.raw({ limit: "100mb", type: "*/*" }),
+    (request, response, next) => {
+      try {
+        const map = campaignStorage.addMap(request.params.campaignId, {
+          content: request.body,
+          contentType: request.get("content-type"),
+          originalFileName: request.get("x-file-name")
+        });
+        const campaign = withAssetUrls(campaignStorage, campaignStorage.getCampaign(request.params.campaignId));
+        const state = stateStore.setCampaign(campaign);
+        onStateChange(state);
+        response.status(201).json({
+          campaign,
+          map: campaign.maps.find((candidate) => candidate.id === map.id)
+        });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  app.patch("/api/campaigns/:campaignId/maps/:mapId", requireGm, (request, response, next) => {
+    try {
+      const map = campaignStorage.renameMap(request.params.campaignId, request.params.mapId, request.body.name);
+      const campaign = withAssetUrls(campaignStorage, campaignStorage.getCampaign(request.params.campaignId));
+      const state = stateStore.setCampaign(campaign);
+      onStateChange(state);
+      response.json({
+        campaign,
+        map: campaign.maps.find((candidate) => candidate.id === map.id)
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/campaigns/:campaignId/maps/reorder", requireGm, (request, response, next) => {
+    try {
+      const campaign = withAssetUrls(
+        campaignStorage,
+        campaignStorage.reorderMaps(request.params.campaignId, request.body.mapIds)
+      );
+      const state = stateStore.setCampaign(campaign);
+      onStateChange(state);
+      response.json({ campaign });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/campaigns/:campaignId/active-map", requireGm, (request, response, next) => {
+    try {
+      const campaign = withAssetUrls(
+        campaignStorage,
+        campaignStorage.setActiveMap(request.params.campaignId, request.body.mapId)
+      );
+      const state = stateStore.setCampaign(campaign);
+      onStateChange(state);
+      response.json({ campaign });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/player/active-map/asset", (_request, response, next) => {
+    try {
+      const state = stateStore.getState();
+      const campaign = state.campaign;
+      const activeMap = campaign ? campaign.maps.find((map) => map.id === campaign.activeMapId) : null;
+
+      if (!campaign || !activeMap) {
+        response.status(404).json({ error: "No active map." });
+        return;
+      }
+
+      const { filePath } = campaignStorage.getMapAsset(campaign.id, activeMap.id);
+      response.sendFile(filePath);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/campaigns/:campaignId/maps/:mapId/asset", requireGm, (request, response, next) => {
+    try {
+      const { filePath } = campaignStorage.getMapAsset(request.params.campaignId, request.params.mapId);
+      response.sendFile(filePath);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.use(express.static(publicDir));
+
+  app.use((error, _request, response, _next) => {
+    response.status(error.statusCode || 500).json({
+      error: error.message || "Unexpected server error."
+    });
+  });
 
   return app;
 }
 
 function createTabletopFogServer(options = {}) {
-  const app = createApp();
   const stateStore = options.stateStore || createStateStore();
+  let io;
+  const app = createApp({
+    ...options,
+    stateStore,
+    onStateChange(state) {
+      if (io) {
+        emitState(io, state);
+      }
+    }
+  });
   const credentials = options.credentials || loadHttpsCredentials(options.env);
   const server = https.createServer(credentials, app);
-  const io = new Server(server);
+  io = new Server(server);
 
   io.on("connection", (socket) => {
     const role = getRoleFromReferer(socket.handshake.headers.referer);
     socket.data.role = role;
 
-    socket.emit("state:sync", stateStore.getState());
-
-    socket.on("gm:increment", () => {
-      if (socket.data.role !== "gm") {
-        return;
-      }
-
-      io.emit("state:sync", stateStore.increment());
-    });
-
+    socket.emit("state:sync", projectStateForRole(stateStore.getState(), socket.data.role));
   });
 
   return {
@@ -60,6 +199,46 @@ function createTabletopFogServer(options = {}) {
     server,
     stateStore
   };
+}
+
+function emitState(io, state) {
+  io.sockets.sockets.forEach((socket) => {
+    socket.emit("state:sync", projectStateForRole(state, socket.data.role));
+  });
+}
+
+function projectStateForRole(state, role) {
+  if (role === "gm") {
+    return state;
+  }
+
+  const campaign = state.campaign;
+  const activeMap = campaign ? campaign.maps.find((map) => map.id === campaign.activeMapId) : null;
+
+  return {
+    activeMap: activeMap
+      ? {
+          id: activeMap.id,
+          name: activeMap.name,
+          assetUrl: "/api/player/active-map/asset"
+        }
+      : null,
+    updatedAt: state.updatedAt,
+    version: state.version
+  };
+}
+
+function requireGm(request, response, next) {
+  if (getRoleFromReferer(request.get("referer")) !== "gm") {
+    response.status(403).json({ error: "GM view required." });
+    return;
+  }
+
+  next();
+}
+
+function withAssetUrls(campaignStorage, campaign) {
+  return campaignStorage.addAssetUrls(campaign);
 }
 
 function getRoleFromReferer(referer) {
@@ -95,5 +274,6 @@ module.exports = {
   createApp,
   createTabletopFogServer,
   getRoleFromReferer,
+  projectStateForRole,
   start
 };

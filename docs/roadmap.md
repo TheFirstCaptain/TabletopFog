@@ -59,23 +59,23 @@ Implementation notes:
 - Keep the storage format simple, local, inspectable, and migration-friendly.
 - A first storage shape can use `~/TabletopFog/tabletopfog-data/<Campaign Name>/campaign.json` plus a `maps/` folder.
 
-## Milestone 3: Static Active Map Display
+## Milestone 3: Static Active Map Display Polish
 
-Goal: Display the selected active campaign map on both GM and player views.
+Goal: Harden and polish the selected active campaign map display on both GM and player views after the F-004 campaign library provides the minimal display path.
 
 Acceptance criteria:
 
-- GM can select a map from the campaign.
-- Player view updates to show the selected active map.
-- Map scales reasonably to available screen.
-- GM and player views show the same active map.
+- GM and player views use consistent active-map rendering behavior.
+- Map scales reasonably to available screen across desktop, iPad, and TV-like landscape viewports.
+- Active-map display handles refresh, reconnect, and image-load error states cleanly.
+- Player receives only the active-map display state needed for read-only rendering.
 - Player view remains read-only.
 - No fog controls are introduced.
 
 Implementation notes:
 
 - Use the campaign and map metadata from Milestone 2.
-- Keep active-map sync simple before fog controls are added.
+- Build on F-004's minimal active-map sync and display behavior.
 
 ## Milestone 4: Manual Fog of War
 
@@ -101,14 +101,11 @@ Implementation notes:
 
 ## Milestone 5: Save and Load Campaign State
 
-Goal: Persist campaigns, maps, ordering, active map, and fog state locally.
+Goal: Complete campaign persistence for fog state and later restore workflows after F-004's basic campaign/map metadata persistence exists.
 
 Acceptance criteria:
 
-- Save campaign metadata.
-- Save map list and ordering.
-- Save map display names.
-- Save active map.
+- Preserve F-004 campaign metadata, map list, ordering, map display names, and active map behavior.
 - Save fog state per map.
 - Reload a campaign later.
 - Restored player view matches saved active map and fog state.
