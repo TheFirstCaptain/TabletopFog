@@ -2,11 +2,11 @@
 
 ## Context
 
-Many virtual tabletop tools include tokens, sheets, dice rollers, initiative, combat automation, rules integrations, chat, and campaign management. TabletopFog is for in-person play with physical minis and a shared display.
+Many virtual tabletop tools include tokens, sheets, dice rollers, initiative, combat automation, rules integrations, chat, notes, and deep campaign management. TabletopFog is for in-person play with physical minis and a shared display.
 
 ## Decision
 
-TabletopFog will not be a full VTT. The MVP will focus on local connectivity, map display, and manual fog-of-war reveal.
+TabletopFog will not be a full VTT. V1 will focus on local connectivity, local campaign/map prep buckets, active map display, and manual fog-of-war hiding over visible maps.
 
 The MVP will not include:
 
@@ -16,13 +16,17 @@ The MVP will not include:
 - Dice roller.
 - Rules automation.
 - NPC tracking.
+- Session or campaign notes.
+- Dynamic lighting.
+
+V1 will include local campaign folders and multiple maps per campaign only as preparation and display organization. This is not a broader campaign-management module.
 
 Initiative tracking may be considered later as an optional v2/v3 module, but it is explicitly out of MVP scope.
 
 ## Consequences
 
 - The app remains simpler to build, test, and use at the table.
-- The UI can stay focused on display and reveal workflows.
+- The UI can stay focused on campaign map selection, display, and manual hide/reveal workflows.
 - Scope pressure should be evaluated against this decision before implementation.
 - Future modules should remain optional and should not compromise the core lightweight map display experience.
 

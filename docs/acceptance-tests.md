@@ -188,27 +188,113 @@ Expected result:
 - The player view does not expose controls for changing map, fog, or session state.
 - Player interactions do not mutate GM state.
 
-## Milestone 3: Fog Reveal Correctness
+## Milestone 2: Campaign and Map Library
 
-### Test: Player Sees Only Revealed Areas
+### Test: GM Can Manage Maps in a Local Campaign
 
 Prerequisites:
 
-- A map is loaded.
+- Local server is running on the GM host machine.
+- At least two representative map image files are available.
+
+Steps:
+
+1. Open the GM view.
+2. Create a campaign named `The Long Walk`.
+3. Confirm the campaign is stored as a local folder with inspectable metadata.
+4. Add two maps to the campaign.
+5. Confirm each map defaults to its original file name.
+6. Rename both maps.
+7. Reorder the maps manually.
+8. Select one map as the active map.
+9. Open the player view.
+
+Expected result:
+
+- The campaign exists as a local folder.
+- The campaign metadata records map names, file paths, order, active map, and empty fog state.
+- The player view displays the active map.
+- The player view remains read-only.
+- No fog, initiative, notes, token, dice, or automation controls are present.
+
+## Milestone 3: Static Active Map Display
+
+### Test: Player View Follows Active Map Selection
+
+Prerequisites:
+
+- A campaign exists with at least two maps.
+- GM and player views are open.
+
+Steps:
+
+1. Select the first map from the GM view.
+2. Confirm the GM view displays the first map.
+3. Confirm the player view displays the first map.
+4. Select the second map from the GM view.
+5. Confirm the GM and player views update without manual player refresh.
+6. Resize the browser window and test the player view on iPad.
+
+Expected result:
+
+- GM and player views show the same active map.
+- Map scaling remains reasonable on desktop and iPad.
+- The player view remains read-only.
+- No fog controls are present.
+
+## Milestone 4: Manual Fog of War
+
+### Test: Player Sees Hidden Areas Obscured
+
+Prerequisites:
+
+- A campaign and active map are loaded.
 - Fog-of-war feature is implemented.
 
 Steps:
 
-1. Start with full fog enabled.
+1. Start with the active map visible.
 2. Open both GM and player views.
-3. Reveal a rectangle or circle from the GM view.
-4. Compare GM and player views.
+3. Add fog over a rectangle or circle from the GM view.
+4. Confirm the player view obscures that hidden area.
+5. Remove or reveal part of the fog from the GM view.
+6. Compare GM and player views.
 
 Expected result:
 
-- The player view shows the revealed map area.
-- Unrevealed areas remain black or otherwise hidden.
+- The map starts visible rather than covered by full black fog.
+- The player view shows the same map with hidden areas obscured.
+- Areas hidden by fog are not visible on the player display.
+- Revealed or cleared areas become visible again.
 - The player view does not show GM-only controls or hidden notes.
+
+## Milestone 5: Save and Load Campaign State
+
+### Test: Campaign State Restores Later
+
+Prerequisites:
+
+- A campaign exists with at least two maps.
+- Fog-of-war feature is implemented.
+
+Steps:
+
+1. Rename and reorder maps in the campaign.
+2. Select an active map.
+3. Add fog to at least one map.
+4. Save the campaign.
+5. Restart or reload the app.
+6. Open the saved campaign.
+7. Open the player view.
+
+Expected result:
+
+- Campaign metadata reloads from local, inspectable files.
+- Map names and manual ordering are restored.
+- The saved active map is restored.
+- Per-map fog state is restored.
+- The player view matches the saved active map and fog state.
+- No cloud storage or user account is required.
 
 ## Scope Control
 
@@ -224,4 +310,5 @@ Expected result:
 
 - MVP work does not include tokens, character sheets, dice roller, rules automation, NPC tracking, cloud hosting, or login/auth.
 - Initiative tracking is not implemented in the MVP.
+- Campaigns and maps are included in V1 only as local prep and display buckets, not as full VTT campaign management.
 - Any new major feature has updated roadmap and acceptance criteria before implementation.

@@ -35,81 +35,125 @@ Implementation notes:
 - Prefer Node.js, Express, Socket.IO, HTTPS, and plain browser code.
 - Do not add accounts, tokens, dice, sheets, or combat features.
 
-## Milestone 2: Static Map Display
+## Milestone 2: Campaign and Map Library
 
-Goal: Display the same map on GM and player views.
+Goal: Create or open a local campaign folder and manage multiple maps inside it.
 
 Acceptance criteria:
 
-- GM can choose or load a map image.
-- Player view displays the same map.
-- Map scales reasonably to available screen.
+- GM can create a campaign.
+- GM can open an existing campaign.
+- Campaigns are stored locally as folders.
+- GM can upload or add maps into a campaign.
+- Original file names are preserved as default map names.
+- GM can rename maps later.
+- GM can reorder maps manually.
+- GM can select an active map.
+- Player view displays the active map.
 - Player view remains read-only.
+- No fog controls, initiative tracking, notes, or tokens are introduced.
 
 Implementation notes:
 
-- Keep local image loading simple.
-- Avoid persistent storage until Milestone 4 unless required by browser constraints.
+- Campaigns and maps are part of V1.
+- Keep the storage format simple, local, inspectable, and migration-friendly.
+- A first storage shape can use `tabletopfog-data/<Campaign Name>/campaign.json` plus a `maps/` folder.
 
-## Milestone 3: Basic Fog of War
+## Milestone 3: Static Active Map Display
 
-Goal: Add simple manual reveal controls.
+Goal: Display the selected active campaign map on both GM and player views.
 
 Acceptance criteria:
 
-- Full black fog layer starts over the map.
-- GM can reveal simple shapes such as rectangles or circles.
-- Player sees only revealed areas.
+- GM can select a map from the campaign.
+- Player view updates to show the selected active map.
+- Map scales reasonably to available screen.
+- GM and player views show the same active map.
+- Player view remains read-only.
+- No fog controls are introduced.
+
+Implementation notes:
+
+- Use the campaign and map metadata from Milestone 2.
+- Keep active-map sync simple before fog controls are added.
+
+## Milestone 4: Manual Fog of War
+
+Goal: Add manual hide/reveal fog controls over a visible map.
+
+Acceptance criteria:
+
+- Map starts visible.
+- GM can add fog or hide areas using simple shapes such as rectangles or circles.
+- GM can remove or reveal fog from hidden areas.
+- Player sees the same map with hidden areas obscured.
 - Hidden areas remain hidden on the player display.
-- No tokens or automation are introduced.
+- Fog state belongs to a single map.
+- No multiple fog states per map.
+- No dynamic lighting, tokens, or vision cones are introduced.
 
 Implementation notes:
 
-- Canvas is the preferred rendering layer.
-- Start with simple reveal geometry before adding brush polish.
+- Do not implement the old full-black-fog-starts-over-the-map behavior.
+- In V1, fog is used to hide areas on an otherwise visible map.
+- Canvas remains the preferred rendering layer.
+- Start with simple hide/reveal geometry before adding brush polish.
 
-## Milestone 4: Save/Load State
+## Milestone 5: Save and Load Campaign State
 
-Goal: Persist a session locally.
+Goal: Persist campaigns, maps, ordering, active map, and fog state locally.
 
 Acceptance criteria:
 
-- Save current map and fog state locally.
-- Reload a previous session.
-- Restored player view matches the saved revealed state.
+- Save campaign metadata.
+- Save map list and ordering.
+- Save map display names.
+- Save active map.
+- Save fog state per map.
+- Reload a campaign later.
+- Restored player view matches saved active map and fog state.
+- Storage format is documented well enough to migrate later.
+- No cloud storage or user accounts are introduced.
 
 Implementation notes:
 
-- Prefer local files or lightweight local storage.
-- Do not introduce cloud storage for the MVP.
+- Use local, inspectable files rather than cloud storage.
+- Keep `campaign.json` simple and include enough structure for future migrations.
 
-## Milestone 5: Quality-of-Life Improvements
+## Milestone 6: Quality-of-Life Improvements
 
 Goal: Improve table usability after the core workflow is proven.
 
 Acceptance criteria:
 
-- Better reveal brush.
-- Undo reveal.
+- Better reveal/hide brush.
+- Undo fog action.
 - Clear fog or reset fog.
 - Fullscreen player view.
 - QR code or copied player URL.
+- Better GM map controls if needed.
 
 Implementation notes:
 
 - Keep each improvement independently useful.
+- Split this into child features before implementation if it grows too large.
 - Update acceptance tests when behavior changes.
 
-## Future Ideas Explicitly Out of MVP
+## Future Ideas Explicitly Out of V1
 
-These ideas may be revisited after the MVP succeeds:
+These ideas may be revisited after V1 succeeds:
 
 - Initiative tracker module.
-- Multiple maps or scenes.
-- Campaign/session notes.
 - Encounter tracker integration.
-- Optional Electron wrapper.
+- Multiple campaigns open at once.
+- Session notes.
+- Campaign notes.
+- Character sheets.
+- Dice roller.
+- Tokens.
+- NPC tracking.
 - Dynamic lighting.
 - Secret room layers.
+- Optional Electron wrapper.
 
 Any future feature should be evaluated against the core purpose: a lightweight in-person battlemap display and fog-of-war tool.

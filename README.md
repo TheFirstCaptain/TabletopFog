@@ -2,19 +2,21 @@
 
 TabletopFog is a lightweight, locally hosted battlemap display and fog-of-war tool for in-person tabletop RPGs. It is designed for a GM running the app on a Chromebook or MacBook, with a player-facing iPad mirrored to a TV.
 
-This project is intentionally not a full virtual tabletop. The MVP excludes tokens, character sheets, dice rolling, rules automation, NPC tracking, login/auth, cloud hosting, and initiative tracking.
+This project is intentionally not a full virtual tabletop. V1 includes local campaign folders and multiple maps per campaign for prep, but excludes tokens, character sheets, dice rolling, rules automation, NPC tracking, notes, login/auth, cloud hosting, dynamic lighting, and initiative tracking.
 
 ## Current Status
 
-TabletopFog is in the first local connectivity spike. A minimal HTTPS app now serves separate GM and player pages and syncs a neutral counter over Socket.IO.
+TabletopFog has completed the first local connectivity spike. A minimal HTTPS app now serves separate GM and player pages and syncs a neutral counter over Socket.IO.
 
-The first implementation milestone is a local connectivity spike:
+Completed local-connectivity work proves:
 
 - Run a local HTTPS server on the GM machine.
 - Serve separate `/gm` and `/player` browser views.
 - Connect an iPad over the same Wi-Fi using the GM machine's LAN IP address.
 - Trigger a simple GM state change.
 - Update the read-only player view live.
+
+The next planned V1 work starts with local campaign and map library support. Campaigns are long-lived local folders, maps belong to campaigns, and maps start visible by default. Fog is added later to hide areas and then removed to reveal them during play.
 
 ## Documentation Map
 
@@ -37,6 +39,7 @@ The first implementation milestone is a local connectivity spike:
 - Socket.IO for live updates.
 - HTTPS for local serving.
 - Plain HTML, CSS, and JavaScript at first.
+- Local, inspectable files for campaign and map state.
 - HTML Canvas for future map and fog rendering.
 
 React, cloud hosting, databases, and native wrappers are deferred unless a later decision record changes direction.

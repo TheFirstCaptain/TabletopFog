@@ -32,7 +32,8 @@ Use this tracker to preserve feature state across sessions and agent handoffs. K
 | F-001 | Documentation Harness and Repo Structure | Complete | Done | [F-001.md](./F-001.md) | 2026-06-13 | Initial docs, acceptance tests, decisions, AI harness, and contributor guide created. |
 | F-002 | Local Connectivity Spike | Complete | Done | [F-002.md](./F-002.md) | 2026-06-14 | Minimal HTTPS Express/Socket.IO counter sync is implemented; Chromebook host to iPad player LAN path validated with ChromeOS Linux port forwarding. |
 | F-003 | Streamlined Local Startup and Chromebook Validation | Complete | Done | [F-003.md](./F-003.md) | 2026-06-17 | `npm run local` implemented and validated on MacBook/iPhone, MacBook/iPad, and Chromebook-host paths; Chromebook stale port forwarding workaround documented. |
-| F-004 | Static Map Display | Proposed | Proposed | [F-004.md](./F-004.md) | 2026-06-13 | Load or choose a map and display it consistently on GM/player views. |
-| F-005 | Basic Fog of War | Proposed | Proposed | [F-005.md](./F-005.md) | 2026-06-13 | Full fog layer and simple GM reveal shapes, with player seeing only revealed areas. |
-| F-006 | Save and Load State | Proposed | Proposed | [F-006.md](./F-006.md) | 2026-06-13 | Persist current map and fog state locally, then reload a previous session. |
-| F-007 | Table Quality-of-Life Improvements | Proposed | Proposed | [F-007.md](./F-007.md) | 2026-06-13 | Better reveal brush, undo, reset, fullscreen player view, and shareable player URL. |
+| F-004 | Campaign and Map Library | Proposed | Proposed | [F-004.md](./F-004.md) | 2026-06-19 | Create/open local campaign folders and manage multiple ordered maps inside a campaign. |
+| F-005 | Static Active Map Display | Proposed | Proposed | [F-005.md](./F-005.md) | 2026-06-19 | Display the selected active campaign map consistently on GM/player views. |
+| F-006 | Manual Fog of War | Proposed | Proposed | [F-006.md](./F-006.md) | 2026-06-19 | Maps start visible; GM adds fog to hide areas and removes fog to reveal them. |
+| F-007 | Save and Load Campaign State | Proposed | Proposed | [F-007.md](./F-007.md) | 2026-06-19 | Persist local campaigns, maps, ordering, active map, and per-map fog state. |
+| F-008 | Table Quality-of-Life Improvements | Proposed | Proposed | [F-008.md](./F-008.md) | 2026-06-19 | Better fog brush, undo, reset, fullscreen player view, player URL sharing, and related table polish. |

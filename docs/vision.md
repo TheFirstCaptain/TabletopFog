@@ -4,7 +4,7 @@
 
 TabletopFog is a lightweight, locally hosted battlemap display and fog-of-war tool for in-person tabletop RPGs.
 
-It helps a GM show a shared map on a player-facing display while keeping unrevealed areas hidden. It is designed for tables that use physical minis, paper notes, and in-person play, not for fully online play.
+It helps a GM prepare local campaign map folders, show a shared map on a player-facing display, and hide secret or unrevealed areas with manual fog. It is designed for tables that use physical minis, paper notes, and in-person play, not for fully online play.
 
 ## Primary MVP Goal
 
@@ -37,10 +37,15 @@ For the MVP, it will not include:
 
 - Tokens.
 - Initiative tracking.
+- Encounter tracker integration.
 - Character sheets.
 - Dice rolling.
 - Rules automation.
 - NPC tracking.
+- Session notes.
+- Campaign notes.
+- Dynamic lighting.
+- Secret room layers.
 - Cloud hosting.
 - Login or authentication.
 
@@ -53,9 +58,12 @@ These exclusions are part of the product design, not temporary omissions to fill
 - Use local hosting for the MVP.
 - Keep GM view and player view separate.
 - Keep player view read-only.
-- Show the player only the map state the GM has revealed.
+- Treat campaigns and maps as V1 prep and display buckets.
+- Store campaign data locally in inspectable files.
+- Start maps visible by default.
+- Use fog to hide areas, then remove fog to reveal them during play.
 - Add complexity only when it directly supports in-person battlemap display.
 
 ## Long-Term Direction
 
-TabletopFog may eventually support optional quality-of-life features such as save/load, multiple scenes, an initiative tracker module, or an Electron wrapper. These should remain modular and should not pull the project into full VTT scope.
+TabletopFog may eventually support optional quality-of-life features such as improved fog brushes, URL sharing, or an Electron wrapper. Initiative tracking, notes, tokens, character sheets, dice, NPC tracking, dynamic lighting, and encounter automation are outside V1 and should remain modular if considered later.

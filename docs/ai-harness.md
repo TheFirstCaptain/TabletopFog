@@ -87,6 +87,8 @@ For the MVP, do not add:
 - Dice roller.
 - Rules automation.
 - NPC tracking.
+- Session or campaign notes.
+- Dynamic lighting.
 - Login/auth.
 - Cloud hosting dependency.
 

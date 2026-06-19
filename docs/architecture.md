@@ -14,7 +14,7 @@ Recommended initial shape:
 - HTML Canvas renders the map and fog layers.
 - State is held in server memory for the first connectivity spike.
 
-Local save/load can come after the connectivity MVP.
+Campaign and map library work is part of V1 and should use local, inspectable folders and files rather than cloud storage.
 
 ## Runtime Model
 
@@ -39,7 +39,9 @@ Both pages connect to the same local server. The GM page can send state updates.
 The GM view owns control actions:
 
 - Load or select a map image when that feature exists.
-- Change revealed fog state.
+- Create or open a local campaign when that feature exists.
+- Add, rename, reorder, and select maps in the active campaign when those features exist.
+- Add fog to hide map areas and remove fog to reveal them when that feature exists.
 - Reset or clear fog when that feature exists.
 - Save or load local state when that feature exists.
 - Display the current player URL or QR code when that feature exists.
@@ -49,7 +51,7 @@ The GM view owns control actions:
 The player view is display-only:
 
 - Render the currently visible map state.
-- Render only revealed areas.
+- Render the active map with GM-hidden areas obscured.
 - Avoid controls that mutate session state.
 - Support fullscreen display on iPad where possible.
 
@@ -59,15 +61,18 @@ The player view should not expose hidden map data through visible UI. Later impl
 
 Initial state can be small and explicit:
 
+- Current campaign identity.
 - Current map identity or image source.
+- Map list, display names, manual order, and active map.
 - Map viewport/scaling information.
-- Fog mode.
-- Reveal shapes or rasterized fog mask.
+- Fog shapes or rasterized fog mask for each map.
 - Last update timestamp or version number.
 
 For Milestone 1, a simple shared state value is enough to prove connectivity and live updates.
 
-For Milestone 3, fog state should be represented in a way that can be saved later and replayed consistently. Simple reveal shapes are acceptable before a more advanced brush system.
+For the campaign library, a first storage shape can use a local data root such as `tabletopfog-data/<Campaign Name>/`, a `campaign.json` file, and a `maps/` folder for image assets.
+
+For manual fog, maps start visible by default. Fog state should represent hidden areas added by the GM and removals from those hidden areas, not a full black layer that must be revealed from total darkness. The representation should be saveable and replayed consistently later.
 
 ## Technology Direction
 
