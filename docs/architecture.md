@@ -70,7 +70,7 @@ Initial state can be small and explicit:
 
 For Milestone 1, a simple shared state value is enough to prove connectivity and live updates.
 
-For the campaign library, a first storage shape can use a local data root such as `tabletopfog-data/<Campaign Name>/`, a `campaign.json` file, and a `maps/` folder for image assets.
+For the campaign library, the default local data root should be `~/TabletopFog/tabletopfog-data/`. A first storage shape can use `~/TabletopFog/tabletopfog-data/<Campaign Name>/`, a `campaign.json` file, and a `maps/` folder for image assets.
 
 For manual fog, maps start visible by default. Fog state should represent hidden areas added by the GM and removals from those hidden areas, not a full black layer that must be revealed from total darkness. The representation should be saveable and replayed consistently later.
 

@@ -19,6 +19,9 @@ Use this tracker to preserve feature state across sessions and agent handoffs. K
 
 - Use an umbrella feature for a milestone with multiple related workstreams.
 - Use child features, such as `F-002A`, only when the work can be delegated, validated, or completed independently.
+- Use child features, such as `F-004A`, for follow-up tweaks that remain inside a completed parent feature's product capability and are distinct enough to track, validate, or review separately.
+- Track broken promised behavior as a bug in `docs/bugs/` instead of as a child feature.
+- Use a new top-level feature when the work adds a new product capability outside the parent feature's scope.
 - Keep small implementation steps inside the feature document instead of adding tracker rows.
 - Prefer outcome-oriented tracker entries over task lists.
 - For feature work, follow the mandatory SDLC subagent workflow in `docs/decisions/decision-004-mandatory-subagent-sdlc.md`.

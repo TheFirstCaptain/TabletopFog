@@ -48,6 +48,12 @@ All of these stages are mandatory for feature work:
 
 The main agent owns the final result. Subagent findings must be reconciled against the vision, architecture, roadmap, acceptance tests, decisions, bugs, and feature docs before changes are accepted.
 
+## Classify Follow-Up Work
+
+After a feature is complete, use child features such as `F-004A` for follow-up tweaks that remain inside the parent feature's product capability and are distinct enough to track, validate, or review separately.
+
+Track broken promised behavior as a bug in `docs/bugs/` instead of as a child feature. Use a new top-level feature when the work adds a new product capability outside the completed parent feature's scope.
+
 ## Keep Scope Small
 
 Make the smallest useful change for the current milestone.

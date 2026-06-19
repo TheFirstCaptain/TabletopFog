@@ -57,7 +57,7 @@ Implementation notes:
 
 - Campaigns and maps are part of V1.
 - Keep the storage format simple, local, inspectable, and migration-friendly.
-- A first storage shape can use `tabletopfog-data/<Campaign Name>/campaign.json` plus a `maps/` folder.
+- A first storage shape can use `~/TabletopFog/tabletopfog-data/<Campaign Name>/campaign.json` plus a `maps/` folder.
 
 ## Milestone 3: Static Active Map Display
 
