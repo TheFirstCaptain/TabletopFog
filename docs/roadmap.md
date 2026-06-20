@@ -31,7 +31,7 @@ Quality-gate workstreams:
   enforcement.
 - Complete: [F-009B](./features/F-009B.md), AI harness compliance and review
   evidence.
-- Active: [F-009C](./features/F-009C.md), continuous integration
+- Complete: [F-009C](./features/F-009C.md), continuous integration
   enforcement.
 - Proposed: [F-009D](./features/F-009D.md), browser workflow coverage.
 
