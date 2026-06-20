@@ -2,13 +2,14 @@
 
 ## Project Structure & Module Organization
 
-TabletopFog is in the first local-connectivity implementation phase.
+TabletopFog is in the early local campaign and map implementation phase.
 
 - `docs/vision.md`: purpose, users, MVP boundaries.
 - `docs/architecture.md`: technical direction and view responsibilities.
 - `docs/roadmap.md`: milestones and out-of-MVP ideas.
 - `docs/features/`: feature tracker, feature template, and milestone feature briefs.
 - `docs/bugs/`: bug tracker and bug template.
+- `docs/engineering/`: engineering-maintenance tracker, template, and records.
 - `docs/acceptance-tests.md`: human-readable validation tests.
 - `docs/development.md`: runtime, HTTPS, and command assumptions.
 - `docs/definition-of-done.md`: completion checklist.
@@ -55,6 +56,11 @@ Feature planning lives in `docs/features/FEATURE_TRACKER.md` and `F-NNN.md` file
 
 Future automated tests should map back to acceptance tests. Name tests around behavior, such as `player-view-read-only` or `gm-player-state-sync`.
 
+Classify work before implementation: new capabilities are features, broken or
+unsafe promised behavior is a bug, and behavior-preserving internal improvements
+are engineering maintenance. Follow the corresponding workflow in
+`docs/ai-harness.md` and keep its tracker current.
+
 ## Commit & Pull Request Guidelines
 
 The Git history only contains an initial commit, so no project-specific commit convention is established yet. Use short, imperative commit messages, for example:
@@ -69,6 +75,10 @@ Pull requests should include a brief summary, files changed, validation performe
 ## Agent-Specific Instructions
 
 Future AI sessions must read the docs before editing. Do not expand MVP scope without updating `docs/roadmap.md`, `docs/features/`, `docs/acceptance-tests.md`, and, for major changes, `docs/decisions/`. Track defects in `docs/bugs/`.
+
+Track behavior-preserving refactors, test hygiene, diagnostics, and maintenance
+in `docs/engineering/`; do not present them as product features. Reclassify work
+when investigation shows it belongs in a different tracker.
 
 Feature work must follow the mandatory subagent SDLC in `docs/decisions/decision-004-mandatory-subagent-sdlc.md`. Keep changes small, prefer simple browser-first implementation, and preserve the core constraint: this is a local fog-of-war display tool, not a full VTT.
 

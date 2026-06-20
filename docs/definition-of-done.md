@@ -1,6 +1,7 @@
 # Definition of Done
 
-Use this checklist before marking a feature `Done` in `docs/features/FEATURE_TRACKER.md`.
+Use the relevant checklist before marking a feature done, resolving a bug, or
+completing engineering maintenance.
 
 ## Required for Every Feature
 
@@ -34,3 +35,24 @@ Do not mark a feature `Done` if:
 - Known blocking bugs are still open.
 - The feature expanded MVP scope without roadmap and decision updates.
 - Documentation no longer matches behavior.
+
+## Required Before Resolving a Bug
+
+- The issue is reproduced or otherwise confirmed in the bug document.
+- A regression test is added where practical, or the reason it is not practical
+  is recorded.
+- The fix is limited to the broken behavior or linked to a feature when new
+  capability is required.
+- Relevant automated and manual validation passes.
+- Security, data-integrity, and compatibility effects are reviewed.
+- The bug document, bug tracker, related feature documents, and affected user or
+  developer documentation are current.
+
+## Required Before Completing Engineering Maintenance
+
+- The engineering document states the behavior being preserved.
+- Scope and module boundaries are explicit.
+- Relevant automated tests and targeted behavior-preservation checks pass.
+- No unintended product, protocol, storage, or workflow changes were introduced.
+- Discovered defects or new capabilities are reclassified and linked.
+- The engineering tracker and affected documentation are current.

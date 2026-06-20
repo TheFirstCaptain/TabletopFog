@@ -17,6 +17,8 @@ Before making code or documentation changes, read:
 - Relevant files in `docs/features/`
 - `docs/bugs/BUG_TRACKER.md`
 - Relevant files in `docs/bugs/`
+- `docs/engineering/ENGINEERING_TRACKER.md`
+- Relevant files in `docs/engineering/`
 - `docs/subagent-output.md`
 - Relevant files in `docs/decisions/`
 
@@ -54,6 +56,49 @@ After a feature is complete, use child features such as `F-004A` for follow-up t
 
 Track broken promised behavior as a bug in `docs/bugs/` instead of as a child feature. Use a new top-level feature when the work adds a new product capability outside the completed parent feature's scope.
 
+Before implementation, classify the change using
+`docs/decisions/decision-008-change-classification-and-maintenance-workflow.md`:
+
+- Use a feature for a new product, developer, tooling, or workflow capability.
+- Use a bug for implemented or promised behavior that is broken, unsafe, or
+  materially misleading.
+- Use engineering maintenance for behavior-preserving structure, test hygiene,
+  diagnostics, or maintainability work.
+
+## Mandatory Bug Workflow
+
+When fixing a bug:
+
+1. Read `docs/bugs/BUG_TRACKER.md` and the relevant `B-NNN.md` document.
+2. Reproduce or otherwise confirm the issue and record the evidence.
+3. Add a failing regression test where practical.
+4. Make the smallest corrective change without adding unrelated capability.
+5. Review the fix for regression, security, data-integrity, and documentation
+   impact.
+6. Run relevant automated and manual validation.
+7. Update the bug document, bug tracker, related feature documents, and other
+   affected documentation before marking the bug resolved.
+
+If the correction requires a materially new capability, stop and create or link
+a feature rather than expanding the bug silently.
+
+## Mandatory Engineering Maintenance Workflow
+
+When performing engineering maintenance:
+
+1. Read `docs/engineering/ENGINEERING_TRACKER.md` and the relevant `E-NNN.md`
+   document.
+2. State the observable behavior that must remain unchanged.
+3. Define narrow scope, module boundaries, and validation before editing.
+4. Prefer incremental changes over repository-wide rewrites.
+5. Run the full relevant test suite and targeted behavior-preservation checks.
+6. Review for accidental product, protocol, storage, or workflow changes.
+7. Update the engineering tracker and affected documentation before marking the
+   work done.
+
+If maintenance exposes broken promised behavior, create or link a bug. If it
+introduces new capability, create or link a feature.
+
 ## Keep Scope Small
 
 Make the smallest useful change for the current milestone.
@@ -65,6 +110,8 @@ Do not expand project scope without also updating:
 - `docs/features/FEATURE_TRACKER.md`
 - The relevant feature document in `docs/features/`
 - `docs/bugs/BUG_TRACKER.md` if the work discovers or fixes a defect
+- `docs/engineering/ENGINEERING_TRACKER.md` if the work creates, changes, or
+  completes behavior-preserving maintenance
 - `docs/acceptance-tests.md`
 - `docs/development.md` if commands, runtime assumptions, ports, or certificate setup change
 - `docs/network-troubleshooting.md` if local connectivity setup or failure modes change

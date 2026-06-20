@@ -43,3 +43,7 @@ Describe how the fix should be verified.
 ## Related Feature
 
 Link the affected `docs/features/F-NNN.md` document when applicable.
+
+## Related Engineering Work
+
+Link affected `docs/engineering/E-NNN.md` records when applicable.

@@ -27,6 +27,8 @@ Use this tracker to preserve feature state across sessions and agent handoffs. K
 - For feature work, follow the mandatory SDLC subagent workflow in `docs/decisions/decision-004-mandatory-subagent-sdlc.md`.
 - Update `docs/acceptance-tests.md` when feature behavior changes.
 - Record major architecture or scope decisions in `docs/decisions/`.
+- Track behavior-preserving internal work in `docs/engineering/` rather than as a
+  product feature.
 
 ## Tracker
 
@@ -40,3 +42,4 @@ Use this tracker to preserve feature state across sessions and agent handoffs. K
 | F-006 | Manual Fog of War | Proposed | Proposed | [F-006.md](./F-006.md) | 2026-06-19 | Maps start visible; GM adds fog to hide areas and removes fog to reveal them. |
 | F-007 | Save and Load Campaign State | Proposed | Proposed | [F-007.md](./F-007.md) | 2026-06-19 | Complete persistence with per-map fog state and reload behavior after F-004's campaign/map metadata persistence. |
 | F-008 | Table Quality-of-Life Improvements | Proposed | Proposed | [F-008.md](./F-008.md) | 2026-06-19 | Better fog brush, undo, reset, fullscreen player view, player URL sharing, and related table polish. |
+| F-009 | Engineering Quality Gates | Proposed | Proposed | [F-009.md](./F-009.md) | 2026-06-20 | Add executable local and CI checks for tests, style, dependencies, coverage, and browser workflows. |

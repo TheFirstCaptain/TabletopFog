@@ -27,8 +27,17 @@ Use this tracker for known defects, regressions, build failures, browser/device 
 - Link bugs to affected feature docs when a defect blocks or is found during feature work.
 - Prefer `Deferred` over deleting known issues that are intentionally postponed.
 - Record same-Wi-Fi, device, browser, and OS details for connectivity or display bugs.
+- Before fixing a bug, reproduce or otherwise confirm it, record evidence in the
+  bug document, add a failing regression test where practical, make the smallest
+  corrective change, review the result, and run the documented validation.
+- If investigation shows the behavior is not broken, reclassify the work as a
+  feature or engineering maintenance item and cross-link the records.
 
 ## Tracker
 
 | ID | Title | Status | Priority | Bug Doc | Last Updated | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| B-001 | WebSocket Dependency Permits Memory-Exhaustion DoS | Open | P2 | [B-001.md](./B-001.md) | 2026-06-20 | `npm audit` reports a high-severity `ws` advisory with a fix available. |
+| B-002 | Campaign Reads Can Destructively Normalize Metadata | Open | P2 | [B-002.md](./B-002.md) | 2026-06-20 | Read paths can rewrite metadata and discard unknown fields. |
+| B-003 | Map Upload Accepts Invalid Image Data | Open | P2 | [B-003.md](./B-003.md) | 2026-06-20 | Arbitrary non-empty bytes can be persisted as map images. |
+| B-004 | Invalid Campaign Metadata Is Silently Hidden | Open | P2 | [B-004.md](./B-004.md) | 2026-06-20 | Invalid campaigns are omitted without a GM-visible diagnostic. |

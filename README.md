@@ -37,6 +37,8 @@ TABLETOPFOG_DATA_DIR=/private/tmp/tabletopfog-data npm run local
 - `docs/roadmap.md`: milestone plan.
 - `docs/features/FEATURE_TRACKER.md`: feature status and next work.
 - `docs/bugs/BUG_TRACKER.md`: known defects and blockers.
+- `docs/engineering/ENGINEERING_TRACKER.md`: behavior-preserving refactors,
+  test hygiene, diagnostics, and maintenance.
 - `docs/acceptance-tests.md`: human-readable validation tests.
 - `docs/decisions/`: architecture decision records.
 - `docs/development.md`: runtime, HTTPS, browser, and command assumptions.
@@ -56,11 +58,16 @@ TABLETOPFOG_DATA_DIR=/private/tmp/tabletopfog-data npm run local
 
 React, cloud hosting, databases, and native wrappers are deferred unless a later decision record changes direction.
 
-## Working on Features
+## Working on Changes
 
 Feature work is tracked in `docs/features/`. When starting a feature, read the docs first, clarify behavior, update the feature document, and follow the mandatory SDLC workflow in `docs/decisions/decision-004-mandatory-subagent-sdlc.md`.
 
-Before marking a feature done, check `docs/definition-of-done.md`.
+Broken or unsafe promised behavior is tracked in `docs/bugs/`. Internal work
+that intentionally preserves behavior is tracked in `docs/engineering/`. Use the
+classification and workflows in `docs/ai-harness.md` before implementation.
+
+Before marking a feature done, resolving a bug, or completing engineering
+maintenance, check `docs/definition-of-done.md`.
 
 ## Current Validation Commands
 

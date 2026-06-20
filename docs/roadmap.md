@@ -16,6 +16,17 @@ Acceptance criteria:
 
 Status: complete.
 
+## Cross-Cutting Engineering: Quality Gates
+
+Goal: Make repository quality expectations executable and repeatable for local
+development and proposed changes.
+
+Tracked as [F-009](./features/F-009.md). This work covers tests, style checks,
+dependency auditing, coverage policy, browser workflow validation, and
+continuous integration without changing product behavior.
+
+Status: proposed.
+
 ## Milestone 1: Local Connectivity Spike
 
 Goal: Prove that the GM machine can host the app and an iPad can connect over the same Wi-Fi network.
