@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "roots": ["server", "public", "scripts"],
+  "modules": {
+    "public/gm.js": {
+      "baselineLines": 296,
+      "responsibility": "Coordinate the GM campaign library, API calls, rendering, and browser events.",
+      "temporaryException": {
+        "engineeringId": "E-003",
+        "reason": "GM API, state, rendering, and event responsibilities are awaiting planned separation."
+      }
+    },
+    "public/player.js": {
+      "baselineLines": 43,
+      "responsibility": "Render read-only player active-map and connection state updates."
+    },
+    "scripts/check-module-baseline.js": {
+      "baselineLines": 144,
+      "responsibility": "Validate the production JavaScript inventory and physical-line ratchet."
+    },
+    "scripts/create-dev-cert.js": {
+      "baselineLines": 209,
+      "responsibility": "Generate and inspect local HTTPS development certificates."
+    },
+    "scripts/run-quality.js": {
+      "baselineLines": 50,
+      "responsibility": "Run read-only local quality stages in a clear fail-fast order."
+    },
+    "scripts/start-local.js": {
+      "baselineLines": 141,
+      "responsibility": "Prepare certificates, resolve LAN addresses, and start the local server workflow."
+    },
+    "server/campaign-storage.js": {
+      "baselineLines": 429,
+      "responsibility": "Manage campaign metadata, map ordering, filesystem persistence, and asset containment.",
+      "temporaryException": {
+        "engineeringId": "E-002",
+        "reason": "Schema, validation, serialization, and filesystem responsibilities are awaiting planned separation."
+      }
+    },
+    "server/certs.js": {
+      "baselineLines": 43,
+      "responsibility": "Resolve and load HTTPS certificate credentials."
+    },
+    "server/index.js": {
+      "baselineLines": 280,
+      "responsibility": "Compose HTTP routes, role projection, Socket.IO synchronization, and HTTPS startup.",
+      "temporaryException": {
+        "engineeringId": "E-004",
+        "reason": "HTTP, role, socket, and startup responsibilities are awaiting planned separation."
+      }
+    },
+    "server/map-image.js": {
+      "baselineLines": 91,
+      "responsibility": "Validate supported map image signatures, metadata, and size limits."
+    },
+    "server/state.js": {
+      "baselineLines": 39,
+      "responsibility": "Maintain snapshot-safe in-memory active campaign state."
+    }
+  }
+}

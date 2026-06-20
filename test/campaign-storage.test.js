@@ -6,11 +6,7 @@ const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
 
-const {
-  createCampaignStorage,
-  normalizeFileName,
-  normalizePathSegment
-} = require("../server/campaign-storage");
+const { createCampaignStorage, normalizeFileName, normalizePathSegment } = require("../server/campaign-storage");
 const { PNG_BYTES } = require("../test-support/fixtures");
 
 function createTempRoot() {
@@ -133,10 +129,13 @@ test("reorders maps with sequential authoritative order values", () => {
 
   const updated = storage.reorderMaps(campaign.id, [second.id, first.id]);
 
-  assert.deepEqual(updated.maps.map((map) => [map.id, map.order]), [
-    [second.id, 1],
-    [first.id, 2]
-  ]);
+  assert.deepEqual(
+    updated.maps.map((map) => [map.id, map.order]),
+    [
+      [second.id, 1],
+      [first.id, 2]
+    ]
+  );
 });
 
 test("loads campaigns sorted by order and repairs order on save", () => {
@@ -158,20 +157,20 @@ test("loads campaigns sorted by order and repairs order on save", () => {
 
   const loaded = storage.getCampaign("The Long Walk");
 
-  assert.deepEqual(loaded.maps.map((map) => [map.id, map.order]), [
-    ["a", 1],
-    ["b", 2],
-    ["c", 3]
-  ]);
+  assert.deepEqual(
+    loaded.maps.map((map) => [map.id, map.order]),
+    [
+      ["a", 1],
+      ["b", 2],
+      ["c", 3]
+    ]
+  );
   assert.equal(fs.readFileSync(campaignPath, "utf8"), originalJson);
 
   storage.reorderMaps("The Long Walk", ["a", "b", "c"]);
 
   assert.deepEqual(
-    JSON.parse(fs.readFileSync(campaignPath, "utf8")).maps.map((map) => [
-      map.id,
-      map.order
-    ]),
+    JSON.parse(fs.readFileSync(campaignPath, "utf8")).maps.map((map) => [map.id, map.order]),
     [
       ["a", 1],
       ["b", 2],

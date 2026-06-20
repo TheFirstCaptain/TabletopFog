@@ -22,8 +22,5 @@ test("certificate regeneration is required when cert or key files are missing", 
 });
 
 test("unique removes duplicate and empty values", () => {
-  assert.deepEqual(unique(["192.168.1.20", "", "192.168.1.20", undefined, "10.0.0.2"]), [
-    "192.168.1.20",
-    "10.0.0.2"
-  ]);
+  assert.deepEqual(unique(["192.168.1.20", "", "192.168.1.20", undefined, "10.0.0.2"]), ["192.168.1.20", "10.0.0.2"]);
 });

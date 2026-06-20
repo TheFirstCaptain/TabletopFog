@@ -181,7 +181,9 @@ Decision records should be short but specific enough for a future AI session to 
 
 Before ending a coding session:
 
-- Run available validation commands.
+- Run `npm run quality` as the authoritative completion check for code or
+  tooling changes. Documentation-only work may use the relevant documentation
+  and diff checks.
 - If no automated tests exist yet, perform the relevant human-readable checks where possible.
 - Check `docs/definition-of-done.md` before marking a feature `Done`.
 - Report what was validated.

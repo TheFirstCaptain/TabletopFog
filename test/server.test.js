@@ -324,10 +324,13 @@ test("manages maps and broadcasts active map state", async () => {
     assert.equal(first.json.map.file, "maps/forest.png");
     assert.equal(second.json.map.file, "maps/forest-2.png");
     assert.equal(renamed.json.map.name, "Forest Ambush");
-    assert.deepEqual(reordered.json.campaign.maps.map((map) => [map.id, map.order]), [
-      [second.json.map.id, 1],
-      [first.json.map.id, 2]
-    ]);
+    assert.deepEqual(
+      reordered.json.campaign.maps.map((map) => [map.id, map.order]),
+      [
+        [second.json.map.id, 1],
+        [first.json.map.id, 2]
+      ]
+    );
     assert.equal(selected.json.campaign.activeMapId, first.json.map.id);
     assert.equal(playerState.activeMap.id, first.json.map.id);
     assert.equal(playerState.campaign, undefined);

@@ -254,7 +254,10 @@ function createCampaignStorage(options = {}) {
       fs.mkdirSync(mapsDir(campaignId), { recursive: true });
       const storedFileName = uniqueName(safeFileName, existingNames(mapsDir(campaignId)));
       const storedPath = path.join(mapsDir(campaignId), storedFileName);
-      const mapId = uniqueName(splitFileName(storedFileName).name, new Set(campaign.maps.map((map) => map.id.toLowerCase())));
+      const mapId = uniqueName(
+        splitFileName(storedFileName).name,
+        new Set(campaign.maps.map((map) => map.id.toLowerCase()))
+      );
       const map = {
         id: mapId,
         name: displayNameFromFileName(originalFileName),

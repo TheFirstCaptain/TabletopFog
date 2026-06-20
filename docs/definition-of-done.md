@@ -10,6 +10,8 @@ completing engineering maintenance.
 - Acceptance notes are satisfied or explicitly revised.
 - Non-goals were checked for scope creep.
 - Relevant automated tests pass, if tests exist.
+- `npm run quality` passes for code or tooling changes; documentation-only work
+  may use the relevant documentation and diff checks instead.
 - Relevant manual validation is performed or documented as not possible.
 - `docs/acceptance-tests.md` is updated when user-visible behavior changes.
 - `docs/development.md` is updated when commands, runtime assumptions, ports, HTTPS setup, or validation commands change.
@@ -39,6 +41,7 @@ Do not mark a feature `Done` if:
 ## Required Before Resolving a Bug
 
 - The issue is reproduced or otherwise confirmed in the bug document.
+- `npm run quality` passes when the bug fix changes code or tooling.
 - A regression test is added where practical, or the reason it is not practical
   is recorded.
 - The fix is limited to the broken behavior or linked to a feature when new
@@ -53,6 +56,7 @@ Do not mark a feature `Done` if:
 - The engineering document states the behavior being preserved.
 - Scope and module boundaries are explicit.
 - Relevant automated tests and targeted behavior-preservation checks pass.
+- `npm run quality` passes when engineering maintenance changes code or tooling.
 - No unintended product, protocol, storage, or workflow changes were introduced.
 - Discovered defects or new capabilities are reclassified and linked.
 - The engineering tracker and affected documentation are current.

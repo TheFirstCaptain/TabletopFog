@@ -48,11 +48,7 @@ function buildStartupDetails(options = {}) {
 }
 
 function formatStartupOutput(details) {
-  const lines = [
-    "TabletopFog local startup",
-    `Listening on: ${details.listenUrl}`,
-    `GM view: ${details.gmUrl}`
-  ];
+  const lines = ["TabletopFog local startup", `Listening on: ${details.listenUrl}`, `GM view: ${details.gmUrl}`];
 
   if (details.playerUrls.length) {
     lines.push("Player view:");

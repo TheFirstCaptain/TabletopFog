@@ -4,7 +4,8 @@ This document records baseline assumptions and commands for local development.
 
 ## Required Runtime
 
-- Node.js 22 or newer is required for the local server.
+- Node.js 22.8.0 or newer is required. The precise minimum supports the built-in
+  coverage include and threshold flags used by `npm run quality`.
 - npm is used for dependency installation, development scripts, and tests.
 - OpenSSL is required for the local development certificate helper.
 - F-002 was locally verified on Node.js `v24.14.0` and npm `11.9.0`.
@@ -119,6 +120,38 @@ Run automated tests:
 ```sh
 npm test
 ```
+
+Run the authoritative completion checks for code and tooling changes:
+
+```sh
+npm run quality
+```
+
+The quality command runs these read-only stages in order:
+
+1. `npm run lint`
+2. `npm run format:check`
+3. `npm run modules:check`
+4. `npm run test:coverage`
+5. `npm run audit:high`
+
+Use `npm run format` to apply Prettier to maintained JavaScript, JSON, CSS,
+HTML, and YAML files. Markdown is intentionally excluded for now.
+
+Node coverage currently includes `server/**/*.js` and `scripts/**/*.js` and
+enforces baseline-derived floors of 76% lines, 69% branches, and 81% functions.
+Browser scripts remain outside Node coverage until F-009D adds browser workflow
+execution.
+
+The dependency audit requires npm registry access. High and critical findings
+block completion, moderate findings remain visible, and registry/network failure
+is a failed quality run. There is no offline command that is equivalent to a
+successful full quality run.
+
+The module baseline in `quality/module-baseline.json` inventories production
+JavaScript under `server/`, `public/`, and `scripts/`. Any new, removed, grown,
+or reduced module requires an intentional baseline update. Growth also requires
+an architecture disposition; reductions lower the ratchet.
 
 The dev server binds to `0.0.0.0` on port `3000` by default so same-Wi-Fi devices can reach it by LAN IP.
 

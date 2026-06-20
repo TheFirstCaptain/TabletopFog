@@ -22,7 +22,7 @@ Expected result:
 
 Prerequisites:
 
-- MacBook Pro has Node.js 22 or newer, npm, and OpenSSL installed.
+- MacBook Pro has Node.js 22.8.0 or newer, npm, and OpenSSL installed.
 - MacBook Pro, iPhone, and iPad are on the same Wi-Fi network.
 - Local HTTPS certificate files have been generated with `npm run cert -- --ip=<LAN-IP>`.
 
@@ -52,7 +52,8 @@ Expected result:
 
 Prerequisites:
 
-- Chromebook has Linux development environment enabled with Node.js 22 or newer, npm, and OpenSSL installed.
+- Chromebook has Linux development environment enabled with Node.js 22.8.0 or
+  newer, npm, and OpenSSL installed.
 - Chromebook and iPad are on the same Wi-Fi network.
 - Local HTTPS certificate files have been generated with `npm run cert -- --ip=<LAN-IP>`.
 

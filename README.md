@@ -82,7 +82,18 @@ git status --short
 npm install
 npm run local
 npm test
+npm run quality
 ```
+
+`npm run quality` is the authoritative completion check for code and tooling
+changes. It runs linting, formatting checks, the module-growth ratchet, the full
+test suite with coverage floors, and a high-severity dependency audit. The audit
+requires npm registry access; a network failure fails the quality command rather
+than being treated as a pass.
+
+Use `npm test` as the faster behavior-test loop while developing. Run
+`npm run format` explicitly to apply formatting; the quality command is
+read-only.
 
 `npm run local` detects LAN IP addresses, checks or regenerates the local HTTPS certificate when needed, starts the server, and prints the GM URL, player URL candidates, certificate path, and Chromebook notes.
 

@@ -5,19 +5,30 @@
   "description": "Local HTTPS tabletop fog-of-war display spike.",
   "main": "server/index.js",
   "scripts": {
+    "audit:high": "npm audit --audit-level=high",
     "cert": "node scripts/create-dev-cert.js",
     "dev": "node server/index.js",
+    "format": "prettier --write \"**/*.{js,json,css,html,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{js,json,css,html,yml,yaml}\"",
+    "lint": "eslint .",
     "local": "node scripts/start-local.js",
-    "test": "node --test"
+    "modules:check": "node scripts/check-module-baseline.js",
+    "quality": "node scripts/run-quality.js",
+    "test": "node --test",
+    "test:coverage": "node --experimental-test-coverage --test-coverage-include='server/**/*.js' --test-coverage-include='scripts/**/*.js' --test-coverage-lines=76 --test-coverage-branches=69 --test-coverage-functions=81 --test"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.8.0"
   },
   "dependencies": {
     "express": "^5.1.0",
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "eslint": "^9.39.4",
+    "globals": "^17.6.0",
+    "prettier": "^3.8.4",
     "socket.io-client": "^4.8.1"
   }
 }

@@ -52,11 +52,9 @@ function ensureOpenSsl() {
 }
 
 function writeOpenSslConfig(configPath, ips) {
-  const altNames = [
-    "DNS.1 = localhost",
-    "IP.1 = 127.0.0.1",
-    ...ips.map((ip, index) => `IP.${index + 2} = ${ip}`)
-  ].join("\n");
+  const altNames = ["DNS.1 = localhost", "IP.1 = 127.0.0.1", ...ips.map((ip, index) => `IP.${index + 2} = ${ip}`)].join(
+    "\n"
+  );
 
   fs.writeFileSync(
     configPath,

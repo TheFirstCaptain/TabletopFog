@@ -43,7 +43,7 @@ Use this tracker to preserve feature state across sessions and agent handoffs. K
 | F-007 | Save and Load Campaign State | Proposed | Proposed | [F-007.md](./F-007.md) | 2026-06-19 | Complete persistence with per-map fog state and reload behavior after F-004's campaign/map metadata persistence. |
 | F-008 | Table Quality-of-Life Improvements | Proposed | Proposed | [F-008.md](./F-008.md) | 2026-06-19 | Better fog brush, undo, reset, fullscreen player view, player URL sharing, and related table polish. |
 | F-009 | Engineering Quality Gates | Active | Clarifying | [F-009.md](./F-009.md) | 2026-06-20 | Umbrella for local checks, AI harness compliance, CI enforcement, and browser workflow coverage. |
-| F-009A | Local Quality Command and Baseline Enforcement | Proposed | Proposed | [F-009A.md](./F-009A.md) | 2026-06-20 | Create the authoritative local test, style, audit, coverage, and module-growth command after E-005. |
+| F-009A | Local Quality Command and Baseline Enforcement | Complete | Done | [F-009A.md](./F-009A.md) | 2026-06-20 | Authoritative local quality command, module ratchet, coverage floors, lint/format checks, and audit gate completed. |
 | F-009B | AI Harness Compliance and Review Evidence | Proposed | Proposed | [F-009B.md](./F-009B.md) | 2026-06-20 | Make required SDLC stages, findings, dispositions, checklists, and final-diff review verifiable. |
 | F-009C | Continuous Integration Enforcement | Proposed | Proposed | [F-009C.md](./F-009C.md) | 2026-06-20 | Run the authoritative local quality command automatically on proposed changes. |
 | F-009D | Browser Workflow Coverage | Proposed | Proposed | [F-009D.md](./F-009D.md) | 2026-06-20 | Characterize current GM/player browser workflows before E-003 and display features. |

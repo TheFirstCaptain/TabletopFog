@@ -100,10 +100,6 @@ test("startLocal prepares the certificate before listening", () => {
   });
 
   assert.equal(result.server, fakeServer);
-  assert.deepEqual(events, [
-    ["prepareCertificate"],
-    ["createServer"],
-    ["listen", 3000, "0.0.0.0"]
-  ]);
+  assert.deepEqual(events, [["prepareCertificate"], ["createServer"], ["listen", 3000, "0.0.0.0"]]);
   assert.match(logs.join("\n"), /https:\/\/192\.168\.1\.20:3000\/player/);
 });

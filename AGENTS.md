@@ -31,10 +31,13 @@ npm install
 npm run cert -- --ip=<LAN-IP>
 npm run dev
 npm test
+npm run quality
 ```
 
 Use `rg --files` to confirm files. Use `git status --short` before and after changes.
 Use `npm run cert -- --ip=<LAN-IP>` whenever the host machine changes Wi-Fi networks or LAN IP addresses.
+Use `npm run quality` as the authoritative completion check for code and tooling
+changes. It requires localhost test binding and npm registry access.
 
 ## Coding Style & Naming Conventions
 

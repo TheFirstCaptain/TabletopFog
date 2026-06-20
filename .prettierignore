@@ -1,0 +1,5 @@
+**/*.md
+certs/
+coverage/
+logs/
+node_modules/
