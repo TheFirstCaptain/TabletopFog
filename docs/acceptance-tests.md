@@ -16,6 +16,39 @@ Expected result:
 
 - The documentation structure exists and describes project scope, architecture, roadmap, acceptance tests, AI workflow, and decisions.
 
+## Cross-Cutting Engineering: Continuous Integration
+
+### Test: Proposed Changes Run the Authoritative Quality Command
+
+Prerequisites:
+
+- The repository is hosted on GitHub with Actions enabled.
+- A pull request can be opened against `main`.
+
+Steps:
+
+1. Open or update a pull request with a change that passes `npm run quality`
+   locally.
+2. Confirm the `Quality / Node 22.8.0` and `Quality / Node 24` jobs both run.
+3. Confirm each job installs with `npm ci` and runs `npm run quality`.
+4. Push a controlled change that makes one quality stage fail.
+5. Confirm both matrix jobs complete and the workflow is unsuccessful.
+6. Confirm the failed stage prints the corresponding local rerun command.
+7. Remove the controlled failure and confirm both jobs pass.
+8. After merging, confirm a push to `main` starts the same matrix workflow.
+
+Expected result:
+
+- Pull requests and pushes to `main` run the complete local quality policy on
+  Node.js 22.8.0 and Node.js 24 without changed-file scoping.
+- A failure on one matrix entry does not cancel the other entry.
+- Required failures are visible and make the workflow unsuccessful.
+- Contributors can reproduce the failure with `npm run quality` or the narrower
+  command printed by the failed stage.
+- The workflow uses no application secrets and does not deploy the app.
+- Merge blocking applies only when the repository's external ruleset or branch
+  protection requires the two matrix checks.
+
 ## Milestone 1: MacBook Pro Hosting
 
 ### Test: GM Can Host Locally from MacBook Pro

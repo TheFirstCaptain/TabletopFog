@@ -38,6 +38,8 @@ Use `rg --files` to confirm files. Use `git status --short` before and after cha
 Use `npm run cert -- --ip=<LAN-IP>` whenever the host machine changes Wi-Fi networks or LAN IP addresses.
 Use `npm run quality` as the authoritative completion check for code and tooling
 changes. It requires localhost test binding and npm registry access.
+GitHub Actions runs that same command for every pull request and push to `main`
+on Node.js 22.8.0 and 24; do not create a separate CI-only quality policy.
 Use `npm run harness:check` to diagnose feature-evidence, reviewer,
 findings-disposition, tracker, or legacy-baseline violations directly.
 

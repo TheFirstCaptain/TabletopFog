@@ -18,6 +18,9 @@ completing engineering maintenance.
 - Relevant automated tests pass, if tests exist.
 - `npm run quality` passes for code or tooling changes; documentation-only work
   may use the relevant documentation and diff checks instead.
+- When a change is proposed through GitHub, both supported Node matrix checks
+  pass; reproduce CI failures locally with `npm run quality` or the narrower
+  command printed by the failed stage.
 - Relevant manual validation is performed or documented as not possible.
 - `docs/acceptance-tests.md` is updated when user-visible behavior changes.
 - `docs/development.md` is updated when commands, runtime assumptions, ports, HTTPS setup, or validation commands change.

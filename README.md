@@ -92,6 +92,12 @@ floors, and a high-severity dependency audit. The audit requires npm registry
 access; a network failure fails the quality command rather than being treated
 as a pass.
 
+GitHub Actions runs the same `npm run quality` command for every pull request
+and every push to `main` on Node.js 22.8.0 and Node.js 24. A CI failure can be
+reproduced locally with `npm run quality`; the failing quality stage also prints
+its narrower rerun command. Repository rulesets or branch protection determine
+whether GitHub blocks merging and are configured outside this repository.
+
 Use `npm test` as the faster behavior-test loop while developing. Run
 `npm run format` explicitly to apply formatting; the quality command is
 read-only.

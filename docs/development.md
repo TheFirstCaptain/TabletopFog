@@ -149,6 +149,26 @@ block completion, moderate findings remain visible, and registry/network failure
 is a failed quality run. There is no offline command that is equivalent to a
 successful full quality run.
 
+## Continuous Integration
+
+GitHub Actions runs `.github/workflows/quality.yml` for every pull request and
+every push to `main`. The workflow tests Node.js 22.8.0 and the current Node.js
+24 line independently, installs dependencies with `npm ci`, and runs the same
+`npm run quality` command documented above. Matrix fail-fast is disabled so a
+failure on one runtime does not hide the other runtime's result.
+
+The workflow has read-only repository permission, receives no application
+secrets, and does not deploy or start TabletopFog. A failed stage prints its
+local granular rerun command; start local reproduction with:
+
+```sh
+npm run quality
+```
+
+GitHub repository rulesets or branch protection must require the visible
+`Quality / Node 22.8.0` and `Quality / Node 24` checks if merge blocking is
+desired. That external setting is not controlled by the workflow file.
+
 The module baseline in `quality/module-baseline.json` inventories production
 JavaScript under `server/`, `public/`, and `scripts/`. Any new, removed, grown,
 or reduced module requires an intentional baseline update. Growth also requires
