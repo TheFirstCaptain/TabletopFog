@@ -38,5 +38,7 @@ broken promised behavior belongs in `docs/bugs/`.
 | --- | --- | --- | --- | --- | --- | --- |
 | E-001 | Clean Up Test Temporary Directories | Proposed | P3 | [E-001.md](./E-001.md) | 2026-06-20 | Add reliable teardown for temporary campaign and certificate directories. |
 | E-002 | Separate Campaign Storage Responsibilities | Proposed | P2 | [E-002.md](./E-002.md) | 2026-06-20 | Incrementally separate schema, validation, serialization, and filesystem operations before persistence grows. |
-| E-003 | Separate GM Client Responsibilities | Proposed | P2 | [E-003.md](./E-003.md) | 2026-06-20 | Separate API, state coordination, rendering, and event wiring while preserving the plain-browser approach. |
+| E-003 | Separate GM Client Responsibilities | Proposed | P1 | [E-003.md](./E-003.md) | 2026-06-20 | Begin after F-009D characterizes current browser behavior and before F-005/F-006 expand the client. |
 | E-004 | Separate Server Transport Responsibilities | Proposed | P2 | [E-004.md](./E-004.md) | 2026-06-20 | Separate HTTP routing, role projection, Socket.IO coordination, and startup concerns. |
+| E-005 | Establish Module Responsibility and Growth Baselines | Proposed | P1 | [E-005.md](./E-005.md) | 2026-06-20 | Record ratchet baselines and temporary exceptions before F-009A implements enforcement. |
+| E-006 | Harden Test Fixtures and Failure-Path Coverage | Proposed | P1 | [E-006.md](./E-006.md) | 2026-06-20 | Establish representative fixtures and boundary matrices before browser and feature coverage expands. |

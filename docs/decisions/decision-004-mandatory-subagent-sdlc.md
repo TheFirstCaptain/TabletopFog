@@ -31,6 +31,15 @@ The main agent must record clarification answers and stage outputs in the releva
 - Small features may take more process than a direct edit, but this is intentional for preserving scope and quality.
 - The main agent must not blindly apply subagent output; it must reconcile conflicts with project constraints.
 
+## Planned Enforcement Hardening
+
+[F-009B](../features/F-009B.md) is planned to make this decision mechanically
+verifiable. It will define structured evidence for each stage, require material
+findings and their dispositions to remain visible, add stage-specific review
+checklists, and require final-diff review. Until F-009B is implemented, the
+current prose workflow remains authoritative and no new automated enforcement is
+implied.
+
 ## Alternatives Considered
 
 - Optional subagents: rejected because optional process is easy to skip under short prompts.
