@@ -2,15 +2,14 @@
 
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
 
 const { validateModuleBaseline } = require("../scripts/check-module-baseline");
+const { createTemporaryDirectory } = require("../test-support/temp-directory");
 
 function createFixture(t, files) {
-  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "tabletopfog-module-baseline-"));
-  t.after(() => fs.rmSync(rootDir, { force: true, recursive: true }));
+  const rootDir = createTemporaryDirectory(t, "tabletopfog-module-baseline-");
 
   Object.entries(files).forEach(([filePath, content]) => {
     const absolutePath = path.join(rootDir, filePath);

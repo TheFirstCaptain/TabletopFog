@@ -2,7 +2,6 @@
 
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const os = require("node:os");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const test = require("node:test");
@@ -25,6 +24,7 @@ const {
   parseMarkdownTable,
   stripFencedCode
 } = require("../scripts/harness-markdown");
+const { createTemporaryDirectory } = require("../test-support/temp-directory");
 
 const now = new Date("2026-06-20T12:00:00Z");
 const stageReviewers = {
@@ -144,8 +144,7 @@ function findingsTable(rows, headers = findingHeaders) {
 }
 
 function makeRepository(t, options = {}) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "tabletopfog-harness-"));
-  t.after(() => fs.rmSync(root, { force: true, recursive: true }));
+  const root = createTemporaryDirectory(t, "tabletopfog-harness-");
   fs.mkdirSync(path.join(root, "docs", "features"), { recursive: true });
   fs.mkdirSync(path.join(root, "quality"), { recursive: true });
 
@@ -539,8 +538,7 @@ test("CLI reports success, policy violations, and unexpected read failures", (t)
   assert.ok(badMessages.some((message) => message.includes("Correct the listed")));
   assert.match(badMessages.at(-1), /npm run harness:check/);
 
-  const missingRoot = fs.mkdtempSync(path.join(os.tmpdir(), "tabletopfog-harness-missing-"));
-  t.after(() => fs.rmSync(missingRoot, { force: true, recursive: true }));
+  const missingRoot = createTemporaryDirectory(t, "tabletopfog-harness-missing-");
   const missingMessages = [];
   assert.equal(runHarnessCheck({ rootDir: missingRoot, now, log: (message) => missingMessages.push(message) }), 1);
   assert.ok(missingMessages.some((message) => message.includes("Unable to validate the repository")));

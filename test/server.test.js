@@ -3,14 +3,14 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const https = require("node:https");
-const os = require("node:os");
 const path = require("node:path");
-const { spawnSync } = require("node:child_process");
 const test = require("node:test");
 
 const { io: createClient } = require("socket.io-client");
 const { createTabletopFogServer, getRoleFromReferer } = require("../server");
+const { createTestCertificate } = require("../test-support/certificate");
 const { PNG_BYTES } = require("../test-support/fixtures");
+const { createTemporaryDirectory } = require("../test-support/temp-directory");
 
 function getHttps(url, options = {}) {
   return new Promise((resolve, reject) => {
@@ -81,66 +81,8 @@ function parseJsonBody(body, headers) {
   return JSON.parse(body);
 }
 
-function createTempRoot() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "tabletopfog-server-data-"));
-}
-
-function createTestCertificate() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tabletopfog-test-cert-"));
-  const keyPath = path.join(dir, "key.pem");
-  const certPath = path.join(dir, "cert.pem");
-  const configPath = path.join(dir, "openssl.cnf");
-
-  fs.writeFileSync(
-    configPath,
-    [
-      "[req]",
-      "prompt = no",
-      "distinguished_name = dn",
-      "x509_extensions = v3_req",
-      "",
-      "[dn]",
-      "CN = TabletopFog Test",
-      "",
-      "[v3_req]",
-      "subjectAltName = @alt_names",
-      "",
-      "[alt_names]",
-      "DNS.1 = localhost",
-      "IP.1 = 127.0.0.1",
-      ""
-    ].join("\n")
-  );
-
-  const result = spawnSync(
-    "openssl",
-    [
-      "req",
-      "-x509",
-      "-newkey",
-      "rsa:2048",
-      "-nodes",
-      "-sha256",
-      "-days",
-      "1",
-      "-keyout",
-      keyPath,
-      "-out",
-      certPath,
-      "-config",
-      configPath
-    ],
-    { encoding: "utf8" }
-  );
-
-  if (result.status !== 0) {
-    throw new Error(`OpenSSL failed: ${result.stderr}`);
-  }
-
-  return {
-    cert: fs.readFileSync(certPath),
-    key: fs.readFileSync(keyPath)
-  };
+function createTempRoot(t) {
+  return createTemporaryDirectory(t, "tabletopfog-server-data-");
 }
 
 function listen(server) {
@@ -192,10 +134,10 @@ function playerHeaders(port, extra = {}) {
   };
 }
 
-test("serves GM and player pages over HTTPS", async () => {
+test("serves GM and player pages over HTTPS", async (t) => {
   const { server, io } = createTabletopFogServer({
-    credentials: createTestCertificate(),
-    dataRoot: createTempRoot()
+    credentials: createTestCertificate(t),
+    dataRoot: createTempRoot(t)
   });
   const port = await listen(server);
 
@@ -212,10 +154,10 @@ test("serves GM and player pages over HTTPS", async () => {
   }
 });
 
-test("creates campaigns through GM API and lists them", async () => {
+test("creates campaigns through GM API and lists them", async (t) => {
   const { server, io } = createTabletopFogServer({
-    credentials: createTestCertificate(),
-    dataRoot: createTempRoot()
+    credentials: createTestCertificate(t),
+    dataRoot: createTempRoot(t)
   });
   const port = await listen(server);
   const url = `https://127.0.0.1:${port}`;
@@ -245,10 +187,10 @@ test("creates campaigns through GM API and lists them", async () => {
   }
 });
 
-test("manages maps and broadcasts active map state", async () => {
+test("manages maps and broadcasts active map state", async (t) => {
   const { server, io, stateStore } = createTabletopFogServer({
-    credentials: createTestCertificate(),
-    dataRoot: createTempRoot()
+    credentials: createTestCertificate(t),
+    dataRoot: createTempRoot(t)
   });
   const port = await listen(server);
   const url = `https://127.0.0.1:${port}`;
@@ -347,10 +289,10 @@ test("manages maps and broadcasts active map state", async () => {
   }
 });
 
-test("rejects invalid map uploads without persisting files or metadata", async () => {
-  const dataRoot = createTempRoot();
-  const { server, io } = createTabletopFogServer({
-    credentials: createTestCertificate(),
+test("rejects invalid map uploads without persisting files or metadata", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const { server, io, stateStore } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
     dataRoot
   });
   const port = await listen(server);
@@ -362,30 +304,72 @@ test("rejects invalid map uploads without persisting files or metadata", async (
       headers: gmHeaders(port, { "content-type": "application/json" }),
       method: "POST"
     });
-    const rejected = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
-      body: Buffer.from("not-an-image"),
-      headers: gmHeaders(port, {
-        "content-type": "image/png",
-        "x-file-name": "forest.png"
-      }),
-      method: "POST"
-    });
     const campaignPath = path.join(dataRoot, "The Long Walk", "campaign.json");
-    const saved = JSON.parse(fs.readFileSync(campaignPath, "utf8"));
+    const originalMetadata = fs.readFileSync(campaignPath, "utf8");
+    const cases = [
+      {
+        body: Buffer.from("not-an-image"),
+        contentType: "image/png",
+        error: /supported map image/,
+        fileName: "forest.png"
+      },
+      {
+        body: PNG_BYTES,
+        contentType: "image/jpeg",
+        error: /must match its image data/,
+        fileName: "forest.jpg"
+      }
+    ];
 
-    assert.equal(rejected.statusCode, 400);
-    assert.match(rejected.json.error, /supported map image/);
-    assert.deepEqual(saved.maps, []);
-    assert.deepEqual(fs.readdirSync(path.join(dataRoot, "The Long Walk", "maps")), []);
+    for (const fixture of cases) {
+      const rejected = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+        body: fixture.body,
+        headers: gmHeaders(port, {
+          "content-type": fixture.contentType,
+          "x-file-name": fixture.fileName
+        }),
+        method: "POST"
+      });
+
+      assert.equal(rejected.statusCode, 400);
+      assert.match(rejected.json.error, fixture.error);
+      assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+      assert.deepEqual(fs.readdirSync(path.join(dataRoot, "The Long Walk", "maps")), []);
+      assert.deepEqual(stateStore.getState().campaign.maps, []);
+    }
   } finally {
     await close(server, io);
   }
 });
 
-test("rejects player-originated API mutations", async () => {
+test("rejects malformed campaign JSON without creating filesystem or in-memory state", async (t) => {
+  const dataRoot = createTempRoot(t);
   const { server, io, stateStore } = createTabletopFogServer({
-    credentials: createTestCertificate(),
-    dataRoot: createTempRoot()
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+
+  try {
+    const rejected = await requestHttps(`${url}/api/campaigns`, {
+      body: "{",
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+
+    assert.equal(rejected.statusCode, 400);
+    assert.equal(stateStore.getState().campaign, null);
+    assert.deepEqual(fs.readdirSync(dataRoot), []);
+  } finally {
+    await close(server, io);
+  }
+});
+
+test("rejects player-originated API mutations", async (t) => {
+  const { server, io, stateStore } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot: createTempRoot(t)
   });
   const port = await listen(server);
   const url = `https://127.0.0.1:${port}`;
@@ -412,10 +396,10 @@ test("derives socket write role from route referer", () => {
   assert.equal(getRoleFromReferer("not a url"), "player");
 });
 
-test("player page exposes no mutating controls", async () => {
+test("player page exposes no mutating controls", async (t) => {
   const { server, io } = createTabletopFogServer({
-    credentials: createTestCertificate(),
-    dataRoot: createTempRoot()
+    credentials: createTestCertificate(t),
+    dataRoot: createTempRoot(t)
   });
   const port = await listen(server);
 

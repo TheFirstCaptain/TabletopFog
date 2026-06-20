@@ -63,6 +63,12 @@ Feature planning lives in `docs/features/FEATURE_TRACKER.md` and `F-NNN.md` file
 
 Future automated tests should map back to acceptance tests. Name tests around behavior, such as `player-view-read-only` or `gm-player-state-sync`.
 
+Use representative fixtures that match the production validation depth. For
+external inputs, cover relevant valid, invalid, mismatched, boundary, and
+partial-failure cases, and assert rejected operations leave files, metadata,
+and in-memory state unchanged. Create temporary test directories through the
+shared test-support helper so teardown is registered with the test context.
+
 Classify work before implementation: new capabilities are features, broken or
 unsafe promised behavior is a bug, and behavior-preserving internal improvements
 are engineering maintenance. Follow the corresponding workflow in

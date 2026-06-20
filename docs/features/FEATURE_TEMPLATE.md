@@ -52,6 +52,11 @@ Replace every placeholder before entering `Planned`.
 | Test realism | Reviewed or Not Applicable | Pending. |
 | Resource cleanup | Reviewed or Not Applicable | Pending. |
 
+For Test realism, review representative valid, invalid, mismatched, boundary,
+and partial-failure inputs that apply to each changed trust boundary. For
+Resource cleanup, verify temporary files/directories and live processes,
+servers, sockets, timers, and listeners are released on success and failure.
+
 ## SDLC Evidence
 
 Use `/root/<task>` for subagents, `human:<identifier>` for human reviewers, and

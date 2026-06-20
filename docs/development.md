@@ -179,6 +179,25 @@ independence, review scope, findings dispositions, tracker consistency, and the
 closed legacy baseline. Its exact Markdown contract is documented in
 `docs/features/FEATURE_TEMPLATE.md`.
 
+## Test Fixtures and Failure Paths
+
+Tests that cross an external-input boundary should use fixtures representative
+of the production validation depth rather than arbitrary bytes with a plausible
+filename. Derive a focused matrix from the actual boundary: relevant valid,
+invalid, mismatched, size-boundary, and partial-failure cases. Do not apply
+irrelevant cases mechanically.
+
+For rejected mutations, assert both the returned error and the absence of
+partial effects in every affected layer, such as copied files, campaign
+metadata, and in-memory state. If a maintenance test exposes broken promised
+behavior, record it as a bug before changing production code.
+
+Tests that create directories under the operating-system temporary root must
+use `createTemporaryDirectory` from `test-support/temp-directory.js` and pass
+the current Node test context. The helper registers recursive idempotent
+teardown; network servers and sockets still require explicit closure in
+`finally` blocks.
+
 The dev server binds to `0.0.0.0` on port `3000` by default so same-Wi-Fi devices can reach it by LAN IP.
 
 ## Troubleshooting

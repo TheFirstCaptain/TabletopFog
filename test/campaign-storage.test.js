@@ -2,15 +2,15 @@
 
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
 
 const { createCampaignStorage, normalizeFileName, normalizePathSegment } = require("../server/campaign-storage");
 const { PNG_BYTES } = require("../test-support/fixtures");
+const { createTemporaryDirectory } = require("../test-support/temp-directory");
 
-function createTempRoot() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "tabletopfog-campaigns-"));
+function createTempRoot(t) {
+  return createTemporaryDirectory(t, "tabletopfog-campaigns-");
 }
 
 test("normalizes filesystem path segments", () => {
@@ -27,8 +27,8 @@ test("normalizes map file names while preserving extensions", () => {
   assert.equal(normalizeFileName("..secret..png"), "secret.png");
 });
 
-test("creates campaigns in safe local folders", () => {
-  const root = createTempRoot();
+test("creates campaigns in safe local folders", (t) => {
+  const root = createTempRoot(t);
   const storage = createCampaignStorage({ dataRoot: root });
 
   const campaign = storage.createCampaign("The Long Walk");
@@ -41,8 +41,8 @@ test("creates campaigns in safe local folders", () => {
   assert.ok(fs.existsSync(path.join(root, "The Long Walk", "maps")));
 });
 
-test("rejects empty and case-only duplicate campaign folders", () => {
-  const root = createTempRoot();
+test("rejects empty and case-only duplicate campaign folders", (t) => {
+  const root = createTempRoot(t);
   const storage = createCampaignStorage({ dataRoot: root });
 
   assert.throws(() => storage.createCampaign("???"), /valid campaign name/);
@@ -52,8 +52,8 @@ test("rejects empty and case-only duplicate campaign folders", () => {
   assert.throws(() => storage.createCampaign("the long walk"), /already exists/);
 });
 
-test("lists only folders with valid campaign metadata", () => {
-  const root = createTempRoot();
+test("lists only folders with valid campaign metadata", (t) => {
+  const root = createTempRoot(t);
   const storage = createCampaignStorage({ dataRoot: root });
 
   storage.createCampaign("The Long Walk");
@@ -69,8 +69,8 @@ test("lists only folders with valid campaign metadata", () => {
   ]);
 });
 
-test("adds maps with original filenames, safe collisions, and default names", () => {
-  const root = createTempRoot();
+test("adds maps with original filenames, safe collisions, and default names", (t) => {
+  const root = createTempRoot(t);
   const storage = createCampaignStorage({ dataRoot: root });
   const campaign = storage.createCampaign("The Long Walk");
 
@@ -96,8 +96,8 @@ test("adds maps with original filenames, safe collisions, and default names", ()
   assert.ok(fs.existsSync(path.join(root, "The Long Walk", "maps", "Goblin Cave-2-2.png")));
 });
 
-test("renames maps without changing stored file paths", () => {
-  const root = createTempRoot();
+test("renames maps without changing stored file paths", (t) => {
+  const root = createTempRoot(t);
   const storage = createCampaignStorage({ dataRoot: root });
   const campaign = storage.createCampaign("The Long Walk");
   const map = storage.addMap(campaign.id, {
@@ -112,8 +112,8 @@ test("renames maps without changing stored file paths", () => {
   assert.equal(renamed.file, "maps/forest.png");
 });
 
-test("reorders maps with sequential authoritative order values", () => {
-  const root = createTempRoot();
+test("reorders maps with sequential authoritative order values", (t) => {
+  const root = createTempRoot(t);
   const storage = createCampaignStorage({ dataRoot: root });
   const campaign = storage.createCampaign("The Long Walk");
   const first = storage.addMap(campaign.id, {
@@ -138,8 +138,42 @@ test("reorders maps with sequential authoritative order values", () => {
   );
 });
 
-test("loads campaigns sorted by order and repairs order on save", () => {
-  const root = createTempRoot();
+test("rejected map mutations preserve campaign metadata byte for byte", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const first = storage.addMap(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "one.png"
+  });
+  const second = storage.addMap(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "two.png"
+  });
+  const campaignPath = path.join(root, campaign.id, "campaign.json");
+  const originalMetadata = fs.readFileSync(campaignPath, "utf8");
+  const cases = [
+    { action: () => storage.reorderMaps(campaign.id, [first.id]), message: /include every map/ },
+    { action: () => storage.reorderMaps(campaign.id, [first.id, "unknown"]), message: /unknown map/ },
+    { action: () => storage.reorderMaps(campaign.id, [first.id, first.id]), message: /duplicate maps/ },
+    { action: () => storage.renameMap(campaign.id, first.id, ""), message: /map name/ },
+    { action: () => storage.setActiveMap(campaign.id, "unknown"), message: /Map not found/ }
+  ];
+
+  cases.forEach(({ action, message }) => {
+    assert.throws(action, message);
+    assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+    assert.deepEqual(
+      storage.getCampaign(campaign.id).maps.map((map) => map.id),
+      [first.id, second.id]
+    );
+  });
+});
+
+test("loads campaigns sorted by order and repairs order on save", (t) => {
+  const root = createTempRoot(t);
   const campaignDir = path.join(root, "The Long Walk");
   fs.mkdirSync(path.join(campaignDir, "maps"), { recursive: true });
   const campaignPath = path.join(campaignDir, "campaign.json");
@@ -179,8 +213,8 @@ test("loads campaigns sorted by order and repairs order on save", () => {
   );
 });
 
-test("campaign reads do not write and later mutations preserve unknown metadata", () => {
-  const root = createTempRoot();
+test("campaign reads do not write and later mutations preserve unknown metadata", (t) => {
+  const root = createTempRoot(t);
   const campaignDir = path.join(root, "The Long Walk");
   const campaignPath = path.join(campaignDir, "campaign.json");
   fs.mkdirSync(path.join(campaignDir, "maps"), { recursive: true });
@@ -221,8 +255,8 @@ test("campaign reads do not write and later mutations preserve unknown metadata"
   assert.equal(saved.maps[0].name, "Forest Ambush");
 });
 
-test("rejects invalid map image data without changing campaign storage", () => {
-  const root = createTempRoot();
+test("rejects invalid map image data without changing campaign storage", (t) => {
+  const root = createTempRoot(t);
   const storage = createCampaignStorage({ dataRoot: root });
   const campaign = storage.createCampaign("The Long Walk");
 
@@ -240,8 +274,8 @@ test("rejects invalid map image data without changing campaign storage", () => {
   assert.deepEqual(fs.readdirSync(path.join(root, campaign.id, "maps")), []);
 });
 
-test("rejects map image metadata that does not match the image data", () => {
-  const root = createTempRoot();
+test("rejects map image metadata that does not match the image data", (t) => {
+  const root = createTempRoot(t);
   const storage = createCampaignStorage({ dataRoot: root });
   const campaign = storage.createCampaign("The Long Walk");
 
@@ -258,8 +292,8 @@ test("rejects map image metadata that does not match the image data", () => {
   assert.deepEqual(storage.getCampaign(campaign.id).maps, []);
 });
 
-test("persists active map and reloads campaign state", () => {
-  const root = createTempRoot();
+test("persists active map and reloads campaign state", (t) => {
+  const root = createTempRoot(t);
   const storage = createCampaignStorage({ dataRoot: root });
   const campaign = storage.createCampaign("The Long Walk");
   const map = storage.addMap(campaign.id, {
@@ -277,8 +311,8 @@ test("persists active map and reloads campaign state", () => {
   assert.equal(reloaded.maps[0].file, "maps/forest.png");
 });
 
-test("rejects map asset paths outside the maps folder", () => {
-  const root = createTempRoot();
+test("rejects map asset paths outside the maps folder", (t) => {
+  const root = createTempRoot(t);
   const campaignDir = path.join(root, "The Long Walk");
   fs.mkdirSync(path.join(campaignDir, "maps"), { recursive: true });
   fs.writeFileSync(
@@ -294,8 +328,8 @@ test("rejects map asset paths outside the maps folder", () => {
   assert.throws(() => storage.getMapAsset("The Long Walk", "bad"), /Invalid map asset path/);
 });
 
-test("rejects symlinked map assets that escape the maps folder", { skip: process.platform === "win32" }, () => {
-  const root = createTempRoot();
+test("rejects symlinked map assets that escape the maps folder", { skip: process.platform === "win32" }, (t) => {
+  const root = createTempRoot(t);
   const campaignDir = path.join(root, "The Long Walk");
   const outsidePath = path.join(root, "outside.png");
   fs.mkdirSync(path.join(campaignDir, "maps"), { recursive: true });
