@@ -14,6 +14,10 @@
       "baselineLines": 43,
       "responsibility": "Render read-only player active-map and connection state updates."
     },
+    "scripts/check-harness-compliance.js": {
+      "baselineLines": 45,
+      "responsibility": "Run repository harness validation and report actionable compliance failures."
+    },
     "scripts/check-module-baseline.js": {
       "baselineLines": 144,
       "responsibility": "Validate the production JavaScript inventory and physical-line ratchet."
@@ -22,8 +26,20 @@
       "baselineLines": 209,
       "responsibility": "Generate and inspect local HTTPS development certificates."
     },
+    "scripts/harness-compliance.js": {
+      "baselineLines": 299,
+      "responsibility": "Validate phase-aware feature evidence, review findings, tracker state, and the closed legacy baseline."
+    },
+    "scripts/harness-markdown.js": {
+      "baselineLines": 188,
+      "responsibility": "Parse exact governed feature-document, tracker, stage, and Markdown table structures."
+    },
+    "scripts/harness-repository.js": {
+      "baselineLines": 79,
+      "responsibility": "Discover governed feature records, resolve canonical follow-up links, and coordinate repository validation."
+    },
     "scripts/run-quality.js": {
-      "baselineLines": 50,
+      "baselineLines": 51,
       "responsibility": "Run read-only local quality stages in a clear fail-fast order."
     },
     "scripts/start-local.js": {

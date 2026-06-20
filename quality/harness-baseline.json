@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "features": {
+    "F-001": {
+      "document": "docs/features/F-001.md",
+      "reason": "Predates Harness Version 1."
+    },
+    "F-002": {
+      "document": "docs/features/F-002.md",
+      "reason": "Predates Harness Version 1."
+    },
+    "F-003": {
+      "document": "docs/features/F-003.md",
+      "reason": "Predates Harness Version 1."
+    },
+    "F-004": {
+      "document": "docs/features/F-004.md",
+      "reason": "Predates Harness Version 1."
+    },
+    "F-009": {
+      "document": "docs/features/F-009.md",
+      "reason": "Predates Harness Version 1."
+    },
+    "F-009A": {
+      "document": "docs/features/F-009A.md",
+      "reason": "Predates Harness Version 1."
+    }
+  }
+}

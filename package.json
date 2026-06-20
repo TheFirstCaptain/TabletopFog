@@ -10,6 +10,7 @@
     "dev": "node server/index.js",
     "format": "prettier --write \"**/*.{js,json,css,html,yml,yaml}\"",
     "format:check": "prettier --check \"**/*.{js,json,css,html,yml,yaml}\"",
+    "harness:check": "node scripts/check-harness-compliance.js",
     "lint": "eslint .",
     "local": "node scripts/start-local.js",
     "modules:check": "node scripts/check-module-baseline.js",

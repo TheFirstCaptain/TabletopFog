@@ -86,10 +86,11 @@ npm run quality
 ```
 
 `npm run quality` is the authoritative completion check for code and tooling
-changes. It runs linting, formatting checks, the module-growth ratchet, the full
-test suite with coverage floors, and a high-severity dependency audit. The audit
-requires npm registry access; a network failure fails the quality command rather
-than being treated as a pass.
+changes. It runs linting, formatting checks, the module-growth ratchet, the
+phase-aware AI harness compliance check, the full test suite with coverage
+floors, and a high-severity dependency audit. The audit requires npm registry
+access; a network failure fails the quality command rather than being treated
+as a pass.
 
 Use `npm test` as the faster behavior-test loop while developing. Run
 `npm run format` explicitly to apply formatting; the quality command is

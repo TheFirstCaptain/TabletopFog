@@ -25,13 +25,15 @@ Tracked as [F-009](./features/F-009.md). This work covers tests, style checks,
 dependency auditing, coverage policy, browser workflow validation, and
 continuous integration without changing product behavior.
 
-Planned workstreams:
+Quality-gate workstreams:
 
-- [F-009A](./features/F-009A.md): local quality command and baseline
+- Complete: [F-009A](./features/F-009A.md), local quality command and baseline
   enforcement.
-- [F-009B](./features/F-009B.md): AI harness compliance and review evidence.
-- [F-009C](./features/F-009C.md): continuous integration enforcement.
-- [F-009D](./features/F-009D.md): browser workflow coverage.
+- Complete: [F-009B](./features/F-009B.md), AI harness compliance and review
+  evidence.
+- Proposed: [F-009C](./features/F-009C.md), continuous integration
+  enforcement.
+- Proposed: [F-009D](./features/F-009D.md), browser workflow coverage.
 
 Engineering prerequisites and supporting work are tracked in
 `docs/engineering/`, including E-005 module baselines and E-006 test-fixture and

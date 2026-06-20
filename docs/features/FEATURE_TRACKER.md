@@ -17,6 +17,9 @@ Use this tracker to preserve feature state across sessions and agent handoffs. K
 
 ## Tracking Conventions
 
+- Keep Status consistent with Phase: `Proposed` maps to `Proposed`, `Done` maps
+  to `Complete`, `Blocked` and `Deferred` use their matching status, and every
+  other active phase maps to `Active`.
 - Use an umbrella feature for a milestone with multiple related workstreams.
 - Use child features, such as `F-002A`, only when the work can be delegated, validated, or completed independently.
 - Use child features, such as `F-004A`, for follow-up tweaks that remain inside a completed parent feature's product capability and are distinct enough to track, validate, or review separately.
@@ -44,6 +47,6 @@ Use this tracker to preserve feature state across sessions and agent handoffs. K
 | F-008 | Table Quality-of-Life Improvements | Proposed | Proposed | [F-008.md](./F-008.md) | 2026-06-19 | Better fog brush, undo, reset, fullscreen player view, player URL sharing, and related table polish. |
 | F-009 | Engineering Quality Gates | Active | Clarifying | [F-009.md](./F-009.md) | 2026-06-20 | Umbrella for local checks, AI harness compliance, CI enforcement, and browser workflow coverage. |
 | F-009A | Local Quality Command and Baseline Enforcement | Complete | Done | [F-009A.md](./F-009A.md) | 2026-06-20 | Authoritative local quality command, module ratchet, coverage floors, lint/format checks, and audit gate completed. |
-| F-009B | AI Harness Compliance and Review Evidence | Proposed | Proposed | [F-009B.md](./F-009B.md) | 2026-06-20 | Make required SDLC stages, findings, dispositions, checklists, and final-diff review verifiable. |
+| F-009B | AI Harness Compliance and Review Evidence | Complete | Done | [F-009B.md](./F-009B.md) | 2026-06-20 | Phase-aware evidence, review findings, closed legacy baseline, and local quality enforcement completed and clean-install validated. |
 | F-009C | Continuous Integration Enforcement | Proposed | Proposed | [F-009C.md](./F-009C.md) | 2026-06-20 | Run the authoritative local quality command automatically on proposed changes. |
 | F-009D | Browser Workflow Coverage | Proposed | Proposed | [F-009D.md](./F-009D.md) | 2026-06-20 | Characterize current GM/player browser workflows before E-003 and display features. |

@@ -132,8 +132,9 @@ The quality command runs these read-only stages in order:
 1. `npm run lint`
 2. `npm run format:check`
 3. `npm run modules:check`
-4. `npm run test:coverage`
-5. `npm run audit:high`
+4. `npm run harness:check`
+5. `npm run test:coverage`
+6. `npm run audit:high`
 
 Use `npm run format` to apply Prettier to maintained JavaScript, JSON, CSS,
 HTML, and YAML files. Markdown is intentionally excluded for now.
@@ -152,6 +153,11 @@ The module baseline in `quality/module-baseline.json` inventories production
 JavaScript under `server/`, `public/`, and `scripts/`. Any new, removed, grown,
 or reduced module requires an intentional baseline update. Growth also requires
 an architecture disposition; reductions lower the ratchet.
+
+The harness check validates phase-aware feature evidence, reviewer
+independence, review scope, findings dispositions, tracker consistency, and the
+closed legacy baseline. Its exact Markdown contract is documented in
+`docs/features/FEATURE_TEMPLATE.md`.
 
 The dev server binds to `0.0.0.0` on port `3000` by default so same-Wi-Fi devices can reach it by LAN IP.
 

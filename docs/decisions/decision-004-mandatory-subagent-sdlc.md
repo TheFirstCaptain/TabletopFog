@@ -20,9 +20,21 @@ Required stages:
 6. Coding with Red/Green TDD where practical.
 7. Code review.
 8. Docs and tracker review.
-9. Main-agent integration and final validation.
+9. Final-diff review after implementation and test changes are complete.
+10. Main-agent integration and final validation.
 
-The main agent must record clarification answers and stage outputs in the relevant `docs/features/F-NNN.md` file.
+The main agent must record clarification answers and stage outputs in the
+relevant `docs/features/F-NNN.md` file using Harness Version 1. Required
+evidence accumulates by tracker phase; future-stage placeholders are not
+required. Architecture, test, UX, code, docs, and final-diff review must be
+independent of the main agent. A human may substitute for a subagent, but the
+main agent cannot waive independent review.
+
+Critical and high findings block completion until fixed. Medium findings must
+be fixed or explicitly accepted/deferred by `human:user` with an existing bug,
+engineering item, or decision, a non-expired review date, and residual risk.
+Low findings require a disposition. The exact evidence contract and phase rules
+are defined in `docs/ai-harness.md` and enforced by `npm run harness:check`.
 
 ## Consequences
 
@@ -31,14 +43,14 @@ The main agent must record clarification answers and stage outputs in the releva
 - Small features may take more process than a direct edit, but this is intentional for preserving scope and quality.
 - The main agent must not blindly apply subagent output; it must reconcile conflicts with project constraints.
 
-## Planned Enforcement Hardening
+## Mechanical Enforcement
 
-[F-009B](../features/F-009B.md) is planned to make this decision mechanically
-verifiable. It will define structured evidence for each stage, require material
-findings and their dispositions to remain visible, add stage-specific review
-checklists, and require final-diff review. Until F-009B is implemented, the
-current prose workflow remains authoritative and no new automated enforcement is
-implied.
+[F-009B](../features/F-009B.md) activates a versioned Markdown contract, a
+closed legacy baseline, phase-aware evidence checks, review-scope checks, and
+governed findings. `npm run quality` runs the harness check before coverage.
+Features F-001 through F-004, F-009, and F-009A are the only grandfathered
+records; every other feature must adopt Harness Version 1 before leaving
+`Proposed`.
 
 ## Alternatives Considered
 

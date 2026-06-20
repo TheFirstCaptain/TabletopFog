@@ -6,6 +6,7 @@ const qualityStages = [
   { label: "Lint", script: "lint" },
   { fix: "npm run format", label: "Format check", script: "format:check" },
   { label: "Module baseline", script: "modules:check" },
+  { label: "Harness compliance", script: "harness:check" },
   { label: "Tests and coverage", script: "test:coverage" },
   { label: "High-severity dependency audit", script: "audit:high" }
 ];

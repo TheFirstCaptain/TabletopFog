@@ -6,7 +6,13 @@ completing engineering maintenance.
 ## Required for Every Feature
 
 - Clarification answers are recorded in the feature document.
-- Mandatory SDLC agent outputs are recorded or summarized in the feature document.
+- Harness Version 1 evidence required for a governed feature's phase passes
+  `npm run harness:check`; grandfathered records pass the closed legacy
+  baseline check.
+- Mandatory SDLC outputs include independent architecture, test, UX, code,
+  docs/tracker, and final-diff reviews plus main-agent final validation.
+- Every material finding has its governed severity, recommendation,
+  disposition, evidence, and residual risk; no blocking finding remains.
 - Acceptance notes are satisfied or explicitly revised.
 - Non-goals were checked for scope creep.
 - Relevant automated tests pass, if tests exist.

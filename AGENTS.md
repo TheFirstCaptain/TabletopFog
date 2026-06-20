@@ -38,6 +38,8 @@ Use `rg --files` to confirm files. Use `git status --short` before and after cha
 Use `npm run cert -- --ip=<LAN-IP>` whenever the host machine changes Wi-Fi networks or LAN IP addresses.
 Use `npm run quality` as the authoritative completion check for code and tooling
 changes. It requires localhost test binding and npm registry access.
+Use `npm run harness:check` to diagnose feature-evidence, reviewer,
+findings-disposition, tracker, or legacy-baseline violations directly.
 
 ## Coding Style & Naming Conventions
 
@@ -84,5 +86,10 @@ in `docs/engineering/`; do not present them as product features. Reclassify work
 when investigation shows it belongs in a different tracker.
 
 Feature work must follow the mandatory subagent SDLC in `docs/decisions/decision-004-mandatory-subagent-sdlc.md`. Keep changes small, prefer simple browser-first implementation, and preserve the core constraint: this is a local fog-of-war display tool, not a full VTT.
+
+Before moving a non-legacy feature out of `Proposed`, adopt Harness Version 1
+from `docs/features/FEATURE_TEMPLATE.md`. Record phase-required evidence and all
+material findings; the main agent cannot self-approve required independent
+reviews or accepted/deferred risk.
 
 When feature work changes commands, setup, validation steps, user-visible behavior, project status, or contributor workflow, sweep `README.md` during the docs and tracker review. Update it when it no longer matches the current workflow, or explicitly note that no README change was needed.

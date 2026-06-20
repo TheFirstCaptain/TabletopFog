@@ -46,9 +46,41 @@ All of these stages are mandatory for feature work:
 - Coding with Red/Green TDD where practical.
 - Code review.
 - Docs and tracker review.
+- Final-diff review after implementation and test changes are complete.
 - Main-agent integration and final validation.
 
 The main agent owns the final result. Subagent findings must be reconciled against the vision, architecture, roadmap, acceptance tests, decisions, bugs, and feature docs before changes are accepted.
+
+## Harness Version 1 Evidence
+
+Every non-legacy feature must use the exact structured sections in
+`docs/features/FEATURE_TEMPLATE.md` before leaving `Proposed`. Evidence is
+cumulative by tracker phase:
+
+- `Clarifying`: clarification.
+- `Planned` or `Approved`: clarification, architecture, implementation, test,
+  and UX reviews plus the review-scope checklist.
+- `Building` or `Validating`: the planning evidence plus Coding and TDD.
+- `Reviewing`: all prior evidence plus code, docs/tracker, and final-diff review.
+- `Done`: all stages plus final validation and governed findings.
+- `Blocked` or `Deferred`: clarification plus explicit blocker or deferral
+  evidence.
+
+Required independent reviews cannot use `/root` as the reviewer. Use a
+subagent identity such as `/root/code_review` or a human identity such as
+`human:user`. If independent review is unavailable, move the feature to
+`Blocked`; the main agent cannot self-waive the requirement.
+
+Material findings use the exact table in the feature template. Critical and
+high findings must be fixed. Medium findings must be fixed or user-approved as
+accepted/deferred with an existing B-, E-, or decision follow-up, a non-expired
+ISO review date, and residual risk. Low findings require a disposition. Use the
+exact sentence `No material findings.` only when none exist.
+
+Run `npm run harness:check` for a direct compliance check. The authoritative
+`npm run quality` command runs it automatically. The only legacy exceptions are
+the fixed records in `quality/harness-baseline.json`; adding another legacy ID
+is rejected by policy code.
 
 ## Classify Follow-Up Work
 

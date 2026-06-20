@@ -5,7 +5,7 @@ const test = require("node:test");
 
 const { qualityStages, runQuality } = require("../scripts/run-quality");
 
-const expectedScripts = ["lint", "format:check", "modules:check", "test:coverage", "audit:high"];
+const expectedScripts = ["lint", "format:check", "modules:check", "harness:check", "test:coverage", "audit:high"];
 
 test("quality runner executes every read-only stage in order", () => {
   const calls = [];
