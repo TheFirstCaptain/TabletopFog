@@ -16,6 +16,10 @@ Recommended initial shape:
 
 Campaign and map library work is part of V1 and should use local, inspectable folders and files rather than cloud storage.
 
+Campaign reads should not rewrite local metadata. Normalization may shape the
+in-memory representation, while repair or migration writes occur only during an
+explicit mutation and preserve unrecognized metadata for forward compatibility.
+
 ## Runtime Model
 
 The GM starts the server locally, then opens a GM URL such as:

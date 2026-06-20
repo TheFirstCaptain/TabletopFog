@@ -195,7 +195,9 @@ Expected result:
 Prerequisites:
 
 - Local server is running on the GM host machine.
-- At least two representative map image files are available.
+- At least two representative PNG, JPEG, GIF, or WebP map image files are
+  available.
+- An invalid or unsupported file is available for rejection testing.
 
 Steps:
 
@@ -210,13 +212,16 @@ Steps:
 9. Reorder the maps manually.
 10. Select one map as the active map.
 11. Open the player view.
-12. Restart or reload the app and reopen the campaign.
+12. Attempt to add the invalid or unsupported file.
+13. Restart or reload the app and reopen the campaign.
 
 Expected result:
 
 - The campaign exists as a local folder.
 - The campaign metadata records map names, file paths, order, active map, and empty fog state.
 - Stored map filenames are filesystem-safe and collision-safe.
+- Invalid, unsupported, or mismatched map image data is rejected without adding
+  a map file or metadata entry.
 - The player view displays the active map.
 - The player view remains read-only.
 - No fog, initiative, notes, token, dice, or automation controls are present.

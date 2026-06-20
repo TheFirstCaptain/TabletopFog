@@ -4,6 +4,13 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 
+const { validateMapImage } = require("./map-image");
+
+const CAMPAIGN_EXTRA_FIELDS = Symbol("campaignExtraFields");
+const MAP_EXTRA_FIELDS = Symbol("mapExtraFields");
+const campaignFields = new Set(["version", "name", "activeMapId", "maps"]);
+const mapFields = new Set(["id", "name", "originalFileName", "file", "order", "fog"]);
+
 function getDefaultDataRoot(env = process.env) {
   return env.TABLETOPFOG_DATA_DIR || path.join(os.homedir(), "TabletopFog", "tabletopfog-data");
 }
@@ -56,6 +63,10 @@ function displayNameFromFileName(fileName) {
   return String(name || "").replace(/^[ ._-]+|[ ._-]+$/g, "") || normalizePathSegment(fileName);
 }
 
+function collectExtraFields(value, knownFields) {
+  return Object.fromEntries(Object.entries(value).filter(([key]) => !knownFields.has(key)));
+}
+
 function createCampaignStorage(options = {}) {
   const dataRoot = path.resolve(options.dataRoot || getDefaultDataRoot(options.env));
 
@@ -95,7 +106,7 @@ function createCampaignStorage(options = {}) {
     fs.renameSync(tempPath, filePath);
   }
 
-  function normalizeCampaign(campaignId, rawCampaign, options = {}) {
+  function normalizeCampaign(campaignId, rawCampaign) {
     const sourceMaps = Array.isArray(rawCampaign.maps) ? rawCampaign.maps : [];
     const decorated = sourceMaps.map((map, index) => ({
       map,
@@ -111,14 +122,22 @@ function createCampaignStorage(options = {}) {
       return left.index - right.index;
     });
 
-    const maps = decorated.map(({ map }, index) => ({
-      id: String(map.id || normalizePathSegment(map.name || `map-${index + 1}`)),
-      name: String(map.name || map.originalFileName || `Map ${index + 1}`),
-      originalFileName: map.originalFileName ? String(map.originalFileName) : undefined,
-      file: String(map.file || ""),
-      order: index + 1,
-      fog: Array.isArray(map.fog) ? map.fog : []
-    }));
+    const maps = decorated.map(({ map }, index) => {
+      const normalizedMap = {
+        id: String(map.id || normalizePathSegment(map.name || `map-${index + 1}`)),
+        name: String(map.name || map.originalFileName || `Map ${index + 1}`),
+        originalFileName: map.originalFileName ? String(map.originalFileName) : undefined,
+        file: String(map.file || ""),
+        order: index + 1,
+        fog: Array.isArray(map.fog) ? map.fog : []
+      };
+
+      Object.defineProperty(normalizedMap, MAP_EXTRA_FIELDS, {
+        enumerable: true,
+        value: collectExtraFields(map, mapFields)
+      });
+      return normalizedMap;
+    });
 
     const campaign = {
       version: Number.isInteger(rawCampaign.version) ? rawCampaign.version : 1,
@@ -128,12 +147,13 @@ function createCampaignStorage(options = {}) {
       maps
     };
 
+    Object.defineProperty(campaign, CAMPAIGN_EXTRA_FIELDS, {
+      enumerable: true,
+      value: collectExtraFields(rawCampaign, campaignFields)
+    });
+
     if (campaign.activeMapId && !campaign.maps.some((map) => map.id === campaign.activeMapId)) {
       campaign.activeMapId = null;
-    }
-
-    if (options.save) {
-      writeJsonAtomic(campaignJsonPath(campaignId), serializeCampaign(campaign));
     }
 
     return campaign;
@@ -141,10 +161,12 @@ function createCampaignStorage(options = {}) {
 
   function serializeCampaign(campaign) {
     return {
+      ...(campaign[CAMPAIGN_EXTRA_FIELDS] || {}),
       version: campaign.version || 1,
       name: campaign.name,
       activeMapId: campaign.activeMapId || null,
       maps: campaign.maps.map((map) => ({
+        ...(map[MAP_EXTRA_FIELDS] || {}),
         id: map.id,
         name: map.name,
         ...(map.originalFileName ? { originalFileName: map.originalFileName } : {}),
@@ -155,10 +177,10 @@ function createCampaignStorage(options = {}) {
     };
   }
 
-  function readCampaign(campaignId, options = {}) {
+  function readCampaign(campaignId) {
     assertCampaignExists(campaignId);
     const raw = JSON.parse(fs.readFileSync(campaignJsonPath(campaignId), "utf8"));
-    return normalizeCampaign(campaignId, raw, options);
+    return normalizeCampaign(campaignId, raw);
   }
 
   function saveCampaign(campaign) {
@@ -217,7 +239,7 @@ function createCampaignStorage(options = {}) {
     dataRoot,
     addAssetUrls,
     addMap(campaignId, mapInput) {
-      const campaign = readCampaign(campaignId, { save: true });
+      const campaign = readCampaign(campaignId);
       const originalFileName = String(mapInput.originalFileName || "").trim();
       const safeFileName = normalizeFileName(originalFileName);
 
@@ -227,9 +249,7 @@ function createCampaignStorage(options = {}) {
 
       const content = Buffer.isBuffer(mapInput.content) ? mapInput.content : Buffer.from(mapInput.content || "");
 
-      if (content.length === 0) {
-        throw createUserError(400, "Map file is empty.");
-      }
+      validateMapImage(content, mapInput.contentType, safeFileName);
 
       fs.mkdirSync(mapsDir(campaignId), { recursive: true });
       const storedFileName = uniqueName(safeFileName, existingNames(mapsDir(campaignId)));
@@ -289,7 +309,7 @@ function createCampaignStorage(options = {}) {
       }
     },
     getCampaign(campaignId) {
-      return readCampaign(campaignId, { save: true });
+      return readCampaign(campaignId);
     },
     getMapAsset(campaignId, mapId) {
       const campaign = readCampaign(campaignId);
@@ -329,7 +349,7 @@ function createCampaignStorage(options = {}) {
         .filter((entry) => entry.isDirectory())
         .map((entry) => {
           try {
-            const campaign = readCampaign(entry.name, { save: true });
+            const campaign = readCampaign(entry.name);
             const activeMap = campaign.maps.find((map) => map.id === campaign.activeMapId);
 
             return {
@@ -346,7 +366,7 @@ function createCampaignStorage(options = {}) {
         .sort((left, right) => left.name.localeCompare(right.name));
     },
     renameMap(campaignId, mapId, name) {
-      const campaign = readCampaign(campaignId, { save: true });
+      const campaign = readCampaign(campaignId);
       const map = findMap(campaign, mapId);
       const displayName = String(name || "").trim();
 
@@ -358,7 +378,7 @@ function createCampaignStorage(options = {}) {
       return findMap(saveCampaign(campaign), mapId);
     },
     reorderMaps(campaignId, mapIds) {
-      const campaign = readCampaign(campaignId, { save: true });
+      const campaign = readCampaign(campaignId);
 
       if (!Array.isArray(mapIds) || mapIds.length !== campaign.maps.length) {
         throw createUserError(400, "Map order must include every map.");
@@ -383,7 +403,7 @@ function createCampaignStorage(options = {}) {
       return saveCampaign(campaign);
     },
     setActiveMap(campaignId, mapId) {
-      const campaign = readCampaign(campaignId, { save: true });
+      const campaign = readCampaign(campaignId);
       findMap(campaign, mapId);
       campaign.activeMapId = mapId;
       return saveCampaign(campaign);

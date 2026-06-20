@@ -18,6 +18,9 @@ Completed local-connectivity work proved:
 
 Current F-004 work adds local campaign and map library support. Campaigns are long-lived local folders, maps belong to campaigns, and maps start visible by default. Fog is added later to hide areas and then removed to reveal them during play.
 
+Map upload accepts PNG, JPEG, GIF, and WebP files up to 100 MB and rejects data
+whose image signature, filename extension, and content type do not agree.
+
 By default, campaign data is stored outside the repo at:
 
 ```text

@@ -84,6 +84,10 @@ TABLETOPFOG_DATA_DIR=/private/tmp/tabletopfog-data npm run local
 
 Campaign folders contain `campaign.json` and a `maps/` folder with copied map assets. These files are intended to be inspectable outside the app.
 
+Map upload supports PNG, JPEG, GIF, and WebP files up to 100 MB. The server
+checks image signatures, filename extensions, and content types before writing a
+map file or changing campaign metadata.
+
 ## Validation Commands
 
 Install dependencies:

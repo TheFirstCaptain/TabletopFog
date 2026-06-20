@@ -8,6 +8,7 @@ const { Server } = require("socket.io");
 
 const { createCampaignStorage } = require("./campaign-storage");
 const { loadHttpsCredentials } = require("./certs");
+const { MAX_MAP_FILE_BYTES } = require("./map-image");
 const { createStateStore } = require("./state");
 
 const publicDir = path.resolve(__dirname, "..", "public");
@@ -68,7 +69,7 @@ function createApp(options = {}) {
   app.post(
     "/api/campaigns/:campaignId/maps",
     requireGm,
-    express.raw({ limit: "100mb", type: "*/*" }),
+    express.raw({ limit: MAX_MAP_FILE_BYTES, type: "*/*" }),
     (request, response, next) => {
       try {
         const map = campaignStorage.addMap(request.params.campaignId, {

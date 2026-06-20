@@ -10,20 +10,23 @@ const test = require("node:test");
 
 const { io: createClient } = require("socket.io-client");
 const { createTabletopFogServer, getRoleFromReferer } = require("../server");
+const { PNG_BYTES } = require("../test-support/fixtures");
 
 function getHttps(url, options = {}) {
   return new Promise((resolve, reject) => {
     const request = https.get(url, { headers: options.headers, rejectUnauthorized: false }, (response) => {
-      let body = "";
+      const chunks = [];
 
-      response.setEncoding("utf8");
       response.on("data", (chunk) => {
-        body += chunk;
+        chunks.push(chunk);
       });
       response.on("end", () => {
+        const rawBody = Buffer.concat(chunks);
+
         resolve({
-            body,
-            statusCode: response.statusCode
+          body: rawBody.toString("utf8"),
+          rawBody,
+          statusCode: response.statusCode
         });
       });
     });
@@ -270,18 +273,18 @@ test("manages maps and broadcasts active map state", async () => {
       method: "POST"
     });
     const first = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
-      body: Buffer.from("first-map"),
+      body: PNG_BYTES,
       headers: gmHeaders(port, {
-        "content-length": "9",
+        "content-length": String(PNG_BYTES.length),
         "content-type": "image/png",
         "x-file-name": "forest.png"
       }),
       method: "POST"
     });
     const second = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
-      body: Buffer.from("second-map"),
+      body: PNG_BYTES,
       headers: gmHeaders(port, {
-        "content-length": "10",
+        "content-length": String(PNG_BYTES.length),
         "content-type": "image/png",
         "x-file-name": "forest.png"
       }),
@@ -330,13 +333,48 @@ test("manages maps and broadcasts active map state", async () => {
     assert.equal(playerState.campaign, undefined);
     assert.equal(playerState.activeMap.assetUrl, "/api/player/active-map/asset");
     assert.equal(gmAsset.statusCode, 200);
-    assert.equal(gmAsset.body, "first-map");
+    assert.deepEqual(gmAsset.rawBody, PNG_BYTES);
     assert.equal(inactivePlayerAsset.statusCode, 403);
     assert.equal(playerAsset.statusCode, 200);
-    assert.equal(playerAsset.body, "first-map");
+    assert.deepEqual(playerAsset.rawBody, PNG_BYTES);
     assert.equal(stateStore.getState().campaign.activeMapId, first.json.map.id);
   } finally {
     player.close();
+    await close(server, io);
+  }
+});
+
+test("rejects invalid map uploads without persisting files or metadata", async () => {
+  const dataRoot = createTempRoot();
+  const { server, io } = createTabletopFogServer({
+    credentials: createTestCertificate(),
+    dataRoot
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+
+  try {
+    await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: "The Long Walk" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const rejected = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: Buffer.from("not-an-image"),
+      headers: gmHeaders(port, {
+        "content-type": "image/png",
+        "x-file-name": "forest.png"
+      }),
+      method: "POST"
+    });
+    const campaignPath = path.join(dataRoot, "The Long Walk", "campaign.json");
+    const saved = JSON.parse(fs.readFileSync(campaignPath, "utf8"));
+
+    assert.equal(rejected.statusCode, 400);
+    assert.match(rejected.json.error, /supported map image/);
+    assert.deepEqual(saved.maps, []);
+    assert.deepEqual(fs.readdirSync(path.join(dataRoot, "The Long Walk", "maps")), []);
+  } finally {
     await close(server, io);
   }
 });
