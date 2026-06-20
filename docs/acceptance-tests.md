@@ -232,6 +232,8 @@ Prerequisites:
 - At least two representative PNG, JPEG, GIF, or WebP map image files are
   available.
 - An invalid or unsupported file is available for rejection testing.
+- A second campaign folder with malformed `campaign.json` is available for
+  non-destructive diagnostic testing.
 
 Steps:
 
@@ -247,7 +249,11 @@ Steps:
 10. Select one map as the active map.
 11. Open the player view.
 12. Attempt to add the invalid or unsupported file.
-13. Restart or reload the app and reopen the campaign.
+13. Reload the campaign library with the malformed campaign folder present.
+14. Confirm the valid campaign remains listed and the malformed folder produces
+    recovery guidance.
+15. Confirm the malformed `campaign.json` was not modified.
+16. Restart or reload the app and reopen the valid campaign.
 
 Expected result:
 
@@ -256,6 +262,8 @@ Expected result:
 - Stored map filenames are filesystem-safe and collision-safe.
 - Invalid, unsupported, or mismatched map image data is rejected without adding
   a map file or metadata entry.
+- Invalid campaign metadata does not hide valid campaigns, produces actionable
+  GM-visible recovery guidance, and is not rewritten automatically.
 - The player view displays the active map.
 - The player view remains read-only.
 - No fog, initiative, notes, token, dice, or automation controls are present.

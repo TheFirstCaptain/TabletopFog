@@ -3,7 +3,7 @@
   "roots": ["server", "public", "scripts"],
   "modules": {
     "public/gm.js": {
-      "baselineLines": 296,
+      "baselineLines": 307,
       "responsibility": "Coordinate the GM campaign library, API calls, rendering, and browser events.",
       "temporaryException": {
         "engineeringId": "E-003",
@@ -47,7 +47,7 @@
       "responsibility": "Prepare certificates, resolve LAN addresses, and start the local server workflow."
     },
     "server/campaign-storage.js": {
-      "baselineLines": 429,
+      "baselineLines": 441,
       "responsibility": "Manage campaign metadata, map ordering, filesystem persistence, and asset containment.",
       "temporaryException": {
         "engineeringId": "E-002",
@@ -59,7 +59,7 @@
       "responsibility": "Resolve and load HTTPS certificate credentials."
     },
     "server/index.js": {
-      "baselineLines": 280,
+      "baselineLines": 283,
       "responsibility": "Compose HTTP routes, role projection, Socket.IO synchronization, and HTTPS startup.",
       "temporaryException": {
         "engineeringId": "E-004",

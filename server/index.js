@@ -35,8 +35,11 @@ function createApp(options = {}) {
 
   app.get("/api/campaigns", requireGm, (_request, response, next) => {
     try {
+      const library = campaignStorage.getCampaignLibrary
+        ? campaignStorage.getCampaignLibrary()
+        : { campaigns: campaignStorage.listCampaigns(), diagnostics: [] };
       response.json({
-        campaigns: campaignStorage.listCampaigns(),
+        ...library,
         dataRoot: campaignStorage.dataRoot
       });
     } catch (error) {

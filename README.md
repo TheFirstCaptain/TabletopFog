@@ -20,6 +20,9 @@ Current F-004 work adds local campaign and map library support. Campaigns are lo
 
 Map upload accepts PNG, JPEG, GIF, and WebP files up to 100 MB and rejects data
 whose image signature, filename extension, and content type do not agree.
+The campaign library keeps valid campaigns available when another campaign has
+invalid metadata and shows non-destructive recovery guidance for the skipped
+folder.
 
 By default, campaign data is stored outside the repo at:
 

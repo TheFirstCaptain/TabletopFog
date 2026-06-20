@@ -40,4 +40,4 @@ Use this tracker for known defects, regressions, build failures, browser/device 
 | B-001 | WebSocket Dependency Permits Memory-Exhaustion DoS | Resolved | P2 | [B-001.md](./B-001.md) | 2026-06-20 | Patched transitive dependencies; `npm audit` reports zero vulnerabilities. |
 | B-002 | Campaign Reads Can Destructively Normalize Metadata | Resolved | P2 | [B-002.md](./B-002.md) | 2026-06-20 | Reads are non-mutating and later writes preserve unrecognized metadata. |
 | B-003 | Map Upload Accepts Invalid Image Data | Resolved | P2 | [B-003.md](./B-003.md) | 2026-06-20 | Supported image signatures and matching upload metadata are validated before persistence. |
-| B-004 | Invalid Campaign Metadata Is Silently Hidden | Open | P2 | [B-004.md](./B-004.md) | 2026-06-20 | Invalid campaigns are omitted without a GM-visible diagnostic. |
+| B-004 | Invalid Campaign Metadata Is Silently Hidden | Resolved | P2 | [B-004.md](./B-004.md) | 2026-06-20 | Valid campaigns remain visible and malformed folders produce safe, non-destructive GM recovery diagnostics. |

@@ -5,6 +5,7 @@
   const campaignForm = document.querySelector("#campaign-form");
   const campaignName = document.querySelector("#campaign-name");
   const libraryMessage = document.querySelector("#library-message");
+  const libraryDiagnostics = document.querySelector("#library-diagnostics");
   const campaignList = document.querySelector("#campaign-list");
   const campaignPanel = document.querySelector("#campaign-panel");
   const campaignHeading = document.querySelector("#campaign-heading");
@@ -17,6 +18,7 @@
   const activeMapImage = document.querySelector("#active-map-image");
 
   let campaigns = [];
+  let diagnostics = [];
   let currentCampaign = null;
 
   function setStatus(message, state) {
@@ -39,6 +41,7 @@
     try {
       const payload = await api("/api/campaigns");
       campaigns = payload.campaigns;
+      diagnostics = payload.diagnostics || [];
       dataRoot.textContent = payload.dataRoot;
       renderCampaigns();
     } catch (error) {
@@ -48,9 +51,17 @@
 
   function renderCampaigns() {
     campaignList.replaceChildren();
+    libraryDiagnostics.replaceChildren();
+
+    diagnostics.forEach((diagnostic) => {
+      const item = document.createElement("p");
+      item.className = "library-diagnostic";
+      item.textContent = `Skipped campaign "${diagnostic.campaignId}": ${diagnostic.message}`;
+      libraryDiagnostics.append(item);
+    });
 
     if (campaigns.length === 0) {
-      libraryMessage.textContent = "No campaigns yet.";
+      libraryMessage.textContent = diagnostics.length === 0 ? "No campaigns yet." : "No valid campaigns available.";
       return;
     }
 

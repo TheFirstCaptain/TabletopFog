@@ -144,10 +144,13 @@ test("serves GM and player pages over HTTPS", async (t) => {
   try {
     const gmResponse = await getHttps(`https://127.0.0.1:${port}/gm`);
     const playerResponse = await getHttps(`https://127.0.0.1:${port}/player`);
+    const gmScript = await getHttps(`https://127.0.0.1:${port}/gm.js`);
 
     assert.equal(gmResponse.statusCode, 200);
     assert.equal(playerResponse.statusCode, 200);
     assert.match(gmResponse.body, /<h1>Campaign Library<\/h1>/);
+    assert.match(gmResponse.body, /id="library-diagnostics"/);
+    assert.match(gmScript.body, /payload\.diagnostics/);
     assert.match(playerResponse.body, /<h1>Player Display<\/h1>/);
   } finally {
     await close(server, io);
@@ -182,6 +185,47 @@ test("creates campaigns through GM API and lists them", async (t) => {
         mapCount: 0
       }
     ]);
+  } finally {
+    await close(server, io);
+  }
+});
+
+test("campaign API reports invalid folders while preserving valid campaigns", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const invalidDirectory = path.join(dataRoot, "Broken Campaign");
+  const invalidMetadataPath = path.join(invalidDirectory, "campaign.json");
+  const invalidMetadata = "{not-json";
+  fs.mkdirSync(invalidDirectory);
+  fs.writeFileSync(invalidMetadataPath, invalidMetadata);
+  const { server, io } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+
+  try {
+    await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: "The Long Walk" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const response = await requestHttps(`${url}/api/campaigns`, {
+      headers: gmHeaders(port)
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(
+      response.json.campaigns.map((campaign) => campaign.id),
+      ["The Long Walk"]
+    );
+    assert.deepEqual(response.json.diagnostics, [
+      {
+        campaignId: "Broken Campaign",
+        message: "Campaign metadata could not be read. Fix or restore campaign.json, then reload the library."
+      }
+    ]);
+    assert.equal(fs.readFileSync(invalidMetadataPath, "utf8"), invalidMetadata);
   } finally {
     await close(server, io);
   }

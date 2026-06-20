@@ -69,6 +69,35 @@ test("lists only folders with valid campaign metadata", (t) => {
   ]);
 });
 
+test("campaign library reports invalid folders without modifying them", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  storage.createCampaign("The Long Walk");
+  const invalidDirectory = path.join(root, "Broken Campaign");
+  const invalidMetadataPath = path.join(invalidDirectory, "campaign.json");
+  const invalidMetadata = "{not-json";
+  fs.mkdirSync(invalidDirectory);
+  fs.writeFileSync(invalidMetadataPath, invalidMetadata);
+
+  assert.deepEqual(storage.getCampaignLibrary(), {
+    campaigns: [
+      {
+        id: "The Long Walk",
+        name: "The Long Walk",
+        activeMapName: null,
+        mapCount: 0
+      }
+    ],
+    diagnostics: [
+      {
+        campaignId: "Broken Campaign",
+        message: "Campaign metadata could not be read. Fix or restore campaign.json, then reload the library."
+      }
+    ]
+  });
+  assert.equal(fs.readFileSync(invalidMetadataPath, "utf8"), invalidMetadata);
+});
+
 test("adds maps with original filenames, safe collisions, and default names", (t) => {
   const root = createTempRoot(t);
   const storage = createCampaignStorage({ dataRoot: root });

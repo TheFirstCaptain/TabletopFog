@@ -235,6 +235,38 @@ function createCampaignStorage(options = {}) {
     return map;
   }
 
+  function getCampaignLibrary() {
+    ensureDataRoot();
+    const campaigns = [];
+    const diagnostics = [];
+
+    fs.readdirSync(dataRoot, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .forEach((entry) => {
+        try {
+          const campaign = readCampaign(entry.name);
+          const activeMap = campaign.maps.find((map) => map.id === campaign.activeMapId);
+
+          campaigns.push({
+            id: campaign.id,
+            name: campaign.name,
+            activeMapName: activeMap ? activeMap.name : null,
+            mapCount: campaign.maps.length
+          });
+        } catch (_error) {
+          diagnostics.push({
+            campaignId: entry.name,
+            message: "Campaign metadata could not be read. Fix or restore campaign.json, then reload the library."
+          });
+        }
+      });
+
+    campaigns.sort((left, right) => left.name.localeCompare(right.name));
+    diagnostics.sort((left, right) => left.campaignId.localeCompare(right.campaignId));
+
+    return { campaigns, diagnostics };
+  }
+
   return {
     dataRoot,
     addAssetUrls,
@@ -314,6 +346,7 @@ function createCampaignStorage(options = {}) {
     getCampaign(campaignId) {
       return readCampaign(campaignId);
     },
+    getCampaignLibrary,
     getMapAsset(campaignId, mapId) {
       const campaign = readCampaign(campaignId);
       const map = findMap(campaign, mapId);
@@ -345,28 +378,7 @@ function createCampaignStorage(options = {}) {
       };
     },
     listCampaigns() {
-      ensureDataRoot();
-
-      return fs
-        .readdirSync(dataRoot, { withFileTypes: true })
-        .filter((entry) => entry.isDirectory())
-        .map((entry) => {
-          try {
-            const campaign = readCampaign(entry.name);
-            const activeMap = campaign.maps.find((map) => map.id === campaign.activeMapId);
-
-            return {
-              id: campaign.id,
-              name: campaign.name,
-              activeMapName: activeMap ? activeMap.name : null,
-              mapCount: campaign.maps.length
-            };
-          } catch (_error) {
-            return null;
-          }
-        })
-        .filter(Boolean)
-        .sort((left, right) => left.name.localeCompare(right.name));
+      return getCampaignLibrary().campaigns;
     },
     renameMap(campaignId, mapId, name) {
       const campaign = readCampaign(campaignId);
