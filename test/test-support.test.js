@@ -5,7 +5,17 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 
-const { createTemporaryDirectory } = require("../test-support/temp-directory");
+const { createTemporaryDirectory, createTemporaryDirectoryResource } = require("../test-support/temp-directory");
+
+test("temporary-directory resource exposes explicit idempotent cleanup", () => {
+  const resource = createTemporaryDirectoryResource("tabletopfog-resource-test-");
+
+  fs.writeFileSync(path.join(resource.directory, "artifact.txt"), "temporary");
+  resource.cleanup();
+
+  assert.equal(fs.existsSync(resource.directory), false);
+  assert.doesNotThrow(resource.cleanup);
+});
 
 test("temporary-directory helper registers recursive idempotent cleanup", () => {
   const cleanups = [];

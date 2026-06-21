@@ -30,7 +30,8 @@ Steps:
 1. Open or update a pull request with a change that passes `npm run quality`
    locally.
 2. Confirm the `Quality / Node 22.8.0` and `Quality / Node 24` jobs both run.
-3. Confirm each job installs with `npm ci` and runs `npm run quality`.
+3. Confirm each job installs with `npm ci`, provisions Chromium, and runs
+   `npm run quality`.
 4. Push a controlled change that makes one quality stage fail.
 5. Confirm both matrix jobs complete and the workflow is unsuccessful.
 6. Confirm the failed stage prints the corresponding local rerun command.
@@ -48,6 +49,40 @@ Expected result:
 - The workflow uses no application secrets and does not deploy the app.
 - Merge blocking applies only when the repository's external ruleset or branch
   protection requires the two matrix checks.
+
+## Cross-Cutting Engineering: Browser Workflow Coverage
+
+### Test: Chromium Characterizes Current GM and Player Workflows
+
+Prerequisites:
+
+- Dependencies and the version-matched Chromium binary are installed with
+  `npm install` and `npm run browser:install`.
+- OpenSSL is available for isolated test certificates.
+
+Steps:
+
+1. Run `npm run test:browser`.
+2. Confirm campaign creation, library return, and campaign reopening pass.
+3. Confirm invalid upload rejection and valid PNG upload pass.
+4. Confirm map rename, reorder, and boundary controls pass.
+5. Confirm active-map changes reach the already-open player view.
+6. Confirm the player exposes no mutation controls and a player-originated GM
+   request is rejected.
+7. Confirm offline/online recovery reports `Reconnecting...` and returns to
+   `Live`.
+8. Confirm a failed active-map image displays the error message and hides the
+   failed image.
+
+Expected result:
+
+- All Chromium workflow tests pass against isolated HTTPS servers and temporary
+  campaign data.
+- Temporary data, certificates, sockets, listeners, and browser contexts are
+  cleaned up after each test.
+- The suite runs as a required stage of `npm run quality` locally and in CI.
+- The result makes no claim about Safari, physical iPad or TV behavior, LAN
+  routing, Chromebook hosting, or certificate trust.
 
 ## Milestone 1: MacBook Pro Hosting
 
@@ -290,6 +325,8 @@ Expected result:
 
 - GM and player views show the same active map.
 - Map scaling remains reasonable on desktop and iPad.
+- If the active-map image cannot load, the player reports the error and does
+  not display the failed image element.
 - The player view remains read-only.
 - No fog controls are present.
 

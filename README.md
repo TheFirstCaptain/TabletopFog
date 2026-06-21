@@ -8,6 +8,9 @@ This project is intentionally not a full virtual tabletop. V1 includes local cam
 
 TabletopFog has completed the first local connectivity spike and is validating the campaign/map library milestone. The HTTPS app serves separate GM and player pages, stores local campaign folders, lets the GM manage maps, and syncs the selected active map to the read-only player display over Socket.IO.
 
+The quality gate now runs Chromium characterization for current GM and player
+workflows before the planned GM client refactor.
+
 Completed local-connectivity work proved:
 
 - Run a local HTTPS server on the GM machine.
@@ -83,17 +86,20 @@ Current setup and validation commands:
 rg --files
 git status --short
 npm install
+npm run browser:install
 npm run local
 npm test
+npm run test:browser
 npm run quality
 ```
 
 `npm run quality` is the authoritative completion check for code and tooling
 changes. It runs linting, formatting checks, the module-growth ratchet, the
 phase-aware AI harness compliance check, the full test suite with coverage
-floors, and a high-severity dependency audit. The audit requires npm registry
-access; a network failure fails the quality command rather than being treated
-as a pass.
+floors, Chromium GM/player workflow tests, and a high-severity dependency
+audit. Run `npm run browser:install` after installing dependencies or updating
+Playwright. The audit requires npm registry access; a network failure fails the
+quality command rather than being treated as a pass.
 
 GitHub Actions runs the same `npm run quality` command for every pull request
 and every push to `main` on Node.js 22.8.0 and Node.js 24. A CI failure can be
@@ -102,7 +108,9 @@ its narrower rerun command. Repository rulesets or branch protection determine
 whether GitHub blocks merging and are configured outside this repository.
 
 Use `npm test` as the faster behavior-test loop while developing. Run
-`npm run format` explicitly to apply formatting; the quality command is
+`npm run test:browser` for Chromium workflow characterization. Safari, iPad,
+TV mirroring, LAN routing, and local certificate trust remain manual checks.
+Run `npm run format` explicitly to apply formatting; the quality command is
 read-only.
 
 `npm run local` detects LAN IP addresses, checks or regenerates the local HTTPS certificate when needed, starts the server, and prints the GM URL, player URL candidates, certificate path, and Chromebook notes.

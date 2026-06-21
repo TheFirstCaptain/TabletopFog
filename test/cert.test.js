@@ -6,8 +6,20 @@ const path = require("node:path");
 const test = require("node:test");
 
 const { certificateNeedsRegeneration, unique } = require("../scripts/create-dev-cert");
-const { createTestCertificate } = require("../test-support/certificate");
+const { createTestCertificate, createTestCertificateResource } = require("../test-support/certificate");
 const { createTemporaryDirectory } = require("../test-support/temp-directory");
+
+test("test certificate resource exposes explicit cleanup", () => {
+  const resource = createTestCertificateResource();
+
+  assert.ok(resource.cert.length > 0);
+  assert.ok(resource.key.length > 0);
+  assert.equal(fs.existsSync(resource.certPath), true);
+
+  resource.cleanup();
+  assert.equal(fs.existsSync(resource.certPath), false);
+  assert.doesNotThrow(resource.cleanup);
+});
 
 test("certificate regeneration is required when cert or key files are missing", (t) => {
   const dir = createTemporaryDirectory(t, "tabletopfog-cert-test-");

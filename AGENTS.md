@@ -17,8 +17,12 @@ TabletopFog is in the early local campaign and map implementation phase.
 - `docs/decisions/`: architecture and product decision records.
 - `server/`: HTTPS Express and Socket.IO server code.
 - `public/`: browser pages and client-side JavaScript.
+- `browser-test/`: Playwright Chromium workflow tests and fixtures.
+- `playwright.config.js`: browser-test configuration.
 - `scripts/`: local development helper scripts.
 - `test/`: Node test suite.
+- `test-support/`: shared fixtures and lifecycle-neutral test resources.
+- `quality/`: module and harness policy baselines.
 
 ## Build, Test, and Development Commands
 
@@ -28,16 +32,20 @@ Current validation commands:
 rg --files
 git status --short
 npm install
+npm run browser:install
 npm run cert -- --ip=<LAN-IP>
 npm run dev
 npm test
+npm run test:browser
 npm run quality
 ```
 
 Use `rg --files` to confirm files. Use `git status --short` before and after changes.
 Use `npm run cert -- --ip=<LAN-IP>` whenever the host machine changes Wi-Fi networks or LAN IP addresses.
-Use `npm run quality` as the authoritative completion check for code and tooling
-changes. It requires localhost test binding and npm registry access.
+Use `npm run browser:install` after dependency installation or a Playwright
+upgrade. Use `npm run quality` as the authoritative completion check for code
+and tooling changes. It requires installed Chromium, localhost test binding,
+and npm registry access.
 GitHub Actions runs that same command for every pull request and push to `main`
 on Node.js 22.8.0 and 24; do not create a separate CI-only quality policy.
 Use `npm run harness:check` to diagnose feature-evidence, reviewer,
@@ -67,7 +75,9 @@ Use representative fixtures that match the production validation depth. For
 external inputs, cover relevant valid, invalid, mismatched, boundary, and
 partial-failure cases, and assert rejected operations leave files, metadata,
 and in-memory state unchanged. Create temporary test directories through the
-shared test-support helper so teardown is registered with the test context.
+shared test-support helpers. Node tests register teardown with their test
+context; other runners must call the returned idempotent cleanup during fixture
+teardown.
 
 Classify work before implementation: new capabilities are features, broken or
 unsafe promised behavior is a bug, and behavior-preserving internal improvements

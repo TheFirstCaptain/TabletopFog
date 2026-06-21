@@ -37,5 +37,7 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: Install dependencies from lockfile
         run: npm ci
+      - name: Install Chromium for browser tests
+        run: npm run browser:install
       - name: Run npm run quality
         run: npm run quality

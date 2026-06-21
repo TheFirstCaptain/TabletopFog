@@ -8,6 +8,7 @@ const qualityStages = [
   { label: "Module baseline", script: "modules:check" },
   { label: "Harness compliance", script: "harness:check" },
   { label: "Tests and coverage", script: "test:coverage" },
+  { label: "Chromium browser workflows", script: "test:browser" },
   { label: "High-severity dependency audit", script: "audit:high" }
 ];
 

@@ -41,3 +41,5 @@ Use this tracker for known defects, regressions, build failures, browser/device 
 | B-002 | Campaign Reads Can Destructively Normalize Metadata | Resolved | P2 | [B-002.md](./B-002.md) | 2026-06-20 | Reads are non-mutating and later writes preserve unrecognized metadata. |
 | B-003 | Map Upload Accepts Invalid Image Data | Resolved | P2 | [B-003.md](./B-003.md) | 2026-06-20 | Supported image signatures and matching upload metadata are validated before persistence. |
 | B-004 | Invalid Campaign Metadata Is Silently Hidden | Resolved | P2 | [B-004.md](./B-004.md) | 2026-06-20 | Valid campaigns remain visible and malformed folders produce safe, non-destructive GM recovery diagnostics. |
+| B-005 | Hidden Player Image Remains Visible After Load Failure | Resolved | P2 | [B-005.md](./B-005.md) | 2026-06-21 | Semantic hidden CSS fix passes Chromium image-error regression and full quality. |
+| B-006 | Harness Repository Test Rejects Current-Dated Evidence | Resolved | P2 | [B-006.md](./B-006.md) | 2026-06-21 | Live-repository validation uses the current clock and passes full quality. |

@@ -16,6 +16,8 @@ completing engineering maintenance.
 - Acceptance notes are satisfied or explicitly revised.
 - Non-goals were checked for scope creep.
 - Relevant automated tests pass, if tests exist.
+- Browser behavior changes pass `npm run test:browser` when the changed workflow
+  is covered by Chromium automation.
 - `npm run quality` passes for code or tooling changes; documentation-only work
   may use the relevant documentation and diff checks instead.
 - When a change is proposed through GitHub, both supported Node matrix checks

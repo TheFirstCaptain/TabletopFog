@@ -33,13 +33,13 @@ Quality-gate workstreams:
   evidence.
 - Complete: [F-009C](./features/F-009C.md), continuous integration
   enforcement.
-- Proposed: [F-009D](./features/F-009D.md), browser workflow coverage.
+- Complete: [F-009D](./features/F-009D.md), Chromium browser workflow coverage.
 
 Engineering prerequisites and supporting work are tracked in
 `docs/engineering/`, including E-005 module baselines and E-006 test-fixture and
 failure-path hardening.
 
-Status: clarifying.
+Status: complete.
 
 ## Milestone 1: Local Connectivity Spike
 

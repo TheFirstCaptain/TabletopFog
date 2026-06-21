@@ -36,6 +36,7 @@ test("quality workflow runs the complete local policy for every supported Node v
   assert.match(workflow, /^ {10}cache: npm$/m);
   assert.match(workflow, /^ {10}cache-dependency-path: package-lock\.json$/m);
   assert.match(workflow, /^ {8}run: npm ci$/m);
+  assert.match(workflow, /^ {6}- name: Install Chromium for browser tests\n {8}run: npm run browser:install$/m);
 
   const qualityRuns = workflow.match(/^\s+run: npm run quality$/gm) || [];
   assert.equal(qualityRuns.length, 1);

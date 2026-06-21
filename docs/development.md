@@ -97,6 +97,16 @@ Install dependencies:
 npm install
 ```
 
+Install the version-matched Chromium browser used by Playwright:
+
+```sh
+npm run browser:install
+```
+
+Repeat browser installation after updating Playwright. The browser binary is
+stored in Playwright's user cache rather than the repository. On Linux, the
+command may request privileges to install required browser system packages.
+
 Generate local HTTPS files:
 
 ```sh
@@ -121,6 +131,12 @@ Run automated tests:
 npm test
 ```
 
+Run Chromium GM/player workflow tests:
+
+```sh
+npm run test:browser
+```
+
 Run the authoritative completion checks for code and tooling changes:
 
 ```sh
@@ -134,15 +150,20 @@ The quality command runs these read-only stages in order:
 3. `npm run modules:check`
 4. `npm run harness:check`
 5. `npm run test:coverage`
-6. `npm run audit:high`
+6. `npm run test:browser`
+7. `npm run audit:high`
 
 Use `npm run format` to apply Prettier to maintained JavaScript, JSON, CSS,
 HTML, and YAML files. Markdown is intentionally excluded for now.
 
-Node coverage currently includes `server/**/*.js` and `scripts/**/*.js` and
-enforces baseline-derived floors of 76% lines, 69% branches, and 81% functions.
-Browser scripts remain outside Node coverage until F-009D adds browser workflow
-execution.
+Node coverage includes `server/**/*.js` and `scripts/**/*.js` and enforces
+baseline-derived floors of 76% lines, 69% branches, and 81% functions. F-009D
+runs `public/` browser behavior separately through Playwright Chromium against
+an isolated HTTPS server and temporary campaign root.
+
+Chromium automation covers current GM and player workflows, connection
+recovery, and player image errors. It does not replace physical Safari, iPad,
+TV mirroring, same-Wi-Fi, Chromebook hosting, or certificate-trust validation.
 
 The dependency audit requires npm registry access. High and critical findings
 block completion, moderate findings remain visible, and registry/network failure
@@ -153,9 +174,10 @@ successful full quality run.
 
 GitHub Actions runs `.github/workflows/quality.yml` for every pull request and
 every push to `main`. The workflow tests Node.js 22.8.0 and the current Node.js
-24 line independently, installs dependencies with `npm ci`, and runs the same
-`npm run quality` command documented above. Matrix fail-fast is disabled so a
-failure on one runtime does not hide the other runtime's result.
+24 line independently, installs dependencies with `npm ci`, provisions
+Chromium and its Linux dependencies, and runs the same `npm run quality`
+command documented above. Matrix fail-fast is disabled so a failure on one
+runtime does not hide the other runtime's result.
 
 The workflow has read-only repository permission, receives no application
 secrets, and does not deploy or start TabletopFog. A failed stage prints its
@@ -192,11 +214,12 @@ partial effects in every affected layer, such as copied files, campaign
 metadata, and in-memory state. If a maintenance test exposes broken promised
 behavior, record it as a bug before changing production code.
 
-Tests that create directories under the operating-system temporary root must
-use `createTemporaryDirectory` from `test-support/temp-directory.js` and pass
-the current Node test context. The helper registers recursive idempotent
-teardown; network servers and sockets still require explicit closure in
-`finally` blocks.
+Node tests that create directories under the operating-system temporary root
+must use `createTemporaryDirectory` from `test-support/temp-directory.js` and
+pass the current Node test context for registered recursive teardown.
+Non-Node runners use `createTemporaryDirectoryResource` and must call its
+idempotent cleanup during fixture teardown or in a `finally` block. Network
+servers and sockets always require explicit closure before directory cleanup.
 
 The dev server binds to `0.0.0.0` on port `3000` by default so same-Wi-Fi devices can reach it by LAN IP.
 

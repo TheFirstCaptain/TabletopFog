@@ -6,6 +6,7 @@
   "main": "server/index.js",
   "scripts": {
     "audit:high": "npm audit --audit-level=high",
+    "browser:install": "playwright install --with-deps chromium",
     "cert": "node scripts/create-dev-cert.js",
     "dev": "node server/index.js",
     "format": "prettier --write \"**/*.{js,json,css,html,yml,yaml}\"",
@@ -16,6 +17,7 @@
     "modules:check": "node scripts/check-module-baseline.js",
     "quality": "node scripts/run-quality.js",
     "test": "node --test",
+    "test:browser": "playwright test",
     "test:coverage": "node --experimental-test-coverage --test-coverage-include='server/**/*.js' --test-coverage-include='scripts/**/*.js' --test-coverage-lines=76 --test-coverage-branches=69 --test-coverage-functions=81 --test"
   },
   "engines": {
@@ -27,6 +29,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@playwright/test": "^1.61.0",
     "eslint": "^9.39.4",
     "globals": "^17.6.0",
     "prettier": "^3.8.4",

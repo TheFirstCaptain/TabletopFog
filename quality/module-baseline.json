@@ -39,7 +39,7 @@
       "responsibility": "Discover governed feature records, resolve canonical follow-up links, and coordinate repository validation."
     },
     "scripts/run-quality.js": {
-      "baselineLines": 51,
+      "baselineLines": 52,
       "responsibility": "Run read-only local quality stages in a clear fail-fast order."
     },
     "scripts/start-local.js": {

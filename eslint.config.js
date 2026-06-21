@@ -19,6 +19,8 @@ module.exports = [
   {
     files: [
       "eslint.config.js",
+      "playwright.config.js",
+      "browser-test/**/*.js",
       "quality/**/*.js",
       "scripts/**/*.js",
       "server/**/*.js",

@@ -8,17 +8,27 @@ function removeTemporaryDirectory(directory) {
   fs.rmSync(directory, { force: true, recursive: true });
 }
 
+function createTemporaryDirectoryResource(prefix) {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+
+  return {
+    cleanup: () => removeTemporaryDirectory(directory),
+    directory
+  };
+}
+
 function createTemporaryDirectory(testContext, prefix) {
   if (!testContext || typeof testContext.after !== "function") {
     throw new TypeError("A Node test context is required for temporary-directory cleanup.");
   }
 
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
-  testContext.after(() => removeTemporaryDirectory(directory));
-  return directory;
+  const resource = createTemporaryDirectoryResource(prefix);
+  testContext.after(resource.cleanup);
+  return resource.directory;
 }
 
 module.exports = {
   createTemporaryDirectory,
+  createTemporaryDirectoryResource,
   removeTemporaryDirectory
 };

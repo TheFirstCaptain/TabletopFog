@@ -163,5 +163,5 @@ test("legacy baseline is closed to additions and requires every approved legacy 
 
 test("current repository conforms to the harness contract", () => {
   const rootDir = path.resolve(__dirname, "..");
-  assert.deepEqual(validateRepository(rootDir, { now }).errors, []);
+  assert.deepEqual(validateRepository(rootDir).errors, []);
 });
