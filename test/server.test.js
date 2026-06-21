@@ -145,12 +145,20 @@ test("serves GM and player pages over HTTPS", async (t) => {
     const gmResponse = await getHttps(`https://127.0.0.1:${port}/gm`);
     const playerResponse = await getHttps(`https://127.0.0.1:${port}/player`);
     const gmScript = await getHttps(`https://127.0.0.1:${port}/gm.js`);
+    const gmState = await getHttps(`https://127.0.0.1:${port}/gm-state.js`);
+    const gmView = await getHttps(`https://127.0.0.1:${port}/gm-view.js`);
 
     assert.equal(gmResponse.statusCode, 200);
     assert.equal(playerResponse.statusCode, 200);
+    assert.equal(gmScript.statusCode, 200);
+    assert.equal(gmState.statusCode, 200);
+    assert.equal(gmView.statusCode, 200);
     assert.match(gmResponse.body, /<h1>Campaign Library<\/h1>/);
     assert.match(gmResponse.body, /id="library-diagnostics"/);
-    assert.match(gmScript.body, /payload\.diagnostics/);
+    assert.match(gmResponse.body, /<script type="module" src="\/gm\.js"><\/script>/);
+    assert.match(gmScript.body, /createGmController/);
+    assert.match(gmState.body, /payload\.diagnostics \|\| \[\]/);
+    assert.match(gmView.body, /Skipped campaign/);
     assert.match(playerResponse.body, /<h1>Player Display<\/h1>/);
   } finally {
     await close(server, io);

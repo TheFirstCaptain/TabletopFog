@@ -49,5 +49,11 @@ module.exports = [
     rules: {
       "no-unused-vars": unusedVariables
     }
+  },
+  {
+    files: ["public/gm*.js"],
+    languageOptions: {
+      sourceType: "module"
+    }
   }
 ];

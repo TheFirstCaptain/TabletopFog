@@ -2,13 +2,29 @@
   "version": 1,
   "roots": ["server", "public", "scripts"],
   "modules": {
+    "public/gm-api.js": {
+      "baselineLines": 59,
+      "responsibility": "Send GM campaign and map API requests and convert failed responses into client errors."
+    },
+    "public/gm-controller.js": {
+      "baselineLines": 108,
+      "responsibility": "Coordinate GM workflows across API, state, view, and Socket.IO boundaries."
+    },
+    "public/gm-events.js": {
+      "baselineLines": 38,
+      "responsibility": "Translate static and delegated GM DOM events into controller actions."
+    },
+    "public/gm-state.js": {
+      "baselineLines": 44,
+      "responsibility": "Maintain GM campaign library and current campaign client state."
+    },
+    "public/gm-view.js": {
+      "baselineLines": 181,
+      "responsibility": "Render the GM campaign library, map controls, messages, status, and active map."
+    },
     "public/gm.js": {
-      "baselineLines": 307,
-      "responsibility": "Coordinate the GM campaign library, API calls, rendering, and browser events.",
-      "temporaryException": {
-        "engineeringId": "E-003",
-        "reason": "GM API, state, rendering, and event responsibilities are awaiting planned separation."
-      }
+      "baselineLines": 16,
+      "responsibility": "Compose and start the browser-native GM client modules."
     },
     "public/player.js": {
       "baselineLines": 43,
