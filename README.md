@@ -8,8 +8,13 @@ This project is intentionally not a full virtual tabletop. V1 includes local cam
 
 TabletopFog has completed the first local connectivity spike and is validating the campaign/map library milestone. The HTTPS app serves separate GM and player pages, stores local campaign folders, lets the GM manage maps, and syncs the selected active map to the read-only player display over Socket.IO.
 
-The quality gate now runs Chromium characterization for current GM and player
-workflows before the planned GM client refactor.
+The quality gate runs Chromium characterization for current GM/player workflows
+and theme behavior.
+
+GM and player headings use a locally bundled EB Garamond display face. The GM
+workspace and player status chrome use a parchment-inspired theme while the
+player map stage remains dark for map contrast. No hosted font service is
+required.
 
 Completed local-connectivity work proved:
 

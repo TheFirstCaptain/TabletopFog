@@ -83,6 +83,9 @@ Implementation notes:
 - Campaigns and maps are part of V1.
 - Keep the storage format simple, local, inspectable, and migration-friendly.
 - A first storage shape can use `~/TabletopFog/tabletopfog-data/<Campaign Name>/campaign.json` plus a `maps/` folder.
+- [F-004A](./features/F-004A.md) adds a locally hosted fantasy display font and
+  accessible parchment-inspired chrome without changing campaign or map
+  behavior.
 
 ## Milestone 3: Static Active Map Display Polish
 

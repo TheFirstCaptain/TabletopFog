@@ -100,6 +100,7 @@ test("player follows active-map changes and remains read-only", async ({ app, pa
 });
 
 test("player reports connection loss and restores active state", async ({ app, page, context }) => {
+  test.setTimeout(30_000);
   const gm = await context.newPage();
   await openGm(gm, app.baseURL);
   await createCampaign(gm);
@@ -114,7 +115,7 @@ test("player reports connection loss and restores active state", async ({ app, p
   await expect(page.getByText("Reconnecting...", { exact: true })).toBeVisible();
 
   await page.context().setOffline(false);
-  await expect(page.getByText("Live", { exact: true })).toBeVisible();
+  await expect(page.getByText("Live", { exact: true })).toBeVisible({ timeout: 15_000 });
   await expect(page.getByRole("img", { name: "forest" })).toBeVisible();
   await expect
     .poll(() => page.getByRole("img", { name: "forest" }).evaluate((image) => image.naturalWidth))

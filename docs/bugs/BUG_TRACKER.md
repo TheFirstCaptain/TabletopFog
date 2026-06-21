@@ -43,3 +43,4 @@ Use this tracker for known defects, regressions, build failures, browser/device 
 | B-004 | Invalid Campaign Metadata Is Silently Hidden | Resolved | P2 | [B-004.md](./B-004.md) | 2026-06-20 | Valid campaigns remain visible and malformed folders produce safe, non-destructive GM recovery diagnostics. |
 | B-005 | Hidden Player Image Remains Visible After Load Failure | Resolved | P2 | [B-005.md](./B-005.md) | 2026-06-21 | Semantic hidden CSS fix passes Chromium image-error regression and full quality. |
 | B-006 | Harness Repository Test Rejects Current-Dated Evidence | Resolved | P2 | [B-006.md](./B-006.md) | 2026-06-21 | Live-repository validation uses the current clock and passes full quality. |
+| B-007 | Data Root Path Overflows Narrow GM Layout | Resolved | P3 | [B-007.md](./B-007.md) | 2026-06-21 | Scoped path wrapping passes the 390 px Chromium regression and full quality. |

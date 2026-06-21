@@ -1,6 +1,7 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const crypto = require("node:crypto");
 const fs = require("node:fs");
 const https = require("node:https");
 const path = require("node:path");
@@ -11,6 +12,9 @@ const { createTabletopFogServer, getRoleFromReferer } = require("../server");
 const { createTestCertificate } = require("../test-support/certificate");
 const { PNG_BYTES } = require("../test-support/fixtures");
 const { createTemporaryDirectory } = require("../test-support/temp-directory");
+
+const EB_GARAMOND_LATIN_RANGE =
+  "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD";
 
 function getHttps(url, options = {}) {
   return new Promise((resolve, reject) => {
@@ -25,6 +29,7 @@ function getHttps(url, options = {}) {
 
         resolve({
           body: rawBody.toString("utf8"),
+          headers: response.headers,
           rawBody,
           statusCode: response.statusCode
         });
@@ -147,18 +152,44 @@ test("serves GM and player pages over HTTPS", async (t) => {
     const gmScript = await getHttps(`https://127.0.0.1:${port}/gm.js`);
     const gmState = await getHttps(`https://127.0.0.1:${port}/gm-state.js`);
     const gmView = await getHttps(`https://127.0.0.1:${port}/gm-view.js`);
+    const styles = await getHttps(`https://127.0.0.1:${port}/styles.css`);
+    const font = await getHttps(`https://127.0.0.1:${port}/assets/fonts/EBGaramond-Variable-Latin.woff2`);
+    const fontLicense = await getHttps(`https://127.0.0.1:${port}/assets/fonts/OFL.txt`);
+    const fontSource = await getHttps(`https://127.0.0.1:${port}/assets/fonts/SOURCE.md`);
+    const supersededFont = await getHttps(`https://127.0.0.1:${port}/assets/fonts/Middleearth-ao6m.ttf`);
 
     assert.equal(gmResponse.statusCode, 200);
     assert.equal(playerResponse.statusCode, 200);
     assert.equal(gmScript.statusCode, 200);
     assert.equal(gmState.statusCode, 200);
     assert.equal(gmView.statusCode, 200);
+    assert.equal(styles.statusCode, 200);
+    assert.equal(font.statusCode, 200);
+    assert.match(font.headers["content-type"], /^font\/woff2/);
+    assert.equal(
+      crypto.createHash("sha256").update(font.rawBody).digest("hex"),
+      "79d17b52365a2d5bd8995c8c54939d384e9888ed2038c7201fd8d4118d6f0a35"
+    );
+    assert.equal(fontLicense.statusCode, 200);
+    assert.match(fontLicense.body, /SIL OPEN FONT LICENSE Version 1\.1/);
+    assert.equal(
+      crypto.createHash("sha256").update(fontLicense.rawBody).digest("hex"),
+      "0985066662eb755ed3683ae5482a81a9195b49ce3f7e165cc2388b3dbece7dd7"
+    );
+    assert.equal(fontSource.statusCode, 200);
+    assert.match(fontSource.body, /79d17b52365a2d5bd8995c8c54939d384e9888ed2038c7201fd8d4118d6f0a35/);
+    assert.ok(fontSource.body.includes(`- Unicode range: \`${EB_GARAMOND_LATIN_RANGE}\``));
+    assert.equal(supersededFont.statusCode, 404);
     assert.match(gmResponse.body, /<h1>Campaign Library<\/h1>/);
     assert.match(gmResponse.body, /id="library-diagnostics"/);
     assert.match(gmResponse.body, /<script type="module" src="\/gm\.js"><\/script>/);
     assert.match(gmScript.body, /createGmController/);
     assert.match(gmState.body, /payload\.diagnostics \|\| \[\]/);
     assert.match(gmView.body, /Skipped campaign/);
+    assert.match(styles.body, /@font-face/);
+    assert.match(styles.body, /EBGaramond-Variable-Latin\.woff2/);
+    assert.match(styles.body, /font-display: swap/);
+    assert.doesNotMatch(styles.body, /https?:\/\//);
     assert.match(playerResponse.body, /<h1>Player Display<\/h1>/);
   } finally {
     await close(server, io);

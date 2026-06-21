@@ -1,15 +1,28 @@
+@font-face {
+  font-family: "EB Garamond";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("/assets/fonts/EBGaramond-Variable-Latin.woff2") format("woff2");
+}
+
 :root {
   color-scheme: light;
-  --background: #f4f6f8;
-  --surface: #ffffff;
-  --surface-strong: #eef2f5;
-  --text: #17202a;
-  --muted: #5f6b7a;
-  --border: #d8dee8;
-  --accent: #0f766e;
-  --accent-strong: #115e59;
-  --danger: #9f1239;
-  --stage: #15181d;
+  --background: #e8d8b5;
+  --surface: #f7ebcf;
+  --surface-strong: #e3d0a8;
+  --text: #2b2118;
+  --muted: #685843;
+  --border: #9b7b4f;
+  --accent: #6b3e24;
+  --accent-strong: #4a2918;
+  --danger: #8c1d2c;
+  --danger-surface: #f5d8d2;
+  --focus: #1f5e73;
+  --stage: #14110f;
+  --stage-text: #c9b17f;
+  --font-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "EB Garamond", Georgia, "Times New Roman", serif;
 }
 
 * {
@@ -23,14 +36,10 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--background);
+  background-color: var(--background);
+  background-image: linear-gradient(135deg, rgb(255 250 235 / 28%), transparent 58%);
   color: var(--text);
-  font-family:
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  font-family: var(--font-body);
 }
 
 button,
@@ -60,9 +69,20 @@ button:disabled {
   opacity: 0.55;
 }
 
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
 button.secondary {
   background: var(--surface);
   color: var(--accent-strong);
+}
+
+button.secondary:hover:not(:disabled) {
+  background: var(--accent-strong);
+  color: #ffffff;
 }
 
 input[type="text"],
@@ -71,7 +91,7 @@ input[type="file"] {
   min-height: 2.75rem;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: #ffffff;
+  background: var(--surface);
   color: var(--text);
   padding: 0.55rem 0.7rem;
 }
@@ -100,6 +120,13 @@ h2,
 h3,
 p {
   margin-top: 0;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
 }
 
 h1 {
@@ -155,10 +182,14 @@ h3 {
   color: var(--muted);
 }
 
+#data-root {
+  overflow-wrap: anywhere;
+}
+
 .library-diagnostic {
-  border: 1px solid #fecdd3;
+  border: 1px solid var(--danger);
   border-radius: 6px;
-  background: #fff1f2;
+  background: var(--danger-surface);
   color: var(--danger);
   padding: 0.75rem;
 }
@@ -223,7 +254,7 @@ h3 {
 
 .map-item[data-active="true"] {
   border-color: var(--accent);
-  background: #eef8f6;
+  background: var(--surface-strong);
 }
 
 .map-item p {
@@ -257,7 +288,8 @@ h3 {
 
 .player-body {
   background: var(--stage);
-  color: #ffffff;
+  color: var(--stage-text);
+  background-image: none;
 }
 
 .player-display {
@@ -268,11 +300,13 @@ h3 {
 
 .player-status-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: 1rem;
   padding: 0.75rem 1rem;
-  background: #0f1216;
-  border-bottom: 1px solid #2b313a;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
 }
 
 .player-status-bar h1,
@@ -290,10 +324,12 @@ h3 {
   place-items: center;
   min-height: 0;
   padding: 1rem;
+  background: var(--stage);
+  color: var(--stage-text);
 }
 
 .player-message {
-  color: #c7d0dc;
+  color: var(--stage-text);
   font-size: 1.25rem;
   font-weight: 700;
 }

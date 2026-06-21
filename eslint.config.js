@@ -51,6 +51,15 @@ module.exports = [
     }
   },
   {
+    files: ["browser-test/**/*.js"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.browser
+      }
+    }
+  },
+  {
     files: ["public/gm*.js"],
     languageOptions: {
       sourceType: "module"

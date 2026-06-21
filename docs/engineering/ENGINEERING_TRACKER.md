@@ -42,3 +42,4 @@ broken promised behavior belongs in `docs/bugs/`.
 | E-004 | Separate Server Transport Responsibilities | Proposed | P2 | [E-004.md](./E-004.md) | 2026-06-20 | Separate HTTP routing, role projection, Socket.IO coordination, and startup concerns. |
 | E-005 | Establish Module Responsibility and Growth Baselines | Done | P1 | [E-005.md](./E-005.md) | 2026-06-20 | Fifteen-module responsibility inventory and strict bidirectional ratchet are implemented, reviewed, and validated. |
 | E-006 | Harden Test Fixtures and Failure-Path Coverage | Done | P1 | [E-006.md](./E-006.md) | 2026-06-20 | Representative fixtures, boundary matrices, partial-state assertions, and test guidance passed full quality validation. |
+| E-007 | Stabilize Browser Reconnect Timing | Done | P2 | [E-007.md](./E-007.md) | 2026-06-21 | Scoped reconnect timing preserves all outcomes and passes isolation, the six-test Chromium suite, and full quality. |

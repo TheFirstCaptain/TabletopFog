@@ -84,6 +84,44 @@ Expected result:
 - The result makes no claim about Safari, physical iPad or TV behavior, LAN
   routing, Chromebook hosting, or certificate trust.
 
+## Milestone 2 Follow-Up: Fantasy Visual Theme
+
+### Test: Theme Loads Locally and Preserves Map Contrast
+
+Prerequisites:
+
+- The local HTTPS server is running.
+- GM and player views can be opened in Chromium.
+
+Steps:
+
+1. Open the GM campaign library and confirm headings use the bundled EB
+   Garamond display font.
+2. Confirm controls, diagnostics, status text, filenames, and dense body text
+   retain the system-font stack.
+3. Confirm the GM page and panels use the parchment palette with readable text,
+   statuses, diagnostics, controls, borders, and focus indicators.
+4. Navigate the GM form and controls with the keyboard and confirm the focused
+   element has a visible outline.
+5. Open the player view and confirm its status bar uses parchment chrome while
+   the map stage remains dark.
+6. Block the local WOFF2 request and reload the GM view.
+7. Confirm the declared serif fallback leaves headings, labels, controls, and
+   workflows usable.
+8. Repeat the GM and player checks at a 390 px viewport with a long displayed
+   data-root path.
+
+Expected result:
+
+- Font loading is same-origin and requires no hosted service at runtime.
+- The superseded Middleearth TTF is absent.
+- Text and focus combinations meet the documented contrast thresholds.
+- The page does not overflow horizontally at the narrow viewport.
+- Campaign/map workflows, player read-only behavior, synchronization, and dark
+  map framing remain unchanged.
+- Physical Safari, iPad, Chromebook, TV, LAN, and certificate behavior remains
+  a separate manual validation boundary.
+
 ## Milestone 1: MacBook Pro Hosting
 
 ### Test: GM Can Host Locally from MacBook Pro
