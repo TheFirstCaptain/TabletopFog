@@ -58,8 +58,10 @@
 
           <div class="active-map-panel">
             <h3>Active Map</h3>
-            <p id="active-map-message" class="muted">No active map selected.</p>
-            <img id="active-map-image" class="map-preview" alt="" hidden />
+            <div id="active-map-stage" class="gm-map-stage">
+              <p id="active-map-message" class="map-state-message muted">No active map selected.</p>
+              <canvas id="active-map-canvas" class="map-canvas" role="img" aria-label="" hidden></canvas>
+            </div>
           </div>
         </div>
       </section>

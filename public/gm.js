@@ -14,3 +14,6 @@ const controller = createGmController({
 
 wireGmEvents(view.elements, controller.actions);
 controller.start();
+window.addEventListener("pagehide", (event) => {
+  if (!event.persisted) view.destroy();
+});

@@ -19,16 +19,20 @@
       "responsibility": "Maintain GM campaign library and current campaign client state."
     },
     "public/gm-view.js": {
-      "baselineLines": 181,
-      "responsibility": "Render the GM campaign library, map controls, messages, status, and active map."
+      "baselineLines": 192,
+      "responsibility": "Render the GM campaign library, map controls, messages, status, and shared-canvas active map."
     },
     "public/gm.js": {
-      "baselineLines": 16,
+      "baselineLines": 19,
       "responsibility": "Compose and start the browser-native GM client modules."
     },
+    "public/map-canvas.js": {
+      "baselineLines": 378,
+      "responsibility": "Render active maps on a DPR-aware canvas with contain geometry, local zoom and pan, guarded image loading, pointer input, and deterministic cleanup."
+    },
     "public/player.js": {
-      "baselineLines": 43,
-      "responsibility": "Render read-only player active-map and connection state updates."
+      "baselineLines": 83,
+      "responsibility": "Coordinate read-only player active-map rendering, connection state, and local viewport controls."
     },
     "scripts/check-harness-compliance.js": {
       "baselineLines": 45,
@@ -75,7 +79,7 @@
       "responsibility": "Resolve and load HTTPS certificate credentials."
     },
     "server/index.js": {
-      "baselineLines": 283,
+      "baselineLines": 284,
       "responsibility": "Compose HTTP routes, role projection, Socket.IO synchronization, and HTTPS startup.",
       "temporaryException": {
         "engineeringId": "E-004",

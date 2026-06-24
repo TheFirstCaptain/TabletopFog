@@ -57,6 +57,7 @@ The player view is display-only:
 - Render the currently visible map state.
 - Render the active map with GM-hidden areas obscured.
 - Avoid controls that mutate session state.
+- Allow local display controls such as map zoom and pan without sending those viewport changes to the GM, server, or other player displays.
 - Support fullscreen display on iPad where possible.
 
 The player view should not expose hidden map data through visible UI. Later implementation should also avoid sending unnecessary hidden state to the player when practical, but the MVP may first prove behavior before hardening transport-level data minimization.
@@ -71,6 +72,11 @@ Initial state can be small and explicit:
 - Map viewport/scaling information.
 - Fog shapes or rasterized fog mask for each map.
 - Last update timestamp or version number.
+
+Active-map identity and content are shared session state. Viewport zoom and pan
+are client-local state: each GM or player renderer owns its own viewport, resets
+when the campaign-qualified active-map identity changes, and does not persist
+or broadcast it.
 
 For Milestone 1, a simple shared state value is enough to prove connectivity and live updates.
 

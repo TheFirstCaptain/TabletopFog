@@ -60,7 +60,7 @@ module.exports = [
     }
   },
   {
-    files: ["public/gm*.js"],
+    files: ["public/gm*.js", "public/map-canvas.js", "public/player.js"],
     languageOptions: {
       sourceType: "module"
     }

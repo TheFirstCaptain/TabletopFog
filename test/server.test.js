@@ -358,6 +358,7 @@ test("manages maps and broadcasts active map state", async (t) => {
     );
     assert.equal(selected.json.campaign.activeMapId, first.json.map.id);
     assert.equal(playerState.activeMap.id, first.json.map.id);
+    assert.equal(playerState.activeMap.campaignId, "The Long Walk");
     assert.equal(playerState.campaign, undefined);
     assert.equal(playerState.activeMap.assetUrl, "/api/player/active-map/asset");
     assert.equal(gmAsset.statusCode, 200);
@@ -490,7 +491,10 @@ test("player page exposes no mutating controls", async (t) => {
     const playerResponse = await getHttps(`https://127.0.0.1:${port}/player`);
 
     assert.equal(playerResponse.statusCode, 200);
-    assert.doesNotMatch(playerResponse.body, /<button/i);
+    assert.match(playerResponse.body, />Zoom out</);
+    assert.match(playerResponse.body, />Fit map</);
+    assert.match(playerResponse.body, />Zoom in</);
+    assert.doesNotMatch(playerResponse.body, /data-action=/i);
     assert.doesNotMatch(playerResponse.body, /<input/i);
     assert.doesNotMatch(playerResponse.body, /<select/i);
     assert.doesNotMatch(playerResponse.body, /<textarea/i);

@@ -67,12 +67,15 @@ Steps:
 3. Confirm invalid upload rejection and valid PNG upload pass.
 4. Confirm map rename, reorder, and boundary controls pass.
 5. Confirm active-map changes reach the already-open player view.
-6. Confirm the player exposes no mutation controls and a player-originated GM
-   request is rejected.
-7. Confirm offline/online recovery reports `Reconnecting...` and returns to
+6. Confirm player zoom and pan remain local to that player view while the GM and
+   a second player remain unchanged.
+7. Confirm the player exposes no shared-state mutation controls and a
+   player-originated GM request is rejected.
+8. Confirm offline/online recovery reports `Reconnecting...` and returns to
    `Live`.
-8. Confirm a failed active-map image displays the error message and hides the
+9. Confirm a failed active-map image displays the error message and hides the
    failed image.
+10. Confirm a delayed older image cannot replace a newer active map.
 
 Expected result:
 
@@ -357,14 +360,28 @@ Steps:
 3. Confirm the player view displays the first map.
 4. Select the second map from the GM view.
 5. Confirm the GM and player views update without manual player refresh.
-6. Resize the browser window and test the player view on iPad.
+6. Use Zoom in, Zoom out, Fit map, drag pan, pinch zoom, and keyboard arrow pan
+   in the player view.
+7. Confirm the GM view and a second player view remain unchanged.
+8. Resize the browser window and test the player view on iPad and a TV-like
+   landscape viewport.
+9. Disconnect and reconnect the player while zoomed, then refresh the page.
 
 Expected result:
 
 - GM and player views show the same active map.
-- Map scaling remains reasonable on desktop and iPad.
+- Map scaling uses centered contain behavior on desktop, iPad, and TV-like
+  landscape viewports.
+- Player zoom is bounded from 50% through 300%, supports local pan, resets when
+  the active map changes or the page reloads, and remains unchanged through a
+  same-map reconnect or resize.
+- Player viewport changes do not mutate campaign or session state and do not
+  change the GM or another player viewport.
+- Switching between campaigns resets the player viewport even when both active
+  maps have the same map ID.
 - If the active-map image cannot load, the player reports the error and does
-  not display the failed image element.
+  not display stale canvas content.
+- A delayed response for an older map cannot replace the current active map.
 - The player view remains read-only.
 - No fog controls are present.
 

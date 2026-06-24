@@ -161,9 +161,10 @@ baseline-derived floors of 76% lines, 69% branches, and 81% functions. F-009D
 runs `public/` browser behavior separately through Playwright Chromium against
 an isolated HTTPS server and temporary campaign root.
 
-Chromium automation covers current GM and player workflows, connection
-recovery, and player image errors. It does not replace physical Safari, iPad,
-TV mirroring, same-Wi-Fi, Chromebook hosting, or certificate-trust validation.
+Chromium automation covers current GM and player workflows, canvas contain
+scaling, independent player zoom and pan, connection recovery, stale image
+loads, and player image errors. It does not replace physical Safari, iPad, TV
+mirroring, same-Wi-Fi, Chromebook hosting, or certificate-trust validation.
 
 The dependency audit requires npm registry access. High and critical findings
 block completion, moderate findings remain visible, and registry/network failure

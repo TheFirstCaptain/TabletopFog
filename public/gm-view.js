@@ -1,3 +1,5 @@
+import { createMapCanvasRenderer } from "./map-canvas.js";
+
 function createButton(document, { action, className, disabled, index, mapId, text }) {
   const button = document.createElement("button");
   button.type = "button";
@@ -14,7 +16,7 @@ function createButton(document, { action, className, disabled, index, mapId, tex
 
 export function createGmView(document) {
   const elements = {
-    activeMapImage: document.querySelector("#active-map-image"),
+    activeMapCanvas: document.querySelector("#active-map-canvas"),
     activeMapMessage: document.querySelector("#active-map-message"),
     backToLibrary: document.querySelector("#back-to-library"),
     campaignForm: document.querySelector("#campaign-form"),
@@ -32,21 +34,27 @@ export function createGmView(document) {
     status: document.querySelector("#connection-status")
   };
 
+  const activeMapRenderer = createMapCanvasRenderer({
+    canvas: elements.activeMapCanvas,
+    onStatus({ map, state }) {
+      elements.activeMapMessage.dataset.state = state;
+      elements.activeMapMessage.setAttribute("role", state === "error" ? "alert" : "status");
+      if (state === "empty") elements.activeMapMessage.textContent = "No active map selected.";
+      if (state === "loading") elements.activeMapMessage.textContent = "Loading map...";
+      if (state === "ready") elements.activeMapMessage.textContent = map.name;
+      if (state === "error") elements.activeMapMessage.textContent = "Map image could not be loaded.";
+    }
+  });
+
   function renderActiveMap(campaign) {
     const activeMap = campaign.maps.find((map) => map.id === campaign.activeMapId);
 
     if (!activeMap) {
-      elements.activeMapMessage.textContent = "No active map selected.";
-      elements.activeMapImage.hidden = true;
-      elements.activeMapImage.removeAttribute("src");
-      elements.activeMapImage.alt = "";
+      activeMapRenderer.setMap(null);
       return;
     }
 
-    elements.activeMapMessage.textContent = activeMap.name;
-    elements.activeMapImage.src = activeMap.assetUrl;
-    elements.activeMapImage.alt = activeMap.name;
-    elements.activeMapImage.hidden = false;
+    activeMapRenderer.setMap({ ...activeMap, campaignId: campaign.id });
   }
 
   function renderMaps(campaign) {
@@ -104,6 +112,9 @@ export function createGmView(document) {
 
   return {
     elements,
+    destroy() {
+      activeMapRenderer.destroy();
+    },
     clearCampaignName() {
       elements.campaignName.value = "";
     },

@@ -222,6 +222,7 @@ function projectStateForRole(state, role) {
   return {
     activeMap: activeMap
       ? {
+          campaignId: campaign.id,
           id: activeMap.id,
           name: activeMap.name,
           assetUrl: "/api/player/active-map/asset"

@@ -6,7 +6,7 @@ This project is intentionally not a full virtual tabletop. V1 includes local cam
 
 ## Current Status
 
-TabletopFog has completed the first local connectivity spike and is validating the campaign/map library milestone. The HTTPS app serves separate GM and player pages, stores local campaign folders, lets the GM manage maps, and syncs the selected active map to the read-only player display over Socket.IO.
+TabletopFog has completed the first local connectivity spike and active-map display polish, while physical-device validation of the campaign/map library remains. The HTTPS app serves separate GM and player pages, stores local campaign folders, lets the GM manage maps, and syncs the selected active map to the read-only player display over Socket.IO.
 
 The quality gate runs Chromium characterization for current GM/player workflows
 and theme behavior.
@@ -15,6 +15,11 @@ GM and player headings use a locally bundled EB Garamond display face. The GM
 workspace and player status chrome use a parchment-inspired theme while the
 player map stage remains dark for map contrast. No hosted font service is
 required.
+
+GM and player displays now share a canvas rendering foundation with centered
+contain scaling. Player Zoom out, Fit map, Zoom in, drag, and pinch controls
+change only that browser's local viewport; they do not mutate campaign state or
+change the GM or another player display.
 
 Completed local-connectivity work proved:
 
@@ -68,7 +73,7 @@ TABLETOPFOG_DATA_DIR=/private/tmp/tabletopfog-data npm run local
 - HTTPS for local serving.
 - Plain HTML, CSS, and JavaScript at first.
 - Local, inspectable files for campaign and map state.
-- HTML Canvas for future map and fog rendering.
+- HTML Canvas for current map rendering and future fog rendering.
 
 React, cloud hosting, databases, and native wrappers are deferred unless a later decision record changes direction.
 

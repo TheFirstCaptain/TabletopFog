@@ -95,6 +95,7 @@ Acceptance criteria:
 
 - GM and player views use consistent active-map rendering behavior.
 - Map scales reasonably to available screen across desktop, iPad, and TV-like landscape viewports.
+- Player can zoom and pan its map independently without changing the GM view or another player display.
 - Active-map display handles refresh, reconnect, and image-load error states cleanly.
 - Player receives only the active-map display state needed for read-only rendering.
 - Player view remains read-only.
@@ -104,6 +105,7 @@ Implementation notes:
 
 - Use the campaign and map metadata from Milestone 2.
 - Build on F-004's minimal active-map sync and display behavior.
+- Keep GM and player viewport state local to each browser view so their controls can diverge later.
 
 ## Milestone 4: Manual Fog of War
 
