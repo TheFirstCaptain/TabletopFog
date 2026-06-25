@@ -6,7 +6,13 @@ This project is intentionally not a full virtual tabletop. V1 includes local cam
 
 ## Current Status
 
-TabletopFog has completed the first local connectivity spike, campaign/map library, fantasy visual theme, active-map display polish, campaign landing page polish, encounter gallery entry, and encounter workspace shell, including Chromebook-host and iPad-player validation through F-005. The HTTPS app serves separate GM and player pages, stores local campaign folders, lets the GM manage maps as encounter cards, and syncs the current player-shown map to the read-only player display over Socket.IO.
+TabletopFog has completed the first local connectivity spike, campaign/map
+library, fantasy visual theme, active-map display polish, campaign landing page
+polish, encounter gallery entry, and encounter workspace shell, including
+Chromebook-host and iPad-player validation through F-005. The HTTPS app serves
+separate GM View and Player Display pages, stores local campaign folders, lets
+the GM manage map-backed encounter cards, and syncs only the current encounter
+shown to players to the read-only Player Display over Socket.IO.
 
 The quality gate runs Chromium characterization for current GM/player workflows
 and theme behavior.
@@ -16,10 +22,10 @@ workspace and player status chrome use a parchment-inspired theme while the
 player map stage remains dark for map contrast. No hosted font service is
 required.
 
-GM and player displays now share a canvas rendering foundation with centered
+GM View and Player Display now share a canvas rendering foundation with centered
 contain scaling. Player Zoom out, Fit map, Zoom in, drag, and pinch controls
 change only that browser's local viewport; they do not mutate campaign state or
-change the GM or another player display.
+change the GM View or another Player Display.
 
 The GM campaign landing page now uses campaign cards with emoji icons, editable
 short descriptions, map counts, and preserved invalid-campaign diagnostics.
@@ -31,9 +37,10 @@ reorder controls, selected-for-prep status, and explicit card-level
 workspace shell with the selected map, shown/not-shown status, `Back to
 Encounters`, a workspace-level `Show to Players` action, and reserved room for
 future table tools. Opening or navigating the workspace does not change the
-player display. Existing storage still uses `maps` and `activeMapId`, where
-`activeMapId` means the encounter currently shown to players until a reviewed
-migration chooses clearer names.
+Player Display. Existing storage still uses `maps` and `activeMapId`, where
+`activeMapId` is an implementation detail meaning the encounter currently shown
+to players until a reviewed migration chooses clearer names. The UI should say
+`Shown to Players`.
 
 Completed local-connectivity work proved:
 
@@ -41,9 +48,12 @@ Completed local-connectivity work proved:
 - Serve separate `/gm` and `/player` browser views.
 - Connect an iPad over the same Wi-Fi using the GM machine's LAN IP address.
 - Trigger a GM state change.
-- Update the read-only player view live.
+- Update the read-only Player Display live.
 
-Completed F-004 work adds local campaign and map library support. Campaigns are long-lived local folders, maps belong to campaigns, and maps start visible by default. Fog is added later to hide areas and then removed to reveal them during play.
+Completed F-004 work adds local campaign and map library support. Campaigns are
+long-lived local folders, encounters are the primary prep units, maps are assets
+inside encounters, and maps start visible by default. Fog is added later to hide
+areas and then removed to reveal them during play.
 
 Map upload accepts PNG, JPEG, GIF, and WebP files up to 100 MB and rejects data
 whose image signature, filename extension, and content type do not agree.
@@ -67,6 +77,8 @@ TABLETOPFOG_DATA_DIR=/private/tmp/tabletopfog-data npm run local
 
 - `docs/vision.md`: project purpose, MVP goal, target devices, and scope boundaries.
 - `docs/architecture.md`: browser-first local architecture and GM/player responsibilities.
+- `docs/design-language.md`: authoritative UI and UX principles.
+- `docs/ui-terminology.md`: user-facing and implementation terminology.
 - `docs/roadmap.md`: milestone plan.
 - `docs/features/FEATURE_TRACKER.md`: feature status and next work.
 - `docs/bugs/BUG_TRACKER.md`: known defects and blockers.

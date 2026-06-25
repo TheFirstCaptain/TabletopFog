@@ -66,9 +66,9 @@ Steps:
 2. Confirm campaign creation, library return, and campaign reopening pass.
 3. Confirm invalid upload rejection and valid PNG upload pass.
 4. Confirm map rename, reorder, and boundary controls pass.
-5. Confirm active-map changes reach the already-open player view.
-6. Confirm player zoom and pan remain local to that player view while the GM and
-   a second player remain unchanged.
+5. Confirm active-map changes reach the already-open Player Display.
+6. Confirm player zoom and pan remain local to that Player Display while the GM
+   View and a second Player Display remain unchanged.
 7. Confirm the player exposes no shared-state mutation controls and a
    player-originated GM request is rejected.
 8. Confirm offline/online recovery reports `Reconnecting...` and returns to
@@ -94,7 +94,7 @@ Expected result:
 Prerequisites:
 
 - The local HTTPS server is running.
-- GM and player views can be opened in Chromium.
+- GM View and Player Display can be opened in Chromium.
 
 Steps:
 
@@ -106,7 +106,7 @@ Steps:
    statuses, diagnostics, controls, borders, and focus indicators.
 4. Navigate the GM form and controls with the keyboard and confirm the focused
    element has a visible outline.
-5. Open the player view and confirm its status bar uses parchment chrome while
+5. Open the Player Display and confirm its status bar uses parchment chrome while
    the map stage remains dark.
 6. Block the local WOFF2 request and reload the GM view.
 7. Confirm the declared serif fallback leaves headings, labels, controls, and
@@ -189,7 +189,7 @@ Expected result:
 
 ## Milestone 1: iPad Connection on Same Wi-Fi
 
-### Test: iPad Can Reach Player View
+### Test: iPad Can Reach Player Display
 
 Prerequisites:
 
@@ -230,15 +230,15 @@ Steps:
 6. Install and fully trust the printed local development certificate on the iPhone and iPad if required.
 7. Open the printed player URL on the iPhone and iPad.
 8. Trigger the simple GM counter increment.
-9. Confirm each player view updates without refresh.
+9. Confirm each Player Display updates without refresh.
 10. Repeat the core iPad flow with the Chromebook as host.
 11. Repeat on a friend's Wi-Fi network.
 
 Expected result:
 
 - GM and player pages both load over HTTPS.
-- The iPhone and iPad reach the player view by LAN IP during MacBook Pro validation.
-- The iPad reaches the player view by LAN IP during Chromebook validation.
+- The iPhone and iPad reach the Player Display by LAN IP during MacBook Pro validation.
+- The iPad reaches the Player Display by LAN IP during Chromebook validation.
 - Player views receive live state updates.
 - The local command reuses an existing trusted certificate when it still covers the current LAN IP, and regenerates it only when needed.
 - Any LAN isolation or certificate failure is documented clearly.
@@ -265,12 +265,12 @@ Steps:
 Expected result:
 
 - The iPad reaches the player page.
-- The player view receives the GM state change live.
+- The Player Display receives the GM state change live.
 - If the network blocks device-to-device traffic, the failure is documented clearly.
 
 ## Milestone 1: GM/Player State Sync
 
-### Test: Live State Change Appears on Player View
+### Test: Live State Change Appears on Player Display
 
 Steps:
 
@@ -280,22 +280,22 @@ Steps:
 
 Expected result:
 
-- The player view updates without a manual refresh.
+- The Player Display updates without a manual refresh.
 - The displayed state matches the GM-triggered state.
 
-## Milestone 1+: Player View Read-Only Behavior
+## Milestone 1+: Player Display Read-Only Behavior
 
 ### Test: Player Cannot Mutate Session State
 
 Steps:
 
-1. Open the player view.
+1. Open the Player Display.
 2. Inspect the visible UI.
 3. Try normal interactions such as tapping, dragging, refreshing, and using visible controls.
 
 Expected result:
 
-- The player view does not expose controls for changing map, fog, or session state.
+- The Player Display does not expose controls for changing map, fog, or session state.
 - Player interactions do not mutate GM state.
 
 ## Milestone 2: Campaign and Map Library
@@ -322,8 +322,8 @@ Steps:
 7. Confirm both duplicate-named maps are retained with unique stored filenames.
 8. Rename both maps.
 9. Reorder the maps manually.
-10. Select one map as the active map.
-11. Open the player view.
+10. Use `Show to Players` for one map-backed encounter.
+11. Open the Player Display.
 12. Attempt to add the invalid or unsupported file.
 13. Reload the campaign library with the malformed campaign folder present.
 14. Confirm the valid campaign remains listed and the malformed folder produces
@@ -334,55 +334,55 @@ Steps:
 Expected result:
 
 - The campaign exists as a local folder.
-- The campaign metadata records map names, file paths, order, active map, and empty fog state.
+- The campaign metadata records map names, file paths, order, the shown-to-players map, and empty fog state.
 - Stored map filenames are filesystem-safe and collision-safe.
 - Invalid, unsupported, or mismatched map image data is rejected without adding
   a map file or metadata entry.
 - Invalid campaign metadata does not hide valid campaigns, produces actionable
   GM-visible recovery guidance, and is not rewritten automatically.
-- The player view displays the active map.
-- The player view remains read-only.
+- The Player Display displays the shown-to-players map.
+- The Player Display remains read-only.
 - No fog, initiative, notes, token, dice, or automation controls are present.
 
 ## Milestone 3: Static Active Map Display
 
-### Test: Player View Follows Active Map Selection
+### Test: Player Display Follows Show to Players
 
 Prerequisites:
 
 - A campaign exists with at least two maps.
-- GM and player views are open.
+- GM View and Player Display are open.
 
 Steps:
 
-1. Select the first map from the GM view.
-2. Confirm the GM view displays the first map.
-3. Confirm the player view displays the first map.
-4. Select the second map from the GM view.
-5. Confirm the GM and player views update without manual player refresh.
+1. Use `Show to Players` for the first map-backed encounter from the GM View.
+2. Confirm the GM View displays the first map.
+3. Confirm the Player Display displays the first map.
+4. Use `Show to Players` for the second map-backed encounter from the GM View.
+5. Confirm the GM View and Player Display update without manual player refresh.
 6. Use Zoom in, Zoom out, Fit map, drag pan, pinch zoom, and keyboard arrow pan
-   in the player view.
-7. Confirm the GM view and a second player view remain unchanged.
-8. Resize the browser window and test the player view on iPad and a TV-like
+   in the Player Display.
+7. Confirm the GM View and a second Player Display remain unchanged.
+8. Resize the browser window and test the Player Display on iPad and a TV-like
    landscape viewport.
 9. Disconnect and reconnect the player while zoomed, then refresh the page.
 
 Expected result:
 
-- GM and player views show the same active map.
+- GM View and Player Display show the same shown-to-players map.
 - Map scaling uses centered contain behavior on desktop, iPad, and TV-like
   landscape viewports.
 - Player zoom is bounded from 50% through 300%, supports local pan, resets when
   the active map changes or the page reloads, and remains unchanged through a
   same-map reconnect or resize.
 - Player viewport changes do not mutate campaign or session state and do not
-  change the GM or another player viewport.
-- Switching between campaigns resets the player viewport even when both active
+  change the GM View or another Player Display viewport.
+- Switching between campaigns resets the Player Display viewport even when both active
   maps have the same map ID.
 - If the active-map image cannot load, the player reports the error and does
   not display stale canvas content.
 - A delayed response for an older map cannot replace the current active map.
-- The player view remains read-only.
+- The Player Display remains read-only.
 - No fog controls are present.
 
 Terminology note:
@@ -412,7 +412,7 @@ Steps:
 6. Edit the campaign emoji icon and short description.
 7. Reload the page and confirm the edited emoji and description persist.
 8. Try an invalid metadata edit and confirm a GM-visible validation error appears.
-9. Confirm editing campaign metadata does not reload or change the player display.
+9. Confirm editing campaign metadata does not reload or change the Player Display.
 10. Create a new campaign from the landing page.
 11. Review invalid campaign diagnostics.
 12. Repeat at a Chromebook-sized viewport.
@@ -423,8 +423,8 @@ Expected result:
 - Campaign cards open the selected campaign.
 - Emoji icons and descriptions are editable, persisted, and shown on campaign cards.
 - Invalid metadata edits are rejected without corrupting campaign files.
-- Metadata-only edits do not change the shown-to-players map or force a player
-  display reload.
+- Metadata-only edits do not change the shown-to-players map or force a Player
+  Display reload.
 - New campaign creation remains available.
 - Invalid campaign diagnostics remain visible and usable.
 - The layout fits Chromebook-sized screens.
@@ -439,7 +439,7 @@ Expected result:
 Prerequisites:
 
 - A campaign exists with at least two maps.
-- GM and player views are open.
+- GM View and Player Display are open.
 - One encounter is already shown to players.
 
 Steps:
@@ -448,15 +448,15 @@ Steps:
 2. Confirm maps display as encounter cards with visually prominent thumbnails.
 3. Confirm the currently shown-to-players encounter is visually distinguished.
 4. Click a different encounter card thumbnail to open its in-page workspace placeholder.
-5. Confirm the player display does not change.
+5. Confirm the Player Display does not change.
 6. Use the card-level explicit `Show to Players` action for that encounter.
 
 Expected result:
 
 - Encounter cards preserve add/upload, rename, and reorder workflows.
 - The selected/editing encounter is distinct from the shown-to-players encounter.
-- Opening or selecting an encounter for editing does not update the player display.
-- The player display changes only after the explicit `Show to Players` action.
+- Opening or selecting an encounter for editing does not update the Player Display.
+- The Player Display changes only after the explicit `Show to Players` action.
 - Existing storage may still use `maps`, and existing `activeMapId` terminology
   represents the shown-to-players map until a reviewed migration changes it.
 
@@ -467,7 +467,7 @@ Expected result:
 Prerequisites:
 
 - A campaign exists with at least two maps.
-- GM and player views are open.
+- GM View and Player Display are open.
 - One encounter is shown to players.
 
 Steps:
@@ -484,7 +484,7 @@ Expected result:
 
 - The workspace uses the existing canvas renderer for the GM map view.
 - The GM can inspect or prep one encounter while another remains shown to players.
-- Player view remains unchanged until `Show to Players` is clicked.
+- Player Display remains unchanged until `Show to Players` is clicked.
 - Workspace navigation back to the encounter gallery is clear.
 - The layout has room for future fog tools without adding fog controls yet.
 - Rename, reorder, and upload remain gallery workflows for this feature.
@@ -504,24 +504,24 @@ Steps:
 1. Show one encounter to players.
 2. Open a different selected/editing encounter in the GM workspace.
 3. Add fog over a rectangle or circle in the selected/editing encounter.
-4. Confirm the player display does not change.
+4. Confirm the Player Display does not change.
 5. Use `Show to Players` for the selected/editing encounter.
-6. Confirm the player view shows that encounter with the hidden area obscured.
+6. Confirm the Player Display shows that encounter with the hidden area obscured.
 7. Remove or reveal part of the fog from the GM workspace.
-8. Confirm the player display updates live because this encounter is now shown to players.
+8. Confirm the Player Display updates live because this encounter is now shown to players.
 9. Open another encounter in the GM workspace and edit its fog without showing it.
 
 Expected result:
 
 - Maps start visible rather than covered by full black fog.
 - Fog belongs to the selected/editing encounter being edited.
-- The player view shows fog updates only for the shown-to-players encounter.
-- Editing fog on a non-shown encounter does not change the player display.
-- Areas hidden by fog are not visible on the player display.
+- The Player Display shows fog updates only for the shown-to-players encounter.
+- Editing fog on a non-shown encounter does not change the Player Display.
+- Areas hidden by fog are not visible on the Player Display.
 - Revealed or cleared areas become visible again.
 - GM fog is semi-transparent unless implementation review chooses a better
   accessible treatment; player fog is opaque or near-opaque.
-- The player view does not show GM-only controls or hidden notes.
+- The Player Display does not show GM-only controls or hidden notes.
 
 ## Milestone 5: Save and Load Campaign State
 
@@ -540,7 +540,7 @@ Steps:
 4. Save the campaign.
 5. Restart or reload the app.
 6. Open the saved campaign.
-7. Open the player view.
+7. Open the Player Display.
 
 Expected result:
 
@@ -548,7 +548,7 @@ Expected result:
 - Map names and manual ordering are restored.
 - The saved shown-to-players encounter is restored.
 - Per-encounter fog state is restored.
-- The player view matches the saved shown-to-players encounter and fog state.
+- The Player Display matches the saved shown-to-players encounter and fog state.
 - GM selected/editing encounter state is not confused with the shown-to-players
   encounter.
 - No cloud storage or user account is required.
@@ -567,5 +567,6 @@ Expected result:
 
 - MVP work does not include tokens, character sheets, dice roller, rules automation, NPC tracking, cloud hosting, or login/auth.
 - Initiative tracking is not implemented in the MVP.
-- Campaigns and maps are included in V1 only as local prep and display buckets, not as full VTT campaign management.
+- Campaigns, encounters, and maps are included in V1 only as local prep and
+  display buckets, not as full VTT campaign management.
 - Any new major feature has updated roadmap and acceptance criteria before implementation.

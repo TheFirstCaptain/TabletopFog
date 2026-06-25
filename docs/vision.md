@@ -4,7 +4,10 @@
 
 TabletopFog is a lightweight, locally hosted battlemap display and fog-of-war tool for in-person tabletop RPGs.
 
-It helps a GM prepare local campaign map folders, show a shared map on a player-facing display, and hide secret or unrevealed areas with manual fog. It is designed for tables that use physical minis, paper notes, and in-person play, not for fully online play.
+It helps a GM prepare local campaigns and encounters, show a chosen encounter on
+a Player Display, and hide secret or unrevealed areas with manual fog. It is
+designed for tables that use physical minis, paper notes, and in-person play,
+not for fully online play.
 
 ## Primary MVP Goal
 
@@ -16,7 +19,7 @@ The MVP succeeds when:
 - The GM can open a GM-facing browser page.
 - An iPad can open a player-facing page using the GM machine's LAN IP address.
 - The GM can trigger a simple state change.
-- The player view updates live without cloud hosting.
+- The Player Display updates live without cloud hosting.
 
 ## Target Users
 
@@ -56,13 +59,17 @@ These exclusions are part of the product design, not temporary omissions to fill
 - Keep the app simple and lightweight.
 - Prefer browser-first implementation.
 - Use local hosting for the MVP.
-- Keep GM view and player view separate.
-- Keep player view read-only.
-- Treat campaigns and maps as V1 prep and display buckets.
+- Keep GM View and Player Display separate.
+- Keep Player Display read-only.
+- Treat campaigns, encounters, and maps as V1 prep and display buckets.
 - Store campaign data locally in inspectable files.
 - Start maps visible by default.
 - Use fog to hide areas, then remove fog to reveal them during play.
 - Add complexity only when it directly supports in-person battlemap display.
+
+User-facing language should follow `docs/ui-terminology.md`. In particular,
+opening or editing an encounter must never change the Player Display; only the
+explicit `Show to Players` action does.
 
 ## Long-Term Direction
 

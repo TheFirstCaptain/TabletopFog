@@ -2,7 +2,9 @@
 
 ## Context
 
-TabletopFog has two separate browser views: GM and player. The GM controls state. The player display is read-only and mirrored to a TV. The MVP does not include accounts, login, or cloud hosting.
+TabletopFog has two separate browser views: GM View and Player Display. The GM
+controls state. The Player Display is read-only and mirrored to a TV. The MVP
+does not include accounts, login, or cloud hosting.
 
 ## Decision
 
@@ -13,7 +15,8 @@ The MVP will use route-based roles:
 
 Both views are served by the same local HTTPS server. The app assumes trusted devices on the same Wi-Fi network. There is no login or authentication for the MVP.
 
-The player view must not expose UI controls that mutate session state. GM-originated state changes are broadcast to connected player views.
+The Player Display must not expose UI controls that mutate session state.
+GM-originated state changes are broadcast to connected Player Display views.
 
 ## Consequences
 

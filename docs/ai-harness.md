@@ -7,7 +7,9 @@ This document defines how future Codex or AI-assisted sessions should work on Ta
 Before making code or documentation changes, read:
 
 - `docs/vision.md`
+- `docs/design-language.md`
 - `docs/architecture.md`
+- `docs/ui-terminology.md`
 - `docs/roadmap.md`
 - `docs/acceptance-tests.md`
 - `docs/development.md`
@@ -22,19 +24,29 @@ Before making code or documentation changes, read:
 - `docs/subagent-output.md`
 - Relevant files in `docs/decisions/`
 
-Use these documents as the source of truth for scope and direction.
+Use these documents as the source of truth for scope, language, and direction.
 
 ## Mandatory Feature Workflow
 
 When the user asks to start or continue a feature, including prompts such as "let's do the next feature," the main agent must:
 
-1. Read `docs/features/FEATURE_TRACKER.md`.
-2. Select the next eligible feature or confirm the requested feature.
-3. Read the relevant `docs/features/F-NNN.md`.
-4. Ask clarification questions before implementation.
-5. Record the answers in the feature document.
-6. Run the mandatory SDLC subagent workflow from `docs/decisions/decision-004-mandatory-subagent-sdlc.md`.
-7. Integrate the work, run validation, update docs and trackers, and summarize the outcome.
+1. Read `docs/vision.md`.
+2. Read `docs/design-language.md`.
+3. Read `docs/architecture.md`.
+4. Read `docs/ui-terminology.md`.
+5. Read `docs/features/FEATURE_TRACKER.md`.
+6. Select the next eligible feature or confirm the requested feature.
+7. Read the relevant `docs/features/F-NNN.md`.
+8. Verify the proposed implementation aligns with:
+   - Quiet software. Better games.
+   - One Question Per Screen.
+   - Never Surprise the GM.
+   - Respect the Table.
+   - Rule of Three.
+9. Ask clarification questions before implementation.
+10. Record the answers in the feature document.
+11. Run the mandatory SDLC subagent workflow from `docs/decisions/decision-004-mandatory-subagent-sdlc.md`.
+12. Integrate the work, run validation, update docs and trackers, and summarize the outcome.
 
 All of these stages are mandatory for feature work:
 
@@ -49,7 +61,9 @@ All of these stages are mandatory for feature work:
 - Final-diff review after implementation and test changes are complete.
 - Main-agent integration and final validation.
 
-The main agent owns the final result. Subagent findings must be reconciled against the vision, architecture, roadmap, acceptance tests, decisions, bugs, and feature docs before changes are accepted.
+The main agent owns the final result. Subagent findings must be reconciled
+against the vision, design language, architecture, UI terminology, roadmap,
+acceptance tests, decisions, bugs, and feature docs before changes are accepted.
 
 ## Harness Version 1 Evidence
 
@@ -135,10 +149,16 @@ introduces new capability, create or link a feature.
 
 Make the smallest useful change for the current milestone.
 
+Small features are preferred. A feature should generally represent one focused
+implementation session. Avoid combining unrelated UI improvements, workflow
+changes, and technical cleanup into a single feature.
+
 Do not expand project scope without also updating:
 
 - `README.md` if commands, setup, current status, validation workflow, or user-facing behavior changed
 - `docs/roadmap.md`
+- `docs/design-language.md` if UI principles, interaction language, or visual direction changed
+- `docs/ui-terminology.md` if user-facing or implementation terminology changed
 - `docs/features/FEATURE_TRACKER.md`
 - The relevant feature document in `docs/features/`
 - `docs/bugs/BUG_TRACKER.md` if the work discovers or fixes a defect
@@ -178,6 +198,9 @@ For the MVP, do not add:
 - Cloud hosting dependency.
 
 If a future change touches one of these areas, stop and update roadmap and decisions first.
+
+Future initiative tracking, if ever approved, belongs to an encounter and must
+remain modular. It must not become a path toward full VTT combat automation.
 
 ## Update Acceptance Criteria with Features
 

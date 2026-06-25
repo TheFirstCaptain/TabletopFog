@@ -2,7 +2,11 @@
 
 ## Context
 
-TabletopFog is intended for in-person tabletop RPG sessions where the GM controls a map and fog-of-war display from a nearby machine. The player display is an iPad mirrored to a TV. The primary MVP goal is to prove that the app can run locally on the GM machine and be reached by the iPad over the same Wi-Fi network.
+TabletopFog is intended for in-person tabletop RPG sessions where the GM
+controls a map and fog-of-war display from a nearby machine. The Player Display
+is an iPad mirrored to a TV. The primary MVP goal is to prove that the app can
+run locally on the GM machine and be reached by the iPad over the same Wi-Fi
+network.
 
 ## Decision
 

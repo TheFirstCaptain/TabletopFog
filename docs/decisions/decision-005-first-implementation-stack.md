@@ -4,7 +4,8 @@
 
 Milestone 1 needs a concrete stack so implementation can focus on proving local connectivity instead of reopening basic technology choices.
 
-The app must run locally on the GM machine, serve separate GM and player browser views, and push live state updates to the player view.
+The app must run locally on the GM machine, serve separate GM View and Player
+Display browser views, and push live state updates to the Player Display.
 
 ## Decision
 

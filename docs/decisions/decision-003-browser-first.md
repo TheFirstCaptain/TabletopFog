@@ -2,7 +2,9 @@
 
 ## Context
 
-The target GM device is a Chromebook first, with MacBook also acceptable. The player display is an iPad mirrored to a TV. A browser-first approach gives the project the broadest device compatibility with the least installation friction.
+The target GM device is a Chromebook first, with MacBook also acceptable. The
+Player Display is an iPad mirrored to a TV. A browser-first approach gives the
+project the broadest device compatibility with the least installation friction.
 
 ## Decision
 
@@ -21,7 +23,7 @@ React or another frontend framework should be avoided unless a later milestone c
 
 ## Consequences
 
-- The same implementation can serve GM and player views.
+- The same implementation can serve the GM View and Player Display.
 - iPad support can be tested directly in Safari.
 - Chromebook support remains practical.
 - The first implementation can avoid app stores, native packaging, and desktop installers.
@@ -29,6 +31,7 @@ React or another frontend framework should be avoided unless a later milestone c
 
 ## Alternatives Considered
 
-- Native desktop app: rejected for MVP because Chromebook support and iPad player display are easier with a browser.
+- Native desktop app: rejected for MVP because Chromebook support and iPad
+  Player Display are easier with a browser.
 - React app from the start: deferred because the initial UI and rendering model should be simple enough for plain browser code.
 - Electron-first app: deferred because it adds packaging concerns before local browser connectivity is proven.

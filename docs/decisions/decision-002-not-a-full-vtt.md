@@ -6,7 +6,9 @@ Many virtual tabletop tools include tokens, sheets, dice rollers, initiative, co
 
 ## Decision
 
-TabletopFog will not be a full VTT. V1 will focus on local connectivity, local campaign/map prep buckets, active map display, and manual fog-of-war hiding over visible maps.
+TabletopFog will not be a full VTT. V1 will focus on local connectivity, local
+campaign, encounter, and map prep buckets, Shown to Players display behavior,
+and manual fog-of-war hiding over visible maps.
 
 The MVP will not include:
 

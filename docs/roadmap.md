@@ -1,6 +1,9 @@
 # Roadmap
 
-Feature-level planning and status tracking lives in `docs/features/FEATURE_TRACKER.md`.
+Feature-level planning and status tracking lives in
+`docs/features/FEATURE_TRACKER.md`. Product language is defined in
+`docs/ui-terminology.md`; design principles are defined in
+`docs/design-language.md`.
 
 ## Milestone 0: Harness and Repo Structure
 
@@ -62,25 +65,26 @@ Implementation notes:
 
 ## Milestone 2: Campaign and Map Library
 
-Goal: Create or open a local campaign folder and manage multiple maps inside it.
+Goal: Create or open a local campaign folder and manage multiple map-backed
+encounters inside it.
 
 Acceptance criteria:
 
 - GM can create a campaign.
 - GM can open an existing campaign.
 - Campaigns are stored locally as folders.
-- GM can upload or add maps into a campaign.
+- GM can upload or add maps as encounter assets in a campaign.
 - Original file names are preserved as default map names.
 - GM can rename maps later.
 - GM can reorder maps manually.
-- GM can select an active map.
-- Player view displays the active map.
-- Player view remains read-only.
+- GM can explicitly show a map-backed encounter to players.
+- Player Display shows only the encounter explicitly shown to players.
+- Player Display remains read-only.
 - No fog controls, initiative tracking, notes, or tokens are introduced.
 
 Implementation notes:
 
-- Campaigns and maps are part of V1.
+- Campaigns, encounters, and maps are part of V1.
 - Keep the storage format simple, local, inspectable, and migration-friendly.
 - A first storage shape can use `~/TabletopFog/tabletopfog-data/<Campaign Name>/campaign.json` plus a `maps/` folder.
 - [F-004A](./features/F-004A.md) adds a locally hosted fantasy display font and
@@ -89,26 +93,29 @@ Implementation notes:
 
 ## Milestone 3: Static Active Map Display Polish
 
-Goal: Harden and polish the selected active campaign map display on both GM and player views after the F-004 campaign library provides the minimal display path.
+Goal: Harden and polish the legacy active-map display path on both GM View and
+Player Display after the F-004 campaign library provides the minimal display
+path.
 
 Acceptance criteria:
 
-- GM and player views use consistent active-map rendering behavior.
+- GM View and Player Display use consistent active-map rendering behavior.
 - Map scales reasonably to available screen across desktop, iPad, and TV-like landscape viewports.
-- Player can zoom and pan its map independently without changing the GM view or another player display.
+- Player Display can zoom and pan its map independently without changing the GM View or another Player Display.
 - Active-map display handles refresh, reconnect, and image-load error states cleanly.
-- Player receives only the active-map display state needed for read-only rendering.
-- Player view remains read-only.
+- Player Display receives only the active-map display state needed for read-only rendering.
+- Player Display remains read-only.
 - No fog controls are introduced.
 
 Implementation notes:
 
 - Use the campaign and map metadata from Milestone 2.
 - Build on F-004's minimal active-map sync and display behavior.
-- Keep GM and player viewport state local to each browser view so their controls can diverge later.
+- Keep GM View and Player Display viewport state local to each browser view so their controls can diverge later.
 - In F-004 and F-005, the older term "active map" means the map currently shown
   to players. Later encounter-workflow features split that idea into a
   selected/editing encounter and a shown-to-players encounter.
+  New UI should use `Shown to Players` instead of `active map`.
 
 ## Milestone 3 Follow-Up: Campaign and Encounter Workflow Polish
 
@@ -116,38 +123,61 @@ Goal: Make the prep workflow feel like a lightweight fantasy tabletop tool:
 campaign cards lead to encounter cards, encounter cards open a GM workspace,
 and showing an encounter to players remains an explicit action.
 
-Feature sequence:
+Completed feature sequence:
 
 - [F-005A](./features/F-005A.md): campaign landing page polish.
 - [F-005B](./features/F-005B.md): encounter card gallery and workspace entry.
 - [F-005C](./features/F-005C.md): encounter workspace shell.
+
+Planned focused UI polish sequence before fog:
+
+- [F-005D](./features/F-005D.md): navigation simplification.
+- [F-005E](./features/F-005E.md): campaign card presentation.
+- [F-005F](./features/F-005F.md): encounter gallery presentation.
+- [F-005G](./features/F-005G.md): encounter workspace layout.
+- [F-005H](./features/F-005H.md): Manage Mode.
+- [F-005I](./features/F-005I.md): design language compliance review.
+- [F-005J](./features/F-005J.md): final UI polish.
+- [F-006](./features/F-006.md): manual fog of war.
 
 Status:
 
 - Complete: [F-005A](./features/F-005A.md), campaign landing page polish.
 - Complete: [F-005B](./features/F-005B.md), encounter card gallery and workspace entry.
 - Complete: [F-005C](./features/F-005C.md), encounter workspace shell.
+- Proposed: [F-005D](./features/F-005D.md), navigation simplification.
+- Proposed: [F-005E](./features/F-005E.md), campaign card presentation.
+- Proposed: [F-005F](./features/F-005F.md), encounter gallery presentation.
+- Proposed: [F-005G](./features/F-005G.md), encounter workspace layout.
+- Proposed: [F-005H](./features/F-005H.md), Manage Mode.
+- Proposed: [F-005I](./features/F-005I.md), design language compliance review.
+- Proposed: [F-005J](./features/F-005J.md), final UI polish.
 
 Acceptance criteria:
 
 - GM `/gm` starts on a fantasy-themed campaign landing page with campaign cards.
-- Opening a campaign shows encounter/map cards with thumbnails.
+- Opening a campaign shows encounter cards with map thumbnails.
 - Clicking an encounter card opens a selected/editing encounter workspace.
-- Clicking or opening an encounter does not automatically change the player display.
+- Clicking or opening an encounter does not automatically change the Player Display.
 - Showing an encounter to players is an explicit `Show to Players` action.
 - The GM may prep one encounter while a different encounter remains shown to players.
-- The player display changes only when the GM explicitly shows an encounter to players.
+- The Player Display changes only when the GM explicitly shows an encounter to players.
 - The current shown-to-players encounter is visually distinguished from the selected/editing encounter.
 - No fog controls, tokens, notes, initiative tracking, dynamic lighting, campaign members, characters, or VTT-style navigation are introduced.
+- Each proposed UI polish feature should remain small enough for one focused
+  implementation session and should not bundle unrelated polish work.
 
 Implementation notes:
 
 - Prefer "encounter" in the UI for prepared map cards while preserving existing
   storage compatibility where current files and APIs still use `maps`.
 - Existing `activeMapId` storage/API terminology currently represents the
-  player-shown map, not necessarily the GM-selected editing encounter.
+  shown-to-players map, not necessarily the GM-selected editing encounter.
 - Consider a future reviewed migration to clearer terminology such as
   `shownMapId`, but do not migrate storage casually.
+- F-005D through F-005J intentionally split the remaining UI polish work before
+  F-006 so navigation, campaign cards, encounter gallery, workspace layout,
+  Manage Mode, review, and final polish can be reviewed independently.
 
 ## Milestone 4: Manual Fog of War
 
@@ -159,10 +189,10 @@ Acceptance criteria:
 - GM can add fog or hide areas on the selected/editing encounter using simple shapes such as rectangles or circles.
 - GM can remove or reveal fog from hidden areas during play.
 - Player receives fog updates only for the encounter currently shown to players.
-- If the GM edits fog on an encounter not shown to players, the player display does not change.
-- If the GM edits fog on the encounter currently shown to players, the player display updates live.
-- Hidden areas remain hidden on the player display.
-- Fog state belongs to a single encounter/map.
+- If the GM edits fog on an encounter not shown to players, the Player Display does not change.
+- If the GM edits fog on the encounter currently shown to players, the Player Display updates live.
+- Hidden areas remain hidden on the Player Display.
+- Fog state belongs to a single encounter.
 - No multiple fog states per encounter.
 - No dynamic lighting, tokens, or vision cones are introduced.
 
@@ -170,6 +200,7 @@ Implementation notes:
 
 - Do not implement the old full-black-fog-starts-over-the-map behavior.
 - In V1, fog is used to hide areas on an otherwise visible map.
+- Fog belongs to the encounter. The map is the visual asset fog is drawn over.
 - Fog tools build on the F-005C encounter workspace and must preserve the
   selected/editing versus shown-to-players distinction.
 - Canvas remains the preferred rendering layer.
@@ -181,10 +212,11 @@ Goal: Complete campaign persistence for fog state and later restore workflows af
 
 Acceptance criteria:
 
-- Preserve F-004 campaign metadata, map list, ordering, map display names, and shown-to-players map behavior.
-- Save fog state per encounter/map.
+- Preserve F-004 campaign metadata, encounter/map list, ordering, display names,
+  and shown-to-players behavior.
+- Save fog state per encounter.
 - Reload a campaign later.
-- Restored player view matches saved shown-to-players encounter and fog state.
+- Restored Player Display matches saved shown-to-players encounter and fog state.
 - Storage format is documented well enough to migrate later.
 - No cloud storage or user accounts are introduced.
 
@@ -204,7 +236,7 @@ Acceptance criteria:
 - Better reveal/hide brush.
 - Undo fog action.
 - Clear fog or reset fog.
-- Fullscreen player view.
+- Fullscreen Player Display.
 - QR code or copied player URL.
 - Better GM map controls if needed.
 
