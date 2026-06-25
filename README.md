@@ -6,7 +6,7 @@ This project is intentionally not a full virtual tabletop. V1 includes local cam
 
 ## Current Status
 
-TabletopFog has completed the first local connectivity spike, campaign/map library, fantasy visual theme, and active-map display polish, including Chromebook-host and iPad-player validation. The HTTPS app serves separate GM and player pages, stores local campaign folders, lets the GM manage maps, and syncs the current player-shown map to the read-only player display over Socket.IO.
+TabletopFog has completed the first local connectivity spike, campaign/map library, fantasy visual theme, active-map display polish, and campaign landing page polish, including Chromebook-host and iPad-player validation through F-005. The HTTPS app serves separate GM and player pages, stores local campaign folders, lets the GM manage maps, and syncs the current player-shown map to the read-only player display over Socket.IO.
 
 The quality gate runs Chromium characterization for current GM/player workflows
 and theme behavior.
@@ -20,6 +20,10 @@ GM and player displays now share a canvas rendering foundation with centered
 contain scaling. Player Zoom out, Fit map, Zoom in, drag, and pinch controls
 change only that browser's local viewport; they do not mutate campaign state or
 change the GM or another player display.
+
+The GM campaign landing page now uses campaign cards with emoji icons, editable
+short descriptions, map counts, and preserved invalid-campaign diagnostics.
+Search/filtering and uploaded campaign images remain deferred.
 
 Upcoming encounter workflow polish will split the old `active map` idea into a
 GM selected/editing encounter and a shown-to-players encounter. Opening an

@@ -229,6 +229,88 @@ test("creates campaigns through GM API and lists them", async (t) => {
   }
 });
 
+test("updates campaign card metadata through GM API only", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const { server, io, stateStore } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+
+  try {
+    await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: "The Long Walk" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const campaignPath = path.join(dataRoot, "The Long Walk", "campaign.json");
+    const updated = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/metadata`, {
+      body: JSON.stringify({
+        description: "Roads through a haunted borderland.",
+        icon: "🛡️"
+      }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PATCH"
+    });
+    const list = await requestHttps(`${url}/api/campaigns`, {
+      headers: gmHeaders(port)
+    });
+    const playerRejected = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/metadata`, {
+      body: JSON.stringify({ description: "Player edit", icon: "🔥" }),
+      headers: playerHeaders(port, { "content-type": "application/json" }),
+      method: "PATCH"
+    });
+    const invalid = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/metadata`, {
+      body: JSON.stringify({ description: "x".repeat(161), icon: "🗺️" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PATCH"
+    });
+    const invalidEmpty = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/metadata`, {
+      body: JSON.stringify({}),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PATCH"
+    });
+    const partialIcon = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/metadata`, {
+      body: JSON.stringify({ icon: "🔥" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PATCH"
+    });
+    const invalidType = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/metadata`, {
+      body: JSON.stringify({ description: ["bad"] }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PATCH"
+    });
+    const unknownField = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/metadata`, {
+      body: JSON.stringify({ unknown: "field" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PATCH"
+    });
+
+    assert.equal(updated.statusCode, 200);
+    assert.equal(updated.json.campaign.description, "Roads through a haunted borderland.");
+    assert.equal(updated.json.campaign.icon, "🛡️");
+    assert.equal(list.json.campaigns[0].description, "Roads through a haunted borderland.");
+    assert.equal(list.json.campaigns[0].icon, "🛡️");
+    assert.equal(playerRejected.statusCode, 403);
+    assert.equal(invalid.statusCode, 400);
+    assert.match(invalid.json.error, /description/);
+    assert.equal(invalidEmpty.statusCode, 400);
+    assert.match(invalidEmpty.json.error, /Campaign metadata/);
+    assert.equal(partialIcon.statusCode, 200);
+    assert.equal(partialIcon.json.campaign.description, "Roads through a haunted borderland.");
+    assert.equal(partialIcon.json.campaign.icon, "🔥");
+    assert.equal(invalidType.statusCode, 400);
+    assert.match(invalidType.json.error, /description/);
+    assert.equal(unknownField.statusCode, 400);
+    assert.match(unknownField.json.error, /description or icon/);
+    assert.equal(JSON.parse(fs.readFileSync(campaignPath, "utf8")).description, "Roads through a haunted borderland.");
+    assert.equal(stateStore.getState().campaign.description, undefined);
+  } finally {
+    await close(server, io);
+  }
+});
+
 test("campaign API reports invalid folders while preserving valid campaigns", async (t) => {
   const dataRoot = createTempRoot(t);
   const invalidDirectory = path.join(dataRoot, "Broken Campaign");

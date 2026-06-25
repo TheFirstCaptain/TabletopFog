@@ -408,17 +408,27 @@ Steps:
 3. Confirm each card shows the campaign name and any available description,
    icon, and lightweight metadata.
 4. Click a campaign card.
-5. Create a new campaign from the landing page.
-6. Review invalid campaign diagnostics.
-7. Repeat at a Chromebook-sized viewport.
+5. Return to the campaign landing page.
+6. Edit the campaign emoji icon and short description.
+7. Reload the page and confirm the edited emoji and description persist.
+8. Try an invalid metadata edit and confirm a GM-visible validation error appears.
+9. Confirm editing campaign metadata does not reload or change the player display.
+10. Create a new campaign from the landing page.
+11. Review invalid campaign diagnostics.
+12. Repeat at a Chromebook-sized viewport.
 
 Expected result:
 
 - The campaign landing page keeps the fantasy/parchment theme.
 - Campaign cards open the selected campaign.
+- Emoji icons and descriptions are editable, persisted, and shown on campaign cards.
+- Invalid metadata edits are rejected without corrupting campaign files.
+- Metadata-only edits do not change the shown-to-players map or force a player
+  display reload.
 - New campaign creation remains available.
 - Invalid campaign diagnostics remain visible and usable.
 - The layout fits Chromebook-sized screens.
+- Campaign search/filtering and uploaded campaign images remain deferred.
 - No fog, token, notes, member, character, cloud, or VTT-style navigation
   controls are present.
 

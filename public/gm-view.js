@@ -1,5 +1,7 @@
 import { createMapCanvasRenderer } from "./map-canvas.js";
 
+const DEFAULT_CAMPAIGN_ICON = "🗺️";
+
 function createButton(document, { action, className, disabled, index, mapId, text }) {
   const button = document.createElement("button");
   button.type = "button";
@@ -157,10 +159,24 @@ export function createGmView(document) {
       elements.libraryMessage.textContent = "";
       campaigns.forEach((campaign) => {
         const item = document.createElement("article");
-        item.className = "campaign-item";
+        item.className = "campaign-card";
+        item.dataset.campaignId = campaign.id;
+        item.dataset.editing = "false";
+
+        const icon = document.createElement("div");
+        icon.className = "campaign-card-icon";
+        icon.textContent = campaign.icon || DEFAULT_CAMPAIGN_ICON;
+        icon.setAttribute("aria-hidden", "true");
+
+        const body = document.createElement("div");
+        body.className = "campaign-card-body";
 
         const title = document.createElement("h3");
         title.textContent = campaign.name;
+
+        const description = document.createElement("p");
+        description.className = "campaign-description";
+        description.textContent = campaign.description || "No description yet.";
 
         const meta = document.createElement("p");
         meta.className = "muted";
@@ -168,15 +184,83 @@ export function createGmView(document) {
           campaign.activeMapName ? `, active: ${campaign.activeMapName}` : ""
         }`;
 
+        body.append(title, description, meta);
+
+        const actions = document.createElement("div");
+        actions.className = "campaign-card-actions";
+
         const open = createButton(document, {
           action: "open-campaign",
           text: "Open"
         });
         open.dataset.campaignId = campaign.id;
 
-        item.append(title, meta, open);
+        const edit = createButton(document, {
+          action: "edit-campaign",
+          className: "secondary",
+          text: "Edit"
+        });
+        edit.setAttribute("aria-label", "Edit campaign details");
+
+        actions.append(open, edit);
+
+        const form = document.createElement("form");
+        form.className = "campaign-card-editor";
+        form.dataset.action = "save-campaign-metadata";
+        form.dataset.campaignId = campaign.id;
+
+        const iconLabel = document.createElement("label");
+        iconLabel.textContent = "Campaign icon";
+        const iconInput = document.createElement("input");
+        iconInput.name = "campaign-icon";
+        iconInput.type = "text";
+        iconInput.maxLength = 8;
+        iconInput.value = campaign.icon || "";
+        iconLabel.append(iconInput);
+
+        const descriptionLabel = document.createElement("label");
+        descriptionLabel.textContent = "Campaign description";
+        const descriptionInput = document.createElement("textarea");
+        descriptionInput.name = "campaign-description";
+        descriptionInput.maxLength = 160;
+        descriptionInput.rows = 3;
+        descriptionInput.value = campaign.description || "";
+        descriptionLabel.append(descriptionInput);
+
+        const editorActions = document.createElement("div");
+        editorActions.className = "campaign-card-actions";
+        const save = createButton(document, {
+          action: "save-campaign-metadata",
+          text: "Save"
+        });
+        save.type = "submit";
+        save.setAttribute("aria-label", "Save campaign details");
+        const cancel = createButton(document, {
+          action: "cancel-campaign-edit",
+          className: "secondary",
+          text: "Cancel"
+        });
+        editorActions.append(save, cancel);
+
+        const message = document.createElement("p");
+        message.className = "campaign-card-message muted";
+        message.setAttribute("aria-live", "polite");
+
+        form.append(iconLabel, descriptionLabel, editorActions);
+        item.append(icon, body, actions, form, message);
         elements.campaignList.append(item);
       });
+    },
+    setCampaignCardMessage(campaignId, message) {
+      const card = elements.campaignList.querySelector(`[data-campaign-id="${CSS.escape(campaignId)}"]`);
+      if (!card) {
+        elements.libraryMessage.textContent = message;
+        return;
+      }
+
+      const cardMessage = card.querySelector(".campaign-card-message");
+      cardMessage.textContent = message;
+      cardMessage.classList.toggle("error-text", Boolean(message));
     },
     setCampaignMessage(message) {
       elements.campaignMessage.textContent = message;

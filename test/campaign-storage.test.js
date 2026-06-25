@@ -284,6 +284,103 @@ test("campaign reads do not write and later mutations preserve unknown metadata"
   assert.equal(saved.maps[0].name, "Forest Ambush");
 });
 
+test("updates campaign card metadata while preserving unknown fields", (t) => {
+  const root = createTempRoot(t);
+  const campaignDir = path.join(root, "The Long Walk");
+  const campaignPath = path.join(campaignDir, "campaign.json");
+  fs.mkdirSync(path.join(campaignDir, "maps"), { recursive: true });
+  fs.writeFileSync(
+    campaignPath,
+    `${JSON.stringify(
+      {
+        version: 1,
+        name: "The Long Walk",
+        activeMapId: null,
+        externalMetadata: { source: "future-version" },
+        maps: []
+      },
+      null,
+      2
+    )}\n`
+  );
+  const storage = createCampaignStorage({ dataRoot: root });
+
+  const updated = storage.updateCampaignMetadata("The Long Walk", {
+    description: "Roads through a haunted borderland.",
+    icon: "🛡️"
+  });
+  const saved = JSON.parse(fs.readFileSync(campaignPath, "utf8"));
+
+  assert.equal(updated.description, "Roads through a haunted borderland.");
+  assert.equal(updated.icon, "🛡️");
+  assert.equal(saved.description, "Roads through a haunted borderland.");
+  assert.equal(saved.icon, "🛡️");
+  assert.deepEqual(saved.externalMetadata, { source: "future-version" });
+});
+
+test("rejects invalid campaign card metadata without changing storage", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const campaignPath = path.join(root, campaign.id, "campaign.json");
+  const originalMetadata = fs.readFileSync(campaignPath, "utf8");
+
+  assert.throws(
+    () =>
+      storage.updateCampaignMetadata(campaign.id, {
+        description: "x".repeat(161),
+        icon: "🗺️"
+      }),
+    /description/
+  );
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+
+  assert.throws(
+    () =>
+      storage.updateCampaignMetadata(campaign.id, {
+        description: "Within bounds.",
+        icon: "too long"
+      }),
+    /icon/
+  );
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+});
+
+test("campaign card metadata patches preserve omitted fields and reject unsupported shapes", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+
+  storage.updateCampaignMetadata(campaign.id, {
+    description: "Initial description.",
+    icon: "🗺️"
+  });
+
+  const descriptionOnly = storage.updateCampaignMetadata(campaign.id, {
+    description: "Updated description."
+  });
+  assert.equal(descriptionOnly.description, "Updated description.");
+  assert.equal(descriptionOnly.icon, "🗺️");
+
+  const iconOnly = storage.updateCampaignMetadata(campaign.id, {
+    icon: "🔥"
+  });
+  assert.equal(iconOnly.description, "Updated description.");
+  assert.equal(iconOnly.icon, "🔥");
+
+  const campaignPath = path.join(root, campaign.id, "campaign.json");
+  const originalMetadata = fs.readFileSync(campaignPath, "utf8");
+
+  assert.throws(() => storage.updateCampaignMetadata(campaign.id, { description: ["bad"] }), /description/);
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+
+  assert.throws(() => storage.updateCampaignMetadata(campaign.id, { icon: { bad: true } }), /icon/);
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+
+  assert.throws(() => storage.updateCampaignMetadata(campaign.id, { unknown: "field" }), /description or icon/);
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+});
+
 test("rejects invalid map image data without changing campaign storage", (t) => {
   const root = createTempRoot(t);
   const storage = createCampaignStorage({ dataRoot: root });

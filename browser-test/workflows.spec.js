@@ -1,5 +1,8 @@
 "use strict";
 
+const fs = require("node:fs");
+const path = require("node:path");
+
 const { PNG_BYTES } = require("../test-support/fixtures");
 const { expect, test } = require("./fixtures");
 
@@ -85,6 +88,90 @@ test("GM creates, reopens, uploads, renames, and reorders campaign maps", async 
     .toEqual(["cave", "Forest Ambush"]);
   await expect(page.getByRole("button", { name: "Up" }).first()).toBeDisabled();
   await expect(page.getByRole("button", { name: "Down" }).nth(1)).toBeDisabled();
+});
+
+test("GM edits campaign card emoji and description without changing player display", async ({ app, page, context }) => {
+  const player = await context.newPage();
+  let playerAssetRequests = 0;
+  await player.route("**/api/player/active-map/asset*", (route) => {
+    playerAssetRequests += 1;
+    return route.continue();
+  });
+  await openGm(page, app.baseURL);
+  await createCampaign(page);
+  await addMap(page, "forest.png");
+  await page.getByRole("button", { name: "Show to players" }).click();
+  await player.goto(`${app.baseURL}/player`);
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  const playerAssetRequestsBeforeMetadataEdit = playerAssetRequests;
+
+  await page.getByRole("button", { name: "Library" }).click();
+  const card = page.locator(".campaign-card").filter({ hasText: "The Long Walk" });
+  await expect(card.getByText("The Long Walk")).toBeVisible();
+  await expect(card.getByText("1 map")).toBeVisible();
+  await expect(card.getByText("🗺️")).toBeVisible();
+  await card.getByRole("button", { name: "Edit campaign details" }).click();
+  await card.getByRole("heading", { name: "The Long Walk" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Campaign Library" })).toBeVisible();
+  await card.getByLabel("Campaign icon").fill("🛡️");
+  await card.getByLabel("Campaign description").fill("Roads through a haunted borderland.");
+  await card.getByRole("button", { name: "Save campaign details" }).click();
+  await expect(card.getByText("Roads through a haunted borderland.")).toBeVisible();
+  await expect(card.getByText("🛡️")).toBeVisible();
+  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeMetadataEdit);
+
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 1, name: "Campaign Library" })).toBeVisible();
+  const reloadedCard = page.locator(".campaign-card").filter({ hasText: "The Long Walk" });
+  await expect(reloadedCard.getByText("Roads through a haunted borderland.")).toBeVisible();
+  await expect(reloadedCard.getByText("🛡️")).toBeVisible();
+  await reloadedCard.click();
+  await expect(page.getByRole("heading", { level: 2, name: "The Long Walk" })).toBeVisible();
+  await page.evaluate(async () => {
+    const response = await fetch(`/api/campaigns/${encodeURIComponent("The Long Walk")}/metadata`, {
+      body: JSON.stringify({
+        description: "Current campaign metadata stays fresh.",
+        icon: "🔥"
+      }),
+      headers: { "content-type": "application/json" },
+      method: "PATCH"
+    });
+
+    if (!response.ok) throw new Error("Metadata update failed.");
+  });
+  await page.getByRole("button", { name: "Library" }).click();
+  const refreshedCard = page.locator(".campaign-card").filter({ hasText: "The Long Walk" });
+  await expect(refreshedCard.getByText("Current campaign metadata stays fresh.")).toBeVisible();
+  await expect(refreshedCard.getByText("🔥")).toBeVisible();
+});
+
+test("campaign landing cards keep diagnostics and deferred controls out of scope", async ({ app, page }) => {
+  await page.setViewportSize({ height: 768, width: 1366 });
+  await openGm(page, app.baseURL);
+  await createCampaign(page, "A Very Long Campaign Name Across The Western Borderlands");
+  await page.getByRole("button", { name: "Library" }).click();
+  await page.locator(".campaign-card").getByRole("button", { name: "Edit campaign details" }).click();
+  await page.getByLabel("Campaign icon").fill("too long");
+  await page.getByRole("button", { name: "Save campaign details" }).click();
+  await expect(page.getByText(/Campaign icon must be one emoji or short symbol/i)).toBeVisible();
+
+  const brokenDirectory = path.join(app.dataRoot, "Broken Campaign");
+  fs.mkdirSync(brokenDirectory);
+  fs.writeFileSync(path.join(brokenDirectory, "campaign.json"), "{not-json");
+  await page.reload();
+  await expect(page.locator(".campaign-card")).toHaveCount(1);
+  await expect(page.getByText(/Skipped campaign "Broken Campaign"/)).toBeVisible();
+  await expect(page.locator("input[type='search']")).toHaveCount(0);
+  await expect(page.getByLabel(/campaign image/i)).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /member|character|token|fog|note|cloud|dashboard/i })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /member|character|token|fog|note|cloud|dashboard/i })).toHaveCount(0);
+  await expect(
+    page.locator("input, textarea, select").filter({ hasText: /member|character|token|fog|note|cloud/i })
+  ).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+  await page.setViewportSize({ height: 844, width: 390 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
 test("player follows active-map changes and remains read-only", async ({ app, page, context }) => {
@@ -275,7 +362,7 @@ test("same map ID in another campaign resets the player viewport", async ({ app,
 
   await page.getByRole("button", { name: "Library" }).click();
   await page
-    .locator(".campaign-item")
+    .locator(".campaign-card")
     .filter({ hasText: "First Campaign" })
     .getByRole("button", { name: "Open" })
     .click();

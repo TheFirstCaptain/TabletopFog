@@ -24,6 +24,13 @@ export function createGmApi(fetchRequest) {
     openCampaign(campaignId) {
       return request(`/api/campaigns/${encodeURIComponent(campaignId)}`);
     },
+    updateCampaignMetadata(campaignId, metadata) {
+      return request(`/api/campaigns/${encodeURIComponent(campaignId)}/metadata`, {
+        body: JSON.stringify(metadata),
+        headers: { "content-type": "application/json" },
+        method: "PATCH"
+      });
+    },
     renameMap(campaignId, mapId, name) {
       return request(`/api/campaigns/${encodeURIComponent(campaignId)}/maps/${encodeURIComponent(mapId)}`, {
         body: JSON.stringify({ name }),

@@ -8,7 +8,10 @@ const { validateMapImage } = require("./map-image");
 
 const CAMPAIGN_EXTRA_FIELDS = Symbol("campaignExtraFields");
 const MAP_EXTRA_FIELDS = Symbol("mapExtraFields");
-const campaignFields = new Set(["version", "name", "activeMapId", "maps"]);
+const MAX_CAMPAIGN_DESCRIPTION_LENGTH = 160;
+const MAX_CAMPAIGN_ICON_LENGTH = 4;
+const campaignFields = new Set(["version", "name", "description", "icon", "activeMapId", "maps"]);
+const metadataFields = new Set(["description", "icon"]);
 const mapFields = new Set(["id", "name", "originalFileName", "file", "order", "fog"]);
 
 function getDefaultDataRoot(env = process.env) {
@@ -143,6 +146,8 @@ function createCampaignStorage(options = {}) {
       version: Number.isInteger(rawCampaign.version) ? rawCampaign.version : 1,
       id: campaignId,
       name: String(rawCampaign.name || campaignId),
+      description: typeof rawCampaign.description === "string" ? rawCampaign.description : "",
+      icon: typeof rawCampaign.icon === "string" ? rawCampaign.icon : "",
       activeMapId: rawCampaign.activeMapId || null,
       maps
     };
@@ -164,6 +169,8 @@ function createCampaignStorage(options = {}) {
       ...(campaign[CAMPAIGN_EXTRA_FIELDS] || {}),
       version: campaign.version || 1,
       name: campaign.name,
+      ...(campaign.description ? { description: campaign.description } : {}),
+      ...(campaign.icon ? { icon: campaign.icon } : {}),
       activeMapId: campaign.activeMapId || null,
       maps: campaign.maps.map((map) => ({
         ...(map[MAP_EXTRA_FIELDS] || {}),
@@ -250,6 +257,8 @@ function createCampaignStorage(options = {}) {
           campaigns.push({
             id: campaign.id,
             name: campaign.name,
+            ...(campaign.description ? { description: campaign.description } : {}),
+            ...(campaign.icon ? { icon: campaign.icon } : {}),
             activeMapName: activeMap ? activeMap.name : null,
             mapCount: campaign.maps.length
           });
@@ -422,8 +431,63 @@ function createCampaignStorage(options = {}) {
       findMap(campaign, mapId);
       campaign.activeMapId = mapId;
       return saveCampaign(campaign);
+    },
+    updateCampaignMetadata(campaignId, metadata) {
+      if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+        throw createUserError(400, "Campaign metadata must be an object.");
+      }
+
+      if (!Object.hasOwn(metadata, "description") && !Object.hasOwn(metadata, "icon")) {
+        throw createUserError(400, "Campaign metadata must include description or icon.");
+      }
+
+      Object.keys(metadata).forEach((key) => {
+        if (!metadataFields.has(key)) {
+          throw createUserError(400, "Campaign metadata must include only description or icon.");
+        }
+      });
+
+      const campaign = readCampaign(campaignId);
+
+      if (Object.hasOwn(metadata, "description")) {
+        campaign.description = normalizeCampaignDescription(metadata.description);
+      }
+
+      if (Object.hasOwn(metadata, "icon")) {
+        campaign.icon = normalizeCampaignIcon(metadata.icon);
+      }
+
+      return saveCampaign(campaign);
     }
   };
+}
+
+function normalizeCampaignDescription(value) {
+  if (typeof value !== "string") {
+    throw createUserError(400, "Campaign description must be text.");
+  }
+
+  const description = value.trim();
+
+  if (description.length > MAX_CAMPAIGN_DESCRIPTION_LENGTH) {
+    throw createUserError(400, `Campaign description must be ${MAX_CAMPAIGN_DESCRIPTION_LENGTH} characters or fewer.`);
+  }
+
+  return description;
+}
+
+function normalizeCampaignIcon(value) {
+  if (typeof value !== "string") {
+    throw createUserError(400, "Campaign icon must be text.");
+  }
+
+  const icon = value.trim();
+
+  if (Array.from(icon).length > MAX_CAMPAIGN_ICON_LENGTH) {
+    throw createUserError(400, "Campaign icon must be one emoji or short symbol.");
+  }
+
+  return icon;
 }
 
 function createUserError(statusCode, message) {
@@ -433,6 +497,7 @@ function createUserError(statusCode, message) {
 }
 
 module.exports = {
+  MAX_CAMPAIGN_DESCRIPTION_LENGTH,
   createCampaignStorage,
   createUserError,
   getDefaultDataRoot,

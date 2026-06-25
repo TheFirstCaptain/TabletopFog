@@ -12,8 +12,37 @@ export function wireGmEvents(elements, actions) {
   elements.backToLibrary.addEventListener("click", actions.backToLibrary);
 
   elements.campaignList.addEventListener("click", (event) => {
-    const button = event.target.closest("button[data-action='open-campaign']");
-    if (button) actions.openCampaign(button.dataset.campaignId);
+    const button = event.target.closest("button[data-action]");
+    if (button) {
+      const card = button.closest(".campaign-card");
+      if (button.dataset.action === "open-campaign") {
+        actions.openCampaign(button.dataset.campaignId);
+      } else if (button.dataset.action === "edit-campaign") {
+        event.preventDefault();
+        card.hidden = false;
+        card.dataset.editing = "true";
+      } else if (button.dataset.action === "cancel-campaign-edit") {
+        event.preventDefault();
+        card.dataset.editing = "false";
+      }
+      return;
+    }
+
+    const card = event.target.closest(".campaign-card[data-campaign-id]");
+    if (card && card.dataset.editing !== "true" && !event.target.closest("input, textarea, form")) {
+      actions.openCampaign(card.dataset.campaignId);
+    }
+  });
+
+  elements.campaignList.addEventListener("submit", (event) => {
+    const form = event.target.closest("form[data-action='save-campaign-metadata']");
+    if (!form) return;
+
+    event.preventDefault();
+    actions.updateCampaignMetadata(form.dataset.campaignId, {
+      description: form.querySelector("[name='campaign-description']").value,
+      icon: form.querySelector("[name='campaign-icon']").value
+    });
   });
 
   elements.mapList.addEventListener("click", (event) => {

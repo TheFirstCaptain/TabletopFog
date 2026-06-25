@@ -30,6 +30,19 @@ export function createGmController({ api, socket, state, view }) {
     }
   }
 
+  async function updateCampaignMetadata(campaignId, metadata) {
+    try {
+      const payload = await api.updateCampaignMetadata(campaignId, metadata);
+      if (state.getCurrentCampaign()?.id === payload.campaign.id) {
+        state.setCurrentCampaign(payload.campaign);
+        view.renderCampaign(state.getCurrentCampaign());
+      }
+      await loadCampaigns();
+    } catch (error) {
+      view.setCampaignCardMessage(campaignId, error.message);
+    }
+  }
+
   async function uploadMap(file) {
     const campaign = state.getCurrentCampaign();
     if (!file || !campaign) return;
@@ -92,6 +105,7 @@ export function createGmController({ api, socket, state, view }) {
       openCampaign,
       renameMap,
       setActiveMap,
+      updateCampaignMetadata,
       uploadMap
     },
     start() {

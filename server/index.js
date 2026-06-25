@@ -69,6 +69,23 @@ function createApp(options = {}) {
     }
   });
 
+  app.patch("/api/campaigns/:campaignId/metadata", requireGm, (request, response, next) => {
+    try {
+      if (!request.body || typeof request.body !== "object" || Array.isArray(request.body)) {
+        response.status(400).json({ error: "Campaign metadata must be a JSON object." });
+        return;
+      }
+
+      const campaign = withAssetUrls(
+        campaignStorage,
+        campaignStorage.updateCampaignMetadata(request.params.campaignId, request.body)
+      );
+      response.json({ campaign });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.post(
     "/api/campaigns/:campaignId/maps",
     requireGm,
