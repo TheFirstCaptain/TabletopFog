@@ -102,7 +102,7 @@ test("GM edits campaign card emoji and description without changing player displ
   await openGm(page, app.baseURL);
   await createCampaign(page);
   await addMap(page, "forest.png");
-  await page.getByRole("button", { name: "Show to Players" }).click();
+  await page.getByRole("button", { name: "Show to Players", exact: true }).click();
   await player.goto(`${app.baseURL}/player`);
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   const playerAssetRequestsBeforeMetadataEdit = playerAssetRequests;
@@ -190,10 +190,11 @@ test("player follows active-map changes and remains read-only", async ({ app, pa
   await addMap(page, "forest.png");
   await addMap(page, "cave.png");
 
-  await page.getByRole("button", { name: "Show to Players" }).first().click();
-  await expect(page.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  await page.getByRole("button", { name: "Show to Players", exact: true }).first().click();
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   await expect(secondPlayer.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  await page.getByRole("button", { name: "Open forest for prep" }).click();
+  await expect(page.getByRole("img", { name: "Map: forest" })).toBeVisible();
 
   await player.getByRole("button", { name: "Zoom in" }).click();
   await player.getByRole("button", { name: "Zoom in" }).click();
@@ -252,7 +253,8 @@ test("player follows active-map changes and remains read-only", async ({ app, pa
   await expect(player.getByText("50%", { exact: true })).toBeVisible();
   await expect(player.getByRole("button", { name: "Zoom out" })).toBeDisabled();
 
-  await page.getByRole("button", { name: "Show to Players" }).click();
+  await page.getByRole("button", { name: "Back to Encounters" }).click();
+  await page.getByRole("button", { name: "Show to Players", exact: true }).click();
   await expect(player.getByRole("img", { name: "Map: cave" })).toBeVisible();
   await expect(player.getByText("100%", { exact: true })).toBeVisible();
   await expect(player.locator("input, select, textarea, [contenteditable=true], [data-action]")).toHaveCount(0);
@@ -308,7 +310,7 @@ test("encounter cards open a workspace without changing the player display", asy
   await expect(forestCard.getByRole("img", { name: "Thumbnail for forest" })).toBeVisible();
   await expect(caveCard.getByRole("img", { name: "Thumbnail for cave" })).toBeVisible();
 
-  await forestCard.getByRole("button", { name: "Show to Players" }).click();
+  await forestCard.getByRole("button", { name: "Show to Players", exact: true }).click();
   await player.goto(`${app.baseURL}/player`);
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   await expect(forestCard.getByText("Shown to Players", { exact: true })).toBeVisible();
@@ -318,14 +320,74 @@ test("encounter cards open a workspace without changing the player display", asy
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { level: 3, name: "cave" })).toBeVisible();
   await expect(page.getByText("Not shown to players", { exact: true })).toBeVisible();
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeWorkspaceOpen);
+
+  await page.getByRole("button", { name: "Back to Encounters" }).click();
+  await expect(caveCard.getByText("Selected for Prep", { exact: true })).toBeVisible();
+  await caveCard.getByRole("button", { name: "Show to Players", exact: true }).click();
+  await expect(player.getByRole("img", { name: "Map: cave" })).toBeVisible();
+  await expect(caveCard.getByText("Shown to Players", { exact: true })).toBeVisible();
+});
+
+test("GM workspace shell previews selected encounter without changing the player display", async ({
+  app,
+  page,
+  context
+}) => {
+  const player = await context.newPage();
+  let playerAssetRequests = 0;
+  await player.route("**/api/player/active-map/asset*", (route) => {
+    playerAssetRequests += 1;
+    return route.continue();
+  });
+
+  await page.setViewportSize({ height: 768, width: 1366 });
+  await openGm(page, app.baseURL);
+  await createCampaign(page);
+  await page
+    .getByLabel("Add map")
+    .setInputFiles(await sizedPngFile(page, "forest.png", 160, 100, "#254117", "#6b8e23"));
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "Encounter name for forest" })).toBeVisible();
+  await page.getByLabel("Add map").setInputFiles(await sizedPngFile(page, "cave.png", 160, 100, "#2c2430", "#b08968"));
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "Encounter name for cave" })).toBeVisible();
+
+  const forestCard = page.locator(".encounter-card").filter({ hasText: "forest" });
+  const caveCard = page.locator(".encounter-card").filter({ hasText: "cave" });
+  await forestCard.getByRole("button", { name: "Show to Players", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Show to Players from workspace" })).toBeHidden();
+  await player.goto(`${app.baseURL}/player`);
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  const playerAssetRequestsBeforeWorkspaceOpen = playerAssetRequests;
+
+  await caveCard.getByRole("button", { name: "Open cave for prep" }).click();
+  await expect(page.getByRole("heading", { level: 3, name: "cave" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Map: cave" })).toBeVisible();
+  await expect(page.getByText("Not shown to players", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Show to Players from workspace" })).toBeVisible();
+  await expect(page.getByText("Future fog tools", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /fog|brush|reveal|hide/i })).toHaveCount(0);
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeWorkspaceOpen);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+  await page.getByRole("button", { name: "Back to Encounters" }).click();
   await expect(caveCard.getByText("Selected for Prep", { exact: true })).toBeVisible();
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeWorkspaceOpen);
 
-  await caveCard.getByRole("button", { name: "Show to Players" }).click();
+  await caveCard.getByRole("button", { name: "Open cave for prep" }).click();
+  await page.getByRole("button", { name: "Show to Players from workspace" }).click();
   await expect(player.getByRole("img", { name: "Map: cave" })).toBeVisible();
-  await expect(caveCard.getByText("Shown to Players", { exact: true })).toBeVisible();
   await expect(page.getByText("Shown to players", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Back to Encounters" }).click();
+  await expect(caveCard.getByText("Shown to Players", { exact: true })).toBeVisible();
+
+  await page.setViewportSize({ height: 844, width: 390 });
+  await caveCard.getByRole("button", { name: "Open cave for prep" }).click();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
 test("active map uses centered contain geometry across table viewports", async ({ app, page, context }) => {
@@ -334,7 +396,7 @@ test("active map uses centered contain geometry across table viewports", async (
   await createCampaign(page);
   await page.getByLabel("Add map").setInputFiles(await sizedPngFile(page, "landscape.png", 800, 400));
   await page.getByRole("button", { name: "Add", exact: true }).click();
-  await page.getByRole("button", { name: "Show to Players" }).click();
+  await page.getByRole("button", { name: "Show to Players", exact: true }).click();
 
   const player = await context.newPage();
   await player.setViewportSize({ height: 768, width: 1024 });
@@ -370,7 +432,7 @@ test("active map uses centered contain geometry across table viewports", async (
   await page.getByLabel("Add map").setInputFiles(await sizedPngFile(page, "portrait.png", 400, 800));
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByRole("textbox", { name: "Encounter name for portrait" })).toBeVisible();
-  await page.getByRole("button", { name: "Show to Players" }).click();
+  await page.getByRole("button", { name: "Show to Players", exact: true }).click();
   const portraitCanvas = player.getByRole("img", { name: "Map: portrait" });
   await expect(portraitCanvas).toBeVisible();
   await expect
@@ -392,11 +454,11 @@ test("same map ID in another campaign resets the player viewport", async ({ app,
   await openGm(page, app.baseURL);
   await createCampaign(page, "First Campaign");
   await addMap(page, "forest.png");
-  await page.getByRole("button", { name: "Show to Players" }).click();
+  await page.getByRole("button", { name: "Show to Players", exact: true }).click();
   await page.getByRole("button", { name: "Library" }).click();
   await createCampaign(page, "Second Campaign");
   await addMap(page, "forest.png");
-  await page.getByRole("button", { name: "Show to Players" }).click();
+  await page.getByRole("button", { name: "Show to Players", exact: true }).click();
 
   const player = await context.newPage();
   await player.goto(`${app.baseURL}/player`);
@@ -420,7 +482,7 @@ test("player reports connection loss and restores active state", async ({ app, p
   await openGm(gm, app.baseURL);
   await createCampaign(gm);
   await addMap(gm, "forest.png");
-  await gm.getByRole("button", { name: "Show to Players" }).click();
+  await gm.getByRole("button", { name: "Show to Players", exact: true }).click();
 
   await page.goto(`${app.baseURL}/player`);
   await expect(page.getByText("Live", { exact: true })).toBeVisible();
@@ -447,7 +509,8 @@ test("player reports an active-map image load failure", async ({ app, page, cont
   await page.route("**/api/campaigns/*/maps/*/asset*", (route) => route.fulfill({ status: 500 }));
   await player.route("**/api/player/active-map/asset*", (route) => route.fulfill({ status: 500 }));
   await player.goto(`${app.baseURL}/player`);
-  await page.getByRole("button", { name: "Show to Players" }).click();
+  await page.getByRole("button", { name: "Open forest for prep" }).click();
+  await page.getByRole("button", { name: "Show to Players from workspace" }).click();
 
   await expect(page.getByText("Map image could not be loaded.", { exact: true })).toBeVisible();
   await expect(page.getByRole("img", { name: "Map: forest" })).toBeHidden();
@@ -481,10 +544,10 @@ test("stale image completion cannot replace a newer active map", async ({ app, p
   });
   await player.goto(`${app.baseURL}/player`);
 
-  await page.getByRole("button", { name: "Show to Players" }).first().click();
+  await page.getByRole("button", { name: "Show to Players", exact: true }).first().click();
   await expect.poll(() => Boolean(delayedRoute)).toBe(true);
   await expect(page.getByRole("button", { name: "Shown" })).toBeVisible();
-  await page.getByRole("button", { name: "Show to Players" }).click();
+  await page.getByRole("button", { name: "Show to Players", exact: true }).click();
   const canvas = player.getByRole("img", { name: "Map: cave" });
   await expect(canvas).toBeVisible();
 

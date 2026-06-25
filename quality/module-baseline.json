@@ -7,20 +7,20 @@
       "responsibility": "Send GM campaign, campaign-card metadata, and map API requests and convert failed responses into client errors."
     },
     "public/gm-controller.js": {
-      "baselineLines": 129,
-      "responsibility": "Coordinate GM campaign library, campaign-card metadata, encounter gallery, map, view, and Socket.IO workflows."
+      "baselineLines": 146,
+      "responsibility": "Coordinate GM campaign library, campaign-card metadata, encounter gallery, encounter workspace, map, view, and Socket.IO workflows."
     },
     "public/gm-events.js": {
-      "baselineLines": 78,
-      "responsibility": "Translate static and delegated GM campaign, campaign-card metadata, encounter gallery, and map DOM events into controller actions."
+      "baselineLines": 80,
+      "responsibility": "Translate static and delegated GM campaign, campaign-card metadata, encounter gallery, encounter workspace, and map DOM events into controller actions."
     },
     "public/gm-state.js": {
-      "baselineLines": 60,
-      "responsibility": "Maintain GM campaign library, current campaign, and GM-local selected encounter client state."
+      "baselineLines": 73,
+      "responsibility": "Maintain GM campaign library, current campaign, GM-local selected encounter, and workspace-open client state."
     },
     "public/gm-view.js": {
-      "baselineLines": 313,
-      "responsibility": "Render the GM campaign card library, campaign-card metadata editing, encounter cards, workspace preview, map controls, messages, status, and shared-canvas map preview."
+      "baselineLines": 325,
+      "responsibility": "Render the GM campaign card library, campaign-card metadata editing, encounter cards, encounter workspace shell, map controls, messages, status, and shared-canvas map preview."
     },
     "public/gm.js": {
       "baselineLines": 19,

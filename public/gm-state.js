@@ -6,10 +6,12 @@ export function createGmState() {
   };
   let currentCampaign = null;
   let selectedEncounterId = null;
+  let workspaceOpen = false;
 
   function ensureSelectedEncounterExists() {
     if (!currentCampaign || !currentCampaign.maps.some((map) => map.id === selectedEncounterId)) {
       selectedEncounterId = null;
+      workspaceOpen = false;
     }
   }
 
@@ -17,6 +19,10 @@ export function createGmState() {
     closeCampaign() {
       currentCampaign = null;
       selectedEncounterId = null;
+      workspaceOpen = false;
+    },
+    closeWorkspace() {
+      workspaceOpen = false;
     },
     getCurrentCampaign() {
       return currentCampaign;
@@ -32,6 +38,13 @@ export function createGmState() {
     },
     getSelectedEncounterId() {
       return selectedEncounterId;
+    },
+    isWorkspaceOpen() {
+      return workspaceOpen;
+    },
+    openEncounter(mapId) {
+      selectedEncounterId = mapId;
+      workspaceOpen = true;
     },
     selectEncounter(mapId) {
       selectedEncounterId = mapId;

@@ -477,7 +477,8 @@ Steps:
 3. Confirm the workspace indicates whether this encounter is currently shown to players.
 4. Navigate back to the encounter gallery.
 5. Return to the workspace.
-6. Click `Show to Players`.
+6. Confirm the workspace includes reserved future fog-tool space without fog controls.
+7. Click the workspace `Show to Players` action.
 
 Expected result:
 
@@ -486,6 +487,7 @@ Expected result:
 - Player view remains unchanged until `Show to Players` is clicked.
 - Workspace navigation back to the encounter gallery is clear.
 - The layout has room for future fog tools without adding fog controls yet.
+- Rename, reorder, and upload remain gallery workflows for this feature.
 
 ## Milestone 4: Manual Fog of War
 

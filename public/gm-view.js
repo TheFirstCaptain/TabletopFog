@@ -20,6 +20,7 @@ export function createGmView(document) {
   const elements = {
     activeMapCanvas: document.querySelector("#active-map-canvas"),
     activeMapMessage: document.querySelector("#active-map-message"),
+    backToEncounters: document.querySelector("#back-to-encounters"),
     backToLibrary: document.querySelector("#back-to-library"),
     campaignForm: document.querySelector("#campaign-form"),
     campaignHeading: document.querySelector("#campaign-heading"),
@@ -28,6 +29,8 @@ export function createGmView(document) {
     campaignName: document.querySelector("#campaign-name"),
     campaignPanel: document.querySelector("#campaign-panel"),
     dataRoot: document.querySelector("#data-root"),
+    encounterGallery: document.querySelector("#encounter-gallery"),
+    encounterWorkspace: document.querySelector("#encounter-workspace"),
     libraryDiagnostics: document.querySelector("#library-diagnostics"),
     libraryMessage: document.querySelector("#library-message"),
     mapFile: document.querySelector("#map-file"),
@@ -35,7 +38,9 @@ export function createGmView(document) {
     mapList: document.querySelector("#map-list"),
     selectedEncounterHeading: document.querySelector("#selected-encounter-heading"),
     selectedEncounterStatus: document.querySelector("#selected-encounter-status"),
-    status: document.querySelector("#connection-status")
+    status: document.querySelector("#connection-status"),
+    workspaceEmpty: document.querySelector("#workspace-empty"),
+    workspaceShowToPlayers: document.querySelector("#workspace-show-to-players")
   };
 
   const activeMapRenderer = createMapCanvasRenderer({
@@ -50,19 +55,26 @@ export function createGmView(document) {
     }
   });
 
-  function renderSelectedEncounter(campaign, selectedEncounterId) {
+  function renderSelectedEncounter(campaign, selectedEncounterId, workspaceOpen) {
     const selectedEncounter = campaign.maps.find((map) => map.id === selectedEncounterId);
 
-    if (!selectedEncounter) {
+    elements.encounterWorkspace.hidden = !workspaceOpen || !selectedEncounter;
+    elements.encounterGallery.hidden = workspaceOpen && selectedEncounter;
+    elements.workspaceEmpty.hidden = workspaceOpen && selectedEncounter;
+
+    if (!workspaceOpen || !selectedEncounter) {
       elements.selectedEncounterHeading.textContent = "Open an encounter";
       elements.selectedEncounterStatus.textContent = "Choose an encounter card to prep it here.";
+      elements.workspaceShowToPlayers.disabled = true;
       activeMapRenderer.setMap(null);
       return;
     }
 
+    const shownToPlayers = selectedEncounter.id === campaign.activeMapId;
     elements.selectedEncounterHeading.textContent = selectedEncounter.name;
-    elements.selectedEncounterStatus.textContent =
-      selectedEncounter.id === campaign.activeMapId ? "Shown to players" : "Not shown to players";
+    elements.selectedEncounterStatus.textContent = shownToPlayers ? "Shown to players" : "Not shown to players";
+    elements.workspaceShowToPlayers.disabled = shownToPlayers;
+    elements.workspaceShowToPlayers.dataset.mapId = selectedEncounter.id;
     activeMapRenderer.setMap({ ...selectedEncounter, campaignId: campaign.id });
   }
 
@@ -163,7 +175,7 @@ export function createGmView(document) {
     hideCampaign() {
       elements.campaignPanel.hidden = true;
     },
-    renderCampaign(campaign, selectedEncounterId = null) {
+    renderCampaign(campaign, selectedEncounterId = null, workspaceOpen = false) {
       if (!campaign) {
         elements.campaignPanel.hidden = true;
         return;
@@ -173,7 +185,7 @@ export function createGmView(document) {
       elements.campaignHeading.textContent = campaign.name;
       elements.campaignMessage.textContent = campaign.maps.length === 0 ? "Add a map to begin." : "";
       renderMaps(campaign, selectedEncounterId);
-      renderSelectedEncounter(campaign, selectedEncounterId);
+      renderSelectedEncounter(campaign, selectedEncounterId, workspaceOpen);
     },
     renderLibrary({ campaigns, dataRoot, diagnostics }) {
       elements.campaignList.replaceChildren();

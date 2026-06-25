@@ -1,4 +1,8 @@
 export function createGmController({ api, socket, state, view }) {
+  function renderCurrentCampaign() {
+    view.renderCampaign(state.getCurrentCampaign(), state.getSelectedEncounterId(), state.isWorkspaceOpen());
+  }
+
   async function loadCampaigns() {
     try {
       state.setLibrary(await api.listCampaigns());
@@ -14,7 +18,7 @@ export function createGmController({ api, socket, state, view }) {
       view.clearCampaignName();
       state.setCurrentCampaign(payload.campaign);
       await loadCampaigns();
-      view.renderCampaign(state.getCurrentCampaign(), state.getSelectedEncounterId());
+      renderCurrentCampaign();
     } catch (error) {
       view.setLibraryMessage(error.message);
     }
@@ -24,7 +28,7 @@ export function createGmController({ api, socket, state, view }) {
     try {
       const payload = await api.openCampaign(campaignId);
       state.setCurrentCampaign(payload.campaign);
-      view.renderCampaign(state.getCurrentCampaign(), state.getSelectedEncounterId());
+      renderCurrentCampaign();
     } catch (error) {
       view.setLibraryMessage(error.message);
     }
@@ -35,7 +39,7 @@ export function createGmController({ api, socket, state, view }) {
       const payload = await api.updateCampaignMetadata(campaignId, metadata);
       if (state.getCurrentCampaign()?.id === payload.campaign.id) {
         state.setCurrentCampaign(payload.campaign);
-        view.renderCampaign(state.getCurrentCampaign(), state.getSelectedEncounterId());
+        renderCurrentCampaign();
       }
       await loadCampaigns();
     } catch (error) {
@@ -52,7 +56,7 @@ export function createGmController({ api, socket, state, view }) {
       view.clearMapFile();
       state.setCurrentCampaign(payload.campaign);
       await loadCampaigns();
-      view.renderCampaign(state.getCurrentCampaign(), state.getSelectedEncounterId());
+      renderCurrentCampaign();
     } catch (error) {
       view.setCampaignMessage(error.message);
     }
@@ -62,7 +66,7 @@ export function createGmController({ api, socket, state, view }) {
     try {
       const payload = await api.renameMap(state.getCurrentCampaign().id, mapId, name);
       state.setCurrentCampaign(payload.campaign);
-      view.renderCampaign(state.getCurrentCampaign(), state.getSelectedEncounterId());
+      renderCurrentCampaign();
     } catch (error) {
       view.setCampaignMessage(error.message);
     }
@@ -75,7 +79,7 @@ export function createGmController({ api, socket, state, view }) {
         state.getReorderedMapIds(fromIndex, toIndex)
       );
       state.setCurrentCampaign(payload.campaign);
-      view.renderCampaign(state.getCurrentCampaign(), state.getSelectedEncounterId());
+      renderCurrentCampaign();
     } catch (error) {
       view.setCampaignMessage(error.message);
     }
@@ -85,16 +89,27 @@ export function createGmController({ api, socket, state, view }) {
     try {
       const payload = await api.setActiveMap(state.getCurrentCampaign().id, mapId);
       state.setCurrentCampaign(payload.campaign);
-      state.selectEncounter(mapId);
-      view.renderCampaign(state.getCurrentCampaign(), state.getSelectedEncounterId());
+      renderCurrentCampaign();
     } catch (error) {
       view.setCampaignMessage(error.message);
     }
   }
 
   function selectEncounter(mapId) {
-    state.selectEncounter(mapId);
-    view.renderCampaign(state.getCurrentCampaign(), state.getSelectedEncounterId());
+    state.openEncounter(mapId);
+    renderCurrentCampaign();
+  }
+
+  function backToEncounters() {
+    state.closeWorkspace();
+    renderCurrentCampaign();
+  }
+
+  function showWorkspaceEncounter() {
+    const selectedEncounterId = state.getSelectedEncounterId();
+    if (selectedEncounterId) {
+      setActiveMap(selectedEncounterId);
+    }
   }
 
   function backToLibrary() {
@@ -106,12 +121,14 @@ export function createGmController({ api, socket, state, view }) {
   return {
     actions: {
       backToLibrary,
+      backToEncounters,
       createCampaign,
       moveMap,
       openCampaign,
       renameMap,
       selectEncounter,
       setActiveMap,
+      showWorkspaceEncounter,
       updateCampaignMetadata,
       uploadMap
     },
@@ -120,7 +137,7 @@ export function createGmController({ api, socket, state, view }) {
       socket.on("disconnect", () => view.setStatus("Reconnecting...", "offline"));
       socket.on("state:sync", (serverState) => {
         if (state.synchronize(serverState)) {
-          view.renderCampaign(state.getCurrentCampaign(), state.getSelectedEncounterId());
+          renderCurrentCampaign();
         }
       });
       loadCampaigns();

@@ -10,6 +10,8 @@ export function wireGmEvents(elements, actions) {
   });
 
   elements.backToLibrary.addEventListener("click", actions.backToLibrary);
+  elements.backToEncounters.addEventListener("click", actions.backToEncounters);
+  elements.workspaceShowToPlayers.addEventListener("click", actions.showWorkspaceEncounter);
 
   elements.campaignList.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-action]");

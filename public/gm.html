@@ -51,19 +51,51 @@
         <p id="campaign-message" class="muted" aria-live="polite"></p>
 
         <div class="workspace-grid">
-          <div>
+          <div id="encounter-gallery">
             <h3>Encounters</h3>
             <div id="map-list" class="map-list" aria-live="polite"></div>
           </div>
 
-          <div class="active-map-panel">
-            <p class="eyebrow">Workspace Preview</p>
-            <h3 id="selected-encounter-heading">Open an encounter</h3>
-            <p id="selected-encounter-status" class="muted">Choose an encounter card to prep it here.</p>
-            <div id="active-map-stage" class="gm-map-stage">
-              <p id="active-map-message" class="map-state-message muted">No encounter selected.</p>
-              <canvas id="active-map-canvas" class="map-canvas" role="img" aria-label="" hidden></canvas>
+          <section
+            id="encounter-workspace"
+            class="encounter-workspace-shell"
+            aria-labelledby="selected-encounter-heading"
+            hidden
+          >
+            <div class="workspace-header">
+              <div>
+                <p class="eyebrow">Encounter Workspace</p>
+                <h3 id="selected-encounter-heading">Open an encounter</h3>
+                <p id="selected-encounter-status" class="muted">Choose an encounter card to prep it here.</p>
+              </div>
+              <div class="workspace-actions">
+                <button id="back-to-encounters" class="secondary" type="button">Back to Encounters</button>
+                <button id="workspace-show-to-players" type="button" aria-label="Show to Players from workspace">
+                  Show to Players
+                </button>
+              </div>
             </div>
+
+            <div id="workspace-body" class="workspace-body">
+              <div>
+                <div id="active-map-stage" class="gm-map-stage">
+                  <p id="active-map-message" class="map-state-message muted">No encounter selected.</p>
+                  <canvas id="active-map-canvas" class="map-canvas" role="img" aria-label="" hidden></canvas>
+                </div>
+              </div>
+
+              <aside class="future-tools-panel" aria-labelledby="future-tools-heading">
+                <p class="eyebrow">Later</p>
+                <h4 id="future-tools-heading">Future fog tools</h4>
+                <p class="muted">Reserved room for table tools in a later feature.</p>
+              </aside>
+            </div>
+          </section>
+
+          <div id="workspace-empty" class="active-map-panel">
+            <p class="eyebrow">Workspace</p>
+            <h3>Open an encounter</h3>
+            <p class="muted">Choose an encounter card to prep it here.</p>
           </div>
         </div>
       </section>
