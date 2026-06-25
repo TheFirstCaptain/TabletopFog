@@ -6,7 +6,7 @@ This project is intentionally not a full virtual tabletop. V1 includes local cam
 
 ## Current Status
 
-TabletopFog has completed the first local connectivity spike and active-map display polish, while physical-device validation of the campaign/map library remains. The HTTPS app serves separate GM and player pages, stores local campaign folders, lets the GM manage maps, and syncs the selected active map to the read-only player display over Socket.IO.
+TabletopFog has completed the first local connectivity spike, campaign/map library, fantasy visual theme, and active-map display polish, including Chromebook-host and iPad-player validation. The HTTPS app serves separate GM and player pages, stores local campaign folders, lets the GM manage maps, and syncs the current player-shown map to the read-only player display over Socket.IO.
 
 The quality gate runs Chromium characterization for current GM/player workflows
 and theme behavior.
@@ -21,6 +21,12 @@ contain scaling. Player Zoom out, Fit map, Zoom in, drag, and pinch controls
 change only that browser's local viewport; they do not mutate campaign state or
 change the GM or another player display.
 
+Upcoming encounter workflow polish will split the old `active map` idea into a
+GM selected/editing encounter and a shown-to-players encounter. Opening an
+encounter for prep will not change the player display; `Show to Players` will
+remain explicit. Existing storage may still use `maps` and `activeMapId` until a
+reviewed migration chooses clearer names.
+
 Completed local-connectivity work proved:
 
 - Run a local HTTPS server on the GM machine.
@@ -29,7 +35,7 @@ Completed local-connectivity work proved:
 - Trigger a GM state change.
 - Update the read-only player view live.
 
-Current F-004 work adds local campaign and map library support. Campaigns are long-lived local folders, maps belong to campaigns, and maps start visible by default. Fog is added later to hide areas and then removed to reveal them during play.
+Completed F-004 work adds local campaign and map library support. Campaigns are long-lived local folders, maps belong to campaigns, and maps start visible by default. Fog is added later to hide areas and then removed to reveal them during play.
 
 Map upload accepts PNG, JPEG, GIF, and WebP files up to 100 MB and rejects data
 whose image signature, filename extension, and content type do not agree.

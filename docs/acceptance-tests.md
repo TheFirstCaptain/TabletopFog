@@ -385,30 +385,130 @@ Expected result:
 - The player view remains read-only.
 - No fog controls are present.
 
+Terminology note:
+
+- For F-004 and F-005, `active map` means the map currently shown to players.
+  Future encounter-workflow features split this into a selected/editing
+  encounter and a shown-to-players encounter.
+
+## Milestone 3 Follow-Up: Campaign Landing Page
+
+### Test: GM Opens Campaign Cards
+
+Prerequisites:
+
+- Local server is running on the GM host machine.
+- At least one valid campaign exists.
+- At least one invalid campaign folder exists for diagnostic coverage.
+
+Steps:
+
+1. Open `/gm`.
+2. Confirm campaigns display as cards rather than a plain list.
+3. Confirm each card shows the campaign name and any available description,
+   icon, and lightweight metadata.
+4. Click a campaign card.
+5. Create a new campaign from the landing page.
+6. Review invalid campaign diagnostics.
+7. Repeat at a Chromebook-sized viewport.
+
+Expected result:
+
+- The campaign landing page keeps the fantasy/parchment theme.
+- Campaign cards open the selected campaign.
+- New campaign creation remains available.
+- Invalid campaign diagnostics remain visible and usable.
+- The layout fits Chromebook-sized screens.
+- No fog, token, notes, member, character, cloud, or VTT-style navigation
+  controls are present.
+
+## Milestone 3 Follow-Up: Encounter Gallery
+
+### Test: Opening an Encounter Does Not Show It to Players
+
+Prerequisites:
+
+- A campaign exists with at least two maps.
+- GM and player views are open.
+- One encounter is already shown to players.
+
+Steps:
+
+1. Open the campaign from the campaign landing page.
+2. Confirm maps display as encounter cards with visually prominent thumbnails.
+3. Confirm the currently shown-to-players encounter is visually distinguished.
+4. Click a different encounter card to open its workspace or workspace placeholder.
+5. Confirm the player display does not change.
+6. Use the explicit `Show to Players` action for that encounter.
+
+Expected result:
+
+- Encounter cards preserve add/upload, rename, and reorder workflows.
+- The selected/editing encounter is distinct from the shown-to-players encounter.
+- Opening or selecting an encounter for editing does not update the player display.
+- The player display changes only after the explicit `Show to Players` action.
+- Existing storage may still use `maps`, and existing `activeMapId` terminology
+  represents the shown-to-players map until a reviewed migration changes it.
+
+## Milestone 3 Follow-Up: Encounter Workspace
+
+### Test: GM Can Prep One Encounter While Another Is Shown
+
+Prerequisites:
+
+- A campaign exists with at least two maps.
+- GM and player views are open.
+- One encounter is shown to players.
+
+Steps:
+
+1. Open a different encounter workspace from the encounter gallery.
+2. Confirm the workspace shows the selected/editing encounter name and map.
+3. Confirm the workspace indicates whether this encounter is currently shown to players.
+4. Navigate back to the encounter gallery.
+5. Return to the workspace.
+6. Click `Show to Players`.
+
+Expected result:
+
+- The workspace uses the existing canvas renderer for the GM map view.
+- The GM can inspect or prep one encounter while another remains shown to players.
+- Player view remains unchanged until `Show to Players` is clicked.
+- Workspace navigation back to the encounter gallery is clear.
+- The layout has room for future fog tools without adding fog controls yet.
+
 ## Milestone 4: Manual Fog of War
 
 ### Test: Player Sees Hidden Areas Obscured
 
 Prerequisites:
 
-- A campaign and active map are loaded.
+- A campaign exists with at least two encounters/maps.
+- The encounter workspace feature is implemented.
 - Fog-of-war feature is implemented.
 
 Steps:
 
-1. Start with the active map visible.
-2. Open both GM and player views.
-3. Add fog over a rectangle or circle from the GM view.
-4. Confirm the player view obscures that hidden area.
-5. Remove or reveal part of the fog from the GM view.
-6. Compare GM and player views.
+1. Show one encounter to players.
+2. Open a different selected/editing encounter in the GM workspace.
+3. Add fog over a rectangle or circle in the selected/editing encounter.
+4. Confirm the player display does not change.
+5. Use `Show to Players` for the selected/editing encounter.
+6. Confirm the player view shows that encounter with the hidden area obscured.
+7. Remove or reveal part of the fog from the GM workspace.
+8. Confirm the player display updates live because this encounter is now shown to players.
+9. Open another encounter in the GM workspace and edit its fog without showing it.
 
 Expected result:
 
-- The map starts visible rather than covered by full black fog.
-- The player view shows the same map with hidden areas obscured.
+- Maps start visible rather than covered by full black fog.
+- Fog belongs to the selected/editing encounter being edited.
+- The player view shows fog updates only for the shown-to-players encounter.
+- Editing fog on a non-shown encounter does not change the player display.
 - Areas hidden by fog are not visible on the player display.
 - Revealed or cleared areas become visible again.
+- GM fog is semi-transparent unless implementation review chooses a better
+  accessible treatment; player fog is opaque or near-opaque.
 - The player view does not show GM-only controls or hidden notes.
 
 ## Milestone 5: Save and Load Campaign State
@@ -423,8 +523,8 @@ Prerequisites:
 Steps:
 
 1. Rename and reorder maps in the campaign.
-2. Select an active map.
-3. Add fog to at least one map.
+2. Show one encounter to players.
+3. Add fog to at least one encounter.
 4. Save the campaign.
 5. Restart or reload the app.
 6. Open the saved campaign.
@@ -434,9 +534,11 @@ Expected result:
 
 - Campaign metadata reloads from local, inspectable files.
 - Map names and manual ordering are restored.
-- The saved active map is restored.
-- Per-map fog state is restored.
-- The player view matches the saved active map and fog state.
+- The saved shown-to-players encounter is restored.
+- Per-encounter fog state is restored.
+- The player view matches the saved shown-to-players encounter and fog state.
+- GM selected/editing encounter state is not confused with the shown-to-players
+  encounter.
 - No cloud storage or user account is required.
 
 ## Scope Control

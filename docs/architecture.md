@@ -45,6 +45,9 @@ The GM view owns control actions:
 - Load or select a map image when that feature exists.
 - Create or open a local campaign when that feature exists.
 - Add, rename, reorder, and select maps in the active campaign when those features exist.
+- Open a selected/editing encounter workspace without changing the player display
+  when that feature exists.
+- Explicitly show an encounter to players when that feature exists.
 - Add fog to hide map areas and remove fog to reveal them when that feature exists.
 - Reset or clear fog when that feature exists.
 - Save or load local state when that feature exists.
@@ -55,7 +58,7 @@ The GM view owns control actions:
 The player view is display-only:
 
 - Render the currently visible map state.
-- Render the active map with GM-hidden areas obscured.
+- Render the encounter explicitly shown to players with GM-hidden areas obscured.
 - Avoid controls that mutate session state.
 - Allow local display controls such as map zoom and pan without sending those viewport changes to the GM, server, or other player displays.
 - Support fullscreen display on iPad where possible.
@@ -67,16 +70,30 @@ The player view should not expose hidden map data through visible UI. Later impl
 Initial state can be small and explicit:
 
 - Current campaign identity.
-- Current map identity or image source.
+- Current player-shown map identity or image source.
+- Current GM selected/editing encounter identity, if that becomes shared state.
 - Map list, display names, manual order, and active map.
 - Map viewport/scaling information.
 - Fog shapes or rasterized fog mask for each map.
 - Last update timestamp or version number.
 
-Active-map identity and content are shared session state. Viewport zoom and pan
-are client-local state: each GM or player renderer owns its own viewport, resets
-when the campaign-qualified active-map identity changes, and does not persist
-or broadcast it.
+For F-004 and F-005, the implemented `active map` concept means the map shown
+to players. F-005B and later should distinguish the selected/editing encounter
+from the shown-to-players encounter. Opening an encounter for GM prep must not
+change the player display; `Show to Players` is an explicit GM action.
+
+Existing storage or API names such as `maps` and `activeMapId` may remain for
+compatibility. Where `activeMapId` remains, treat it as the player-shown map,
+not necessarily the GM-selected editing encounter. A future migration to clearer
+terminology such as `shownMapId` should be reviewed separately rather than
+bundled casually into UI or fog work.
+
+Shown-to-players map identity and content are shared session state. GM
+selected/editing encounter state may be client-local or separately scoped until
+a feature requires sharing it. Viewport zoom and pan are client-local state:
+each GM or player renderer owns its own viewport, resets when the
+campaign-qualified rendered-map identity changes, and does not persist or
+broadcast it.
 
 For Milestone 1, a simple shared state value is enough to prove connectivity and live updates.
 

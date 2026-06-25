@@ -106,26 +106,66 @@ Implementation notes:
 - Use the campaign and map metadata from Milestone 2.
 - Build on F-004's minimal active-map sync and display behavior.
 - Keep GM and player viewport state local to each browser view so their controls can diverge later.
+- In F-004 and F-005, the older term "active map" means the map currently shown
+  to players. Later encounter-workflow features split that idea into a
+  selected/editing encounter and a shown-to-players encounter.
 
-## Milestone 4: Manual Fog of War
+## Milestone 3 Follow-Up: Campaign and Encounter Workflow Polish
 
-Goal: Add manual hide/reveal fog controls over a visible map.
+Goal: Make the prep workflow feel like a lightweight fantasy tabletop tool:
+campaign cards lead to encounter cards, encounter cards open a GM workspace,
+and showing an encounter to players remains an explicit action.
+
+Feature sequence:
+
+- [F-005A](./features/F-005A.md): campaign landing page polish.
+- [F-005B](./features/F-005B.md): encounter card gallery and workspace entry.
+- [F-005C](./features/F-005C.md): encounter workspace shell.
 
 Acceptance criteria:
 
-- Map starts visible.
-- GM can add fog or hide areas using simple shapes such as rectangles or circles.
-- GM can remove or reveal fog from hidden areas.
-- Player sees the same map with hidden areas obscured.
+- GM `/gm` starts on a fantasy-themed campaign landing page with campaign cards.
+- Opening a campaign shows encounter/map cards with thumbnails.
+- Clicking an encounter card opens a selected/editing encounter workspace.
+- Clicking or opening an encounter does not automatically change the player display.
+- Showing an encounter to players is an explicit `Show to Players` action.
+- The GM may prep one encounter while a different encounter remains shown to players.
+- The player display changes only when the GM explicitly shows an encounter to players.
+- The current shown-to-players encounter is visually distinguished from the selected/editing encounter.
+- No fog controls, tokens, notes, initiative tracking, dynamic lighting, campaign members, characters, or VTT-style navigation are introduced.
+
+Implementation notes:
+
+- Prefer "encounter" in the UI for prepared map cards while preserving existing
+  storage compatibility where current files and APIs still use `maps`.
+- Existing `activeMapId` storage/API terminology currently represents the
+  player-shown map, not necessarily the GM-selected editing encounter.
+- Consider a future reviewed migration to clearer terminology such as
+  `shownMapId`, but do not migrate storage casually.
+
+## Milestone 4: Manual Fog of War
+
+Goal: Add manual hide/reveal fog controls in the GM encounter workspace.
+
+Acceptance criteria:
+
+- Maps start visible.
+- GM can add fog or hide areas on the selected/editing encounter using simple shapes such as rectangles or circles.
+- GM can remove or reveal fog from hidden areas during play.
+- Player receives fog updates only for the encounter currently shown to players.
+- If the GM edits fog on an encounter not shown to players, the player display does not change.
+- If the GM edits fog on the encounter currently shown to players, the player display updates live.
 - Hidden areas remain hidden on the player display.
-- Fog state belongs to a single map.
-- No multiple fog states per map.
+- Fog state belongs to a single encounter/map.
+- No multiple fog states per encounter.
 - No dynamic lighting, tokens, or vision cones are introduced.
 
 Implementation notes:
 
 - Do not implement the old full-black-fog-starts-over-the-map behavior.
 - In V1, fog is used to hide areas on an otherwise visible map.
+- Fog tools build on the F-005C encounter workspace and must preserve the
+  selected/editing versus shown-to-players distinction.
 - Canvas remains the preferred rendering layer.
 - Start with simple hide/reveal geometry before adding brush polish.
 
@@ -135,10 +175,10 @@ Goal: Complete campaign persistence for fog state and later restore workflows af
 
 Acceptance criteria:
 
-- Preserve F-004 campaign metadata, map list, ordering, map display names, and active map behavior.
-- Save fog state per map.
+- Preserve F-004 campaign metadata, map list, ordering, map display names, and shown-to-players map behavior.
+- Save fog state per encounter/map.
 - Reload a campaign later.
-- Restored player view matches saved active map and fog state.
+- Restored player view matches saved shown-to-players encounter and fog state.
 - Storage format is documented well enough to migrate later.
 - No cloud storage or user accounts are introduced.
 
@@ -146,6 +186,8 @@ Implementation notes:
 
 - Use local, inspectable files rather than cloud storage.
 - Keep `campaign.json` simple and include enough structure for future migrations.
+- Preserve the distinction between GM selected/editing encounter and
+  shown-to-players encounter when persisting state.
 
 ## Milestone 6: Quality-of-Life Improvements
 
