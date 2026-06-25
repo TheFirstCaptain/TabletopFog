@@ -123,20 +123,17 @@ test("loads the local fantasy theme with accessible desktop and narrow layouts",
   });
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await page.getByRole("button", { name: "Show to Players", exact: true }).click();
-  const activeMetadata = await page.locator(".encounter-card[data-shown='true'] .muted").evaluate((element) => {
-    const item = element.closest(".encounter-card");
-    return {
-      background: getComputedStyle(item).backgroundColor,
-      color: getComputedStyle(element).color
-    };
-  });
-  expect(activeMetadata).toEqual({
+  const shownCardStyles = await page.locator(".encounter-card[data-shown='true']").evaluate((element) => ({
+    background: getComputedStyle(element).backgroundColor,
+    statusColor: getComputedStyle(element.querySelector(".status-pill")).color
+  }));
+  expect(shownCardStyles).toEqual({
     background: "rgb(227, 208, 168)",
-    color: "rgb(104, 88, 67)"
+    statusColor: "rgb(255, 255, 255)"
   });
   expect(contrast(palette.muted, palette.strongSurface)).toBeGreaterThanOrEqual(4.5);
 
-  const libraryButton = page.getByRole("button", { name: "Library" });
+  const libraryButton = page.getByRole("button", { name: "Back to Campaign Library" });
   await libraryButton.hover();
   const secondaryHover = await libraryButton.evaluate((element) => {
     const computed = getComputedStyle(element);

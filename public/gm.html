@@ -10,15 +10,15 @@
     <main class="shell gm-shell">
       <header class="page-header">
         <p class="eyebrow">TabletopFog</p>
-        <h1>Campaign Library</h1>
+        <h1 id="page-title">Campaign Library</h1>
+        <p id="breadcrumb" class="breadcrumb" aria-label="Breadcrumb">Campaign Library</p>
         <p id="connection-status" class="status" aria-live="polite">Connecting...</p>
       </header>
 
-      <section class="panel" aria-labelledby="library-heading">
+      <section id="library-panel" class="panel" aria-labelledby="library-heading">
         <div class="section-heading">
           <div>
             <h2 id="library-heading">Campaigns</h2>
-            <p id="data-root" class="muted">Loading local data root.</p>
           </div>
         </div>
 
@@ -36,10 +36,10 @@
       <section id="campaign-panel" class="panel" aria-labelledby="campaign-heading" hidden>
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Open Campaign</p>
+            <p class="eyebrow">Campaign</p>
             <h2 id="campaign-heading">Campaign</h2>
           </div>
-          <button id="back-to-library" class="secondary" type="button">Library</button>
+          <button id="back-to-library" class="secondary" type="button">Back to Campaign Library</button>
         </div>
 
         <form id="map-form" class="inline-form">
@@ -69,7 +69,7 @@
                 <p id="selected-encounter-status" class="muted">Choose an encounter card to prep it here.</p>
               </div>
               <div class="workspace-actions">
-                <button id="back-to-encounters" class="secondary" type="button">Back to Encounters</button>
+                <button id="back-to-encounters" class="secondary" type="button">Back to Campaign</button>
                 <button id="workspace-show-to-players" type="button" aria-label="Show to Players from workspace">
                   Show to Players
                 </button>
@@ -85,15 +85,15 @@
               </div>
 
               <aside class="future-tools-panel" aria-labelledby="future-tools-heading">
-                <p class="eyebrow">Later</p>
-                <h4 id="future-tools-heading">Future fog tools</h4>
-                <p class="muted">Reserved room for table tools in a later feature.</p>
+                <p class="eyebrow">Encounter</p>
+                <h4 id="future-tools-heading">Tools</h4>
+                <p class="muted">No tools yet.</p>
               </aside>
             </div>
           </section>
 
           <div id="workspace-empty" class="active-map-panel">
-            <p class="eyebrow">Workspace</p>
+            <p class="eyebrow">Encounter Workspace</p>
             <h3>Open an encounter</h3>
             <p class="muted">Choose an encounter card to prep it here.</p>
           </div>

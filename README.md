@@ -34,13 +34,14 @@ Search/filtering and uploaded campaign images remain deferred.
 Opening a campaign now shows encounter cards with map thumbnails, rename and
 reorder controls, selected-for-prep status, and explicit card-level
 `Show to Players` actions. Opening an encounter for prep enters a focused GM
-workspace shell with the selected map, shown/not-shown status, `Back to
-Encounters`, a workspace-level `Show to Players` action, and reserved room for
-future table tools. Opening or navigating the workspace does not change the
-Player Display. Existing storage still uses `maps` and `activeMapId`, where
-`activeMapId` is an implementation detail meaning the encounter currently shown
-to players until a reviewed migration chooses clearer names. The UI should say
-`Shown to Players`.
+workspace shell with the selected map, shown/not-shown status, informational
+breadcrumbs, a single `Back to Campaign` action, and a workspace-level
+`Show to Players` action. Campaign screens use `Back to Campaign Library`, and
+normal GM UI avoids showing local filesystem paths. Opening or navigating the
+workspace does not change the Player Display. Existing storage still uses
+`maps` and `activeMapId`, where `activeMapId` is an implementation detail
+meaning the encounter currently shown to players until a reviewed migration
+chooses clearer names. The UI should say `Shown to Players`.
 
 Completed local-connectivity work proved:
 

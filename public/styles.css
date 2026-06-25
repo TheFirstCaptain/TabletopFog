@@ -194,6 +194,14 @@ h4 {
   font-weight: 700;
 }
 
+.breadcrumb {
+  margin-bottom: 0.5rem;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
 .status[data-state="live"] {
   color: var(--accent-strong);
 }
@@ -204,10 +212,6 @@ h4 {
 
 .muted {
   color: var(--muted);
-}
-
-#data-root {
-  overflow-wrap: anywhere;
 }
 
 .library-diagnostic {
@@ -357,6 +361,11 @@ h4 {
 .map-item p,
 .encounter-card p {
   margin-bottom: 0;
+}
+
+.encounter-name {
+  margin-bottom: 0;
+  overflow-wrap: anywhere;
 }
 
 .encounter-open-button {

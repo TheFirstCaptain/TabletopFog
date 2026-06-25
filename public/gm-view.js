@@ -1,4 +1,5 @@
 import { createMapCanvasRenderer } from "./map-canvas.js";
+import { createGmNavigation } from "./gm-navigation.js";
 
 const DEFAULT_CAMPAIGN_ICON = "🗺️";
 
@@ -28,9 +29,10 @@ export function createGmView(document) {
     campaignMessage: document.querySelector("#campaign-message"),
     campaignName: document.querySelector("#campaign-name"),
     campaignPanel: document.querySelector("#campaign-panel"),
-    dataRoot: document.querySelector("#data-root"),
+    breadcrumb: document.querySelector("#breadcrumb"),
     encounterGallery: document.querySelector("#encounter-gallery"),
     encounterWorkspace: document.querySelector("#encounter-workspace"),
+    libraryPanel: document.querySelector("#library-panel"),
     libraryDiagnostics: document.querySelector("#library-diagnostics"),
     libraryMessage: document.querySelector("#library-message"),
     mapFile: document.querySelector("#map-file"),
@@ -38,10 +40,12 @@ export function createGmView(document) {
     mapList: document.querySelector("#map-list"),
     selectedEncounterHeading: document.querySelector("#selected-encounter-heading"),
     selectedEncounterStatus: document.querySelector("#selected-encounter-status"),
+    pageTitle: document.querySelector("#page-title"),
     status: document.querySelector("#connection-status"),
     workspaceEmpty: document.querySelector("#workspace-empty"),
     workspaceShowToPlayers: document.querySelector("#workspace-show-to-players")
   };
+  const navigation = createGmNavigation(elements);
 
   const activeMapRenderer = createMapCanvasRenderer({
     canvas: elements.activeMapCanvas,
@@ -58,10 +62,6 @@ export function createGmView(document) {
   function renderSelectedEncounter(campaign, selectedEncounterId, workspaceOpen) {
     const selectedEncounter = campaign.maps.find((map) => map.id === selectedEncounterId);
 
-    elements.encounterWorkspace.hidden = !workspaceOpen || !selectedEncounter;
-    elements.encounterGallery.hidden = workspaceOpen && selectedEncounter;
-    elements.workspaceEmpty.hidden = workspaceOpen && selectedEncounter;
-
     if (!workspaceOpen || !selectedEncounter) {
       elements.selectedEncounterHeading.textContent = "Open an encounter";
       elements.selectedEncounterStatus.textContent = "Choose an encounter card to prep it here.";
@@ -71,6 +71,7 @@ export function createGmView(document) {
     }
 
     const shownToPlayers = selectedEncounter.id === campaign.activeMapId;
+    navigation.showWorkspace(campaign, selectedEncounter);
     elements.selectedEncounterHeading.textContent = selectedEncounter.name;
     elements.selectedEncounterStatus.textContent = shownToPlayers ? "Shown to players" : "Not shown to players";
     elements.workspaceShowToPlayers.disabled = shownToPlayers;
@@ -100,6 +101,10 @@ export function createGmView(document) {
       thumbnail.src = map.assetUrl;
       thumbnail.alt = `Thumbnail for ${map.name}`;
       openForPrep.append(thumbnail);
+
+      const title = document.createElement("h4");
+      title.className = "encounter-name";
+      title.textContent = map.name;
 
       const name = document.createElement("input");
       name.type = "text";
@@ -152,11 +157,7 @@ export function createGmView(document) {
         })
       );
 
-      const meta = document.createElement("p");
-      meta.className = "muted";
-      meta.textContent = map.originalFileName || map.file;
-
-      item.append(openForPrep, name, status, meta, controls);
+      item.append(openForPrep, title, name, status, controls);
       elements.mapList.append(item);
     });
   }
@@ -173,24 +174,23 @@ export function createGmView(document) {
       elements.mapFile.value = "";
     },
     hideCampaign() {
-      elements.campaignPanel.hidden = true;
+      navigation.showLibrary();
     },
     renderCampaign(campaign, selectedEncounterId = null, workspaceOpen = false) {
       if (!campaign) {
-        elements.campaignPanel.hidden = true;
+        navigation.showLibrary();
         return;
       }
 
-      elements.campaignPanel.hidden = false;
+      navigation.showCampaign(campaign);
       elements.campaignHeading.textContent = campaign.name;
       elements.campaignMessage.textContent = campaign.maps.length === 0 ? "Add a map to begin." : "";
       renderMaps(campaign, selectedEncounterId);
       renderSelectedEncounter(campaign, selectedEncounterId, workspaceOpen);
     },
-    renderLibrary({ campaigns, dataRoot, diagnostics }) {
+    renderLibrary({ campaigns, diagnostics }) {
       elements.campaignList.replaceChildren();
       elements.libraryDiagnostics.replaceChildren();
-      elements.dataRoot.textContent = dataRoot;
 
       diagnostics.forEach((diagnostic) => {
         const item = document.createElement("p");
@@ -230,7 +230,7 @@ export function createGmView(document) {
         const meta = document.createElement("p");
         meta.className = "muted";
         meta.textContent = `${campaign.mapCount} map${campaign.mapCount === 1 ? "" : "s"}${
-          campaign.activeMapName ? `, active: ${campaign.activeMapName}` : ""
+          campaign.activeMapName ? `, Shown to Players: ${campaign.activeMapName}` : ""
         }`;
 
         body.append(title, description, meta);

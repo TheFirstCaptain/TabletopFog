@@ -38,12 +38,17 @@ async function sizedPngFile(page, name, width, height, leftColor = "#d9b978", ri
 async function openGm(page, baseURL) {
   await page.goto(`${baseURL}/gm`);
   await expect(page.getByRole("heading", { level: 1, name: "Campaign Library" })).toBeVisible();
+  await expect(page.getByLabel("Breadcrumb")).toHaveText("Campaign Library");
+  await expect(page.getByRole("button", { name: /^Back to/ })).toHaveCount(0);
   await expect(page.getByText("Live", { exact: true })).toBeVisible();
 }
 
 async function createCampaign(page, name = "The Long Walk") {
   await page.getByLabel("New campaign").fill(name);
   await page.getByRole("button", { name: "Create" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Campaign" })).toBeVisible();
+  await expect(page.getByLabel("Breadcrumb")).toHaveText(`Campaign Library / ${name}`);
+  await expect(page.getByRole("button", { name: /^Back to/ })).toHaveCount(1);
   await expect(page.getByRole("heading", { level: 2, name })).toBeVisible();
 }
 
@@ -55,12 +60,14 @@ async function addMap(page, name) {
 
 test("GM creates, reopens, uploads, renames, and reorders campaign maps", async ({ app, page }) => {
   await openGm(page, app.baseURL);
+  await expect(page.getByText(app.dataRoot, { exact: true })).toHaveCount(0);
   await createCampaign(page);
   await expect(page.getByText("Add a map to begin.", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Library" }).click();
+  await page.getByRole("button", { name: "Back to Campaign Library" }).click();
   await expect(page.getByRole("heading", { level: 3, name: "The Long Walk" })).toBeVisible();
   await page.getByRole("button", { name: "Open" }).click();
+  await expect(page.getByLabel("Breadcrumb")).toHaveText("Campaign Library / The Long Walk");
   await expect(page.getByRole("heading", { level: 2, name: "The Long Walk" })).toBeVisible();
 
   await page.getByLabel("Add map").setInputFiles({
@@ -107,7 +114,7 @@ test("GM edits campaign card emoji and description without changing player displ
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   const playerAssetRequestsBeforeMetadataEdit = playerAssetRequests;
 
-  await page.getByRole("button", { name: "Library" }).click();
+  await page.getByRole("button", { name: "Back to Campaign Library" }).click();
   const card = page.locator(".campaign-card").filter({ hasText: "The Long Walk" });
   await expect(card.getByText("The Long Walk")).toBeVisible();
   await expect(card.getByText("1 map")).toBeVisible();
@@ -141,7 +148,7 @@ test("GM edits campaign card emoji and description without changing player displ
 
     if (!response.ok) throw new Error("Metadata update failed.");
   });
-  await page.getByRole("button", { name: "Library" }).click();
+  await page.getByRole("button", { name: "Back to Campaign Library" }).click();
   const refreshedCard = page.locator(".campaign-card").filter({ hasText: "The Long Walk" });
   await expect(refreshedCard.getByText("Current campaign metadata stays fresh.")).toBeVisible();
   await expect(refreshedCard.getByText("🔥")).toBeVisible();
@@ -151,7 +158,7 @@ test("campaign landing cards keep diagnostics and deferred controls out of scope
   await page.setViewportSize({ height: 768, width: 1366 });
   await openGm(page, app.baseURL);
   await createCampaign(page, "A Very Long Campaign Name Across The Western Borderlands");
-  await page.getByRole("button", { name: "Library" }).click();
+  await page.getByRole("button", { name: "Back to Campaign Library" }).click();
   await page.locator(".campaign-card").getByRole("button", { name: "Edit campaign details" }).click();
   await page.getByLabel("Campaign icon").fill("too long");
   await page.getByRole("button", { name: "Save campaign details" }).click();
@@ -253,7 +260,7 @@ test("player follows active-map changes and remains read-only", async ({ app, pa
   await expect(player.getByText("50%", { exact: true })).toBeVisible();
   await expect(player.getByRole("button", { name: "Zoom out" })).toBeDisabled();
 
-  await page.getByRole("button", { name: "Back to Encounters" }).click();
+  await page.getByRole("button", { name: "Back to Campaign" }).click();
   await page.getByRole("button", { name: "Show to Players", exact: true }).click();
   await expect(player.getByRole("img", { name: "Map: cave" })).toBeVisible();
   await expect(player.getByText("100%", { exact: true })).toBeVisible();
@@ -318,12 +325,15 @@ test("encounter cards open a workspace without changing the player display", asy
 
   await caveCard.getByRole("button", { name: "Open cave for prep" }).focus();
   await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { level: 1, name: "Encounter Workspace" })).toBeVisible();
+  await expect(page.getByLabel("Breadcrumb")).toHaveText("Campaign Library / The Long Walk / cave");
+  await expect(page.getByRole("button", { name: /^Back to/ })).toHaveCount(1);
   await expect(page.getByRole("heading", { level: 3, name: "cave" })).toBeVisible();
   await expect(page.getByText("Not shown to players", { exact: true })).toBeVisible();
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeWorkspaceOpen);
 
-  await page.getByRole("button", { name: "Back to Encounters" }).click();
+  await page.getByRole("button", { name: "Back to Campaign" }).click();
   await expect(caveCard.getByText("Selected for Prep", { exact: true })).toBeVisible();
   await caveCard.getByRole("button", { name: "Show to Players", exact: true }).click();
   await expect(player.getByRole("img", { name: "Map: cave" })).toBeVisible();
@@ -367,13 +377,13 @@ test("GM workspace shell previews selected encounter without changing the player
   await expect(page.getByRole("img", { name: "Map: cave" })).toBeVisible();
   await expect(page.getByText("Not shown to players", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Show to Players from workspace" })).toBeVisible();
-  await expect(page.getByText("Future fog tools", { exact: true })).toBeVisible();
+  await expect(page.getByText("Tools", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /fog|brush|reveal|hide/i })).toHaveCount(0);
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeWorkspaceOpen);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
-  await page.getByRole("button", { name: "Back to Encounters" }).click();
+  await page.getByRole("button", { name: "Back to Campaign" }).click();
   await expect(caveCard.getByText("Selected for Prep", { exact: true })).toBeVisible();
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeWorkspaceOpen);
@@ -382,7 +392,7 @@ test("GM workspace shell previews selected encounter without changing the player
   await page.getByRole("button", { name: "Show to Players from workspace" }).click();
   await expect(player.getByRole("img", { name: "Map: cave" })).toBeVisible();
   await expect(page.getByText("Shown to players", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Back to Encounters" }).click();
+  await page.getByRole("button", { name: "Back to Campaign" }).click();
   await expect(caveCard.getByText("Shown to Players", { exact: true })).toBeVisible();
 
   await page.setViewportSize({ height: 844, width: 390 });
@@ -455,7 +465,7 @@ test("same map ID in another campaign resets the player viewport", async ({ app,
   await createCampaign(page, "First Campaign");
   await addMap(page, "forest.png");
   await page.getByRole("button", { name: "Show to Players", exact: true }).click();
-  await page.getByRole("button", { name: "Library" }).click();
+  await page.getByRole("button", { name: "Back to Campaign Library" }).click();
   await createCampaign(page, "Second Campaign");
   await addMap(page, "forest.png");
   await page.getByRole("button", { name: "Show to Players", exact: true }).click();
@@ -466,7 +476,7 @@ test("same map ID in another campaign resets the player viewport", async ({ app,
   await player.getByRole("button", { name: "Zoom in" }).click();
   await expect(player.getByText("125%", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Library" }).click();
+  await page.getByRole("button", { name: "Back to Campaign Library" }).click();
   await page
     .locator(".campaign-card")
     .filter({ hasText: "First Campaign" })

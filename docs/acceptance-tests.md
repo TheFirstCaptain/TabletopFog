@@ -489,6 +489,41 @@ Expected result:
 - The layout has room for future fog tools without adding fog controls yet.
 - Rename, reorder, and upload remain gallery workflows for this feature.
 
+## Milestone 3 Follow-Up: Navigation Simplification
+
+### Test: GM Navigation Uses One Clear Back Action
+
+Prerequisites:
+
+- A campaign exists with at least two maps.
+- GM View and Player Display are open.
+- One encounter is shown to players.
+
+Steps:
+
+1. Open the Campaign Library.
+2. Confirm the page title and breadcrumb identify `Campaign Library`.
+3. Confirm normal GM UI does not show the local data root or full filesystem paths.
+4. Open a campaign.
+5. Confirm the page title identifies `Campaign`, the breadcrumb shows
+   `Campaign Library / <campaign>`, and there is one visible Back action.
+6. Open an Encounter Workspace.
+7. Confirm the page title identifies `Encounter Workspace`, the breadcrumb shows
+   `Campaign Library / <campaign> / <encounter>`, and there is one visible Back
+   action.
+8. Navigate back to the Campaign screen, then back to the Campaign Library.
+9. Repeat the navigation at a 390 px viewport.
+
+Expected result:
+
+- Breadcrumbs are informational and do not compete with the Back action.
+- The Campaign screen backs to Campaign Library.
+- The Encounter Workspace backs to Campaign.
+- Normal GM UI avoids filesystem paths and implementation-focused labels.
+- Opening or navigating away from an Encounter Workspace does not change the
+  Player Display.
+- The Player Display changes only after the GM clicks `Show to Players`.
+
 ## Milestone 4: Manual Fog of War
 
 ### Test: Player Sees Hidden Areas Obscured

@@ -128,10 +128,10 @@ Completed feature sequence:
 - [F-005A](./features/F-005A.md): campaign landing page polish.
 - [F-005B](./features/F-005B.md): encounter card gallery and workspace entry.
 - [F-005C](./features/F-005C.md): encounter workspace shell.
+- [F-005D](./features/F-005D.md): navigation simplification.
 
 Planned focused UI polish sequence before fog:
 
-- [F-005D](./features/F-005D.md): navigation simplification.
 - [F-005E](./features/F-005E.md): campaign card presentation.
 - [F-005F](./features/F-005F.md): encounter gallery presentation.
 - [F-005G](./features/F-005G.md): encounter workspace layout.
@@ -145,7 +145,7 @@ Status:
 - Complete: [F-005A](./features/F-005A.md), campaign landing page polish.
 - Complete: [F-005B](./features/F-005B.md), encounter card gallery and workspace entry.
 - Complete: [F-005C](./features/F-005C.md), encounter workspace shell.
-- Proposed: [F-005D](./features/F-005D.md), navigation simplification.
+- Complete: [F-005D](./features/F-005D.md), navigation simplification.
 - Proposed: [F-005E](./features/F-005E.md), campaign card presentation.
 - Proposed: [F-005F](./features/F-005F.md), encounter gallery presentation.
 - Proposed: [F-005G](./features/F-005G.md), encounter workspace layout.
