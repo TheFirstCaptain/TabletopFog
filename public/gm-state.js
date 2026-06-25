@@ -5,10 +5,18 @@ export function createGmState() {
     diagnostics: []
   };
   let currentCampaign = null;
+  let selectedEncounterId = null;
+
+  function ensureSelectedEncounterExists() {
+    if (!currentCampaign || !currentCampaign.maps.some((map) => map.id === selectedEncounterId)) {
+      selectedEncounterId = null;
+    }
+  }
 
   return {
     closeCampaign() {
       currentCampaign = null;
+      selectedEncounterId = null;
     },
     getCurrentCampaign() {
       return currentCampaign;
@@ -22,8 +30,15 @@ export function createGmState() {
       maps.splice(toIndex, 0, moved);
       return maps.map((map) => map.id);
     },
+    getSelectedEncounterId() {
+      return selectedEncounterId;
+    },
+    selectEncounter(mapId) {
+      selectedEncounterId = mapId;
+    },
     setCurrentCampaign(campaign) {
       currentCampaign = campaign;
+      ensureSelectedEncounterExists();
     },
     setLibrary(payload) {
       library = {
@@ -35,6 +50,7 @@ export function createGmState() {
     synchronize(serverState) {
       if (currentCampaign && serverState.campaign && serverState.campaign.id === currentCampaign.id) {
         currentCampaign = serverState.campaign;
+        ensureSelectedEncounterExists();
         return true;
       }
 

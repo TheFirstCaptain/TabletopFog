@@ -6,7 +6,7 @@ This project is intentionally not a full virtual tabletop. V1 includes local cam
 
 ## Current Status
 
-TabletopFog has completed the first local connectivity spike, campaign/map library, fantasy visual theme, active-map display polish, and campaign landing page polish, including Chromebook-host and iPad-player validation through F-005. The HTTPS app serves separate GM and player pages, stores local campaign folders, lets the GM manage maps, and syncs the current player-shown map to the read-only player display over Socket.IO.
+TabletopFog has completed the first local connectivity spike, campaign/map library, fantasy visual theme, active-map display polish, campaign landing page polish, and encounter gallery entry, including Chromebook-host and iPad-player validation through F-005. The HTTPS app serves separate GM and player pages, stores local campaign folders, lets the GM manage maps as encounter cards, and syncs the current player-shown map to the read-only player display over Socket.IO.
 
 The quality gate runs Chromium characterization for current GM/player workflows
 and theme behavior.
@@ -25,11 +25,15 @@ The GM campaign landing page now uses campaign cards with emoji icons, editable
 short descriptions, map counts, and preserved invalid-campaign diagnostics.
 Search/filtering and uploaded campaign images remain deferred.
 
-Upcoming encounter workflow polish will split the old `active map` idea into a
-GM selected/editing encounter and a shown-to-players encounter. Opening an
-encounter for prep will not change the player display; `Show to Players` will
-remain explicit. Existing storage may still use `maps` and `activeMapId` until a
-reviewed migration chooses clearer names.
+Opening a campaign now shows encounter cards with map thumbnails, rename and
+reorder controls, selected-for-prep status, and explicit card-level
+`Show to Players` actions. Opening an encounter for prep updates only the GM
+workspace preview and does not change the player display. Existing storage still
+uses `maps` and `activeMapId`, where `activeMapId` means the encounter currently
+shown to players until a reviewed migration chooses clearer names.
+
+Upcoming encounter workflow polish will expand the lightweight workspace
+preview into the full encounter workspace shell before fog tools are added.
 
 Completed local-connectivity work proved:
 

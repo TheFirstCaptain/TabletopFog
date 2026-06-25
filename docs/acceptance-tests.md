@@ -447,9 +447,9 @@ Steps:
 1. Open the campaign from the campaign landing page.
 2. Confirm maps display as encounter cards with visually prominent thumbnails.
 3. Confirm the currently shown-to-players encounter is visually distinguished.
-4. Click a different encounter card to open its workspace or workspace placeholder.
+4. Click a different encounter card thumbnail to open its in-page workspace placeholder.
 5. Confirm the player display does not change.
-6. Use the explicit `Show to Players` action for that encounter.
+6. Use the card-level explicit `Show to Players` action for that encounter.
 
 Expected result:
 

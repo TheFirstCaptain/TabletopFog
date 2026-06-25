@@ -52,14 +52,16 @@
 
         <div class="workspace-grid">
           <div>
-            <h3>Maps</h3>
+            <h3>Encounters</h3>
             <div id="map-list" class="map-list" aria-live="polite"></div>
           </div>
 
           <div class="active-map-panel">
-            <h3>Active Map</h3>
+            <p class="eyebrow">Workspace Preview</p>
+            <h3 id="selected-encounter-heading">Open an encounter</h3>
+            <p id="selected-encounter-status" class="muted">Choose an encounter card to prep it here.</p>
             <div id="active-map-stage" class="gm-map-stage">
-              <p id="active-map-message" class="map-state-message muted">No active map selected.</p>
+              <p id="active-map-message" class="map-state-message muted">No encounter selected.</p>
               <canvas id="active-map-canvas" class="map-canvas" role="img" aria-label="" hidden></canvas>
             </div>
           </div>

@@ -78,9 +78,9 @@ Initial state can be small and explicit:
 - Last update timestamp or version number.
 
 For F-004 and F-005, the implemented `active map` concept means the map shown
-to players. F-005B and later should distinguish the selected/editing encounter
-from the shown-to-players encounter. Opening an encounter for GM prep must not
-change the player display; `Show to Players` is an explicit GM action.
+to players. F-005B distinguishes the GM-local selected/editing encounter from
+the shown-to-players encounter. Opening an encounter for GM prep must not change
+the player display; `Show to Players` is an explicit GM action.
 
 Existing storage or API names such as `maps` and `activeMapId` may remain for
 compatibility. Where `activeMapId` remains, treat it as the player-shown map,

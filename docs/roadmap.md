@@ -122,6 +122,12 @@ Feature sequence:
 - [F-005B](./features/F-005B.md): encounter card gallery and workspace entry.
 - [F-005C](./features/F-005C.md): encounter workspace shell.
 
+Status:
+
+- Complete: [F-005A](./features/F-005A.md), campaign landing page polish.
+- Complete: [F-005B](./features/F-005B.md), encounter card gallery and workspace entry.
+- Proposed: [F-005C](./features/F-005C.md), encounter workspace shell.
+
 Acceptance criteria:
 
 - GM `/gm` starts on a fantasy-themed campaign landing page with campaign cards.

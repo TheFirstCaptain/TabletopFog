@@ -122,9 +122,9 @@ test("loads the local fantasy theme with accessible desktop and narrow layouts",
     name: "forest.png"
   });
   await page.getByRole("button", { name: "Add", exact: true }).click();
-  await page.getByRole("button", { name: "Show to players" }).click();
-  const activeMetadata = await page.locator(".map-item[data-active='true'] .muted").evaluate((element) => {
-    const item = element.closest(".map-item");
+  await page.getByRole("button", { name: "Show to Players" }).click();
+  const activeMetadata = await page.locator(".encounter-card[data-shown='true'] .muted").evaluate((element) => {
+    const item = element.closest(".encounter-card");
     return {
       background: getComputedStyle(item).backgroundColor,
       color: getComputedStyle(element).color

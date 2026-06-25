@@ -33,6 +33,8 @@ export function createGmView(document) {
     mapFile: document.querySelector("#map-file"),
     mapForm: document.querySelector("#map-form"),
     mapList: document.querySelector("#map-list"),
+    selectedEncounterHeading: document.querySelector("#selected-encounter-heading"),
+    selectedEncounterStatus: document.querySelector("#selected-encounter-status"),
     status: document.querySelector("#connection-status")
   };
 
@@ -41,39 +43,74 @@ export function createGmView(document) {
     onStatus({ map, state }) {
       elements.activeMapMessage.dataset.state = state;
       elements.activeMapMessage.setAttribute("role", state === "error" ? "alert" : "status");
-      if (state === "empty") elements.activeMapMessage.textContent = "No active map selected.";
+      if (state === "empty") elements.activeMapMessage.textContent = "No encounter selected.";
       if (state === "loading") elements.activeMapMessage.textContent = "Loading map...";
       if (state === "ready") elements.activeMapMessage.textContent = map.name;
       if (state === "error") elements.activeMapMessage.textContent = "Map image could not be loaded.";
     }
   });
 
-  function renderActiveMap(campaign) {
-    const activeMap = campaign.maps.find((map) => map.id === campaign.activeMapId);
+  function renderSelectedEncounter(campaign, selectedEncounterId) {
+    const selectedEncounter = campaign.maps.find((map) => map.id === selectedEncounterId);
 
-    if (!activeMap) {
+    if (!selectedEncounter) {
+      elements.selectedEncounterHeading.textContent = "Open an encounter";
+      elements.selectedEncounterStatus.textContent = "Choose an encounter card to prep it here.";
       activeMapRenderer.setMap(null);
       return;
     }
 
-    activeMapRenderer.setMap({ ...activeMap, campaignId: campaign.id });
+    elements.selectedEncounterHeading.textContent = selectedEncounter.name;
+    elements.selectedEncounterStatus.textContent =
+      selectedEncounter.id === campaign.activeMapId ? "Shown to players" : "Not shown to players";
+    activeMapRenderer.setMap({ ...selectedEncounter, campaignId: campaign.id });
   }
 
-  function renderMaps(campaign) {
+  function renderMaps(campaign, selectedEncounterId) {
     elements.mapList.replaceChildren();
 
     campaign.maps.forEach((map, index) => {
       const item = document.createElement("article");
-      item.className = "map-item";
-      if (map.id === campaign.activeMapId) item.dataset.active = "true";
+      item.className = "encounter-card";
+      item.dataset.mapId = map.id;
+      if (map.id === campaign.activeMapId) item.dataset.shown = "true";
+      if (map.id === selectedEncounterId) item.dataset.selected = "true";
+
+      const openForPrep = document.createElement("button");
+      openForPrep.type = "button";
+      openForPrep.className = "encounter-open-button";
+      openForPrep.dataset.action = "select-encounter";
+      openForPrep.dataset.mapId = map.id;
+      openForPrep.setAttribute("aria-label", `Open ${map.name} for prep`);
+
+      const thumbnail = document.createElement("img");
+      thumbnail.className = "encounter-thumbnail";
+      thumbnail.src = map.assetUrl;
+      thumbnail.alt = `Thumbnail for ${map.name}`;
+      openForPrep.append(thumbnail);
 
       const name = document.createElement("input");
       name.type = "text";
       name.value = map.name;
-      name.setAttribute("aria-label", `Map name for ${map.name}`);
+      name.setAttribute("aria-label", `Encounter name for ${map.name}`);
+
+      const status = document.createElement("div");
+      status.className = "encounter-status";
+      if (map.id === campaign.activeMapId) {
+        const shown = document.createElement("span");
+        shown.className = "status-pill";
+        shown.textContent = "Shown to Players";
+        status.append(shown);
+      }
+      if (map.id === selectedEncounterId) {
+        const selected = document.createElement("span");
+        selected.className = "status-pill secondary-pill";
+        selected.textContent = "Selected for Prep";
+        status.append(selected);
+      }
 
       const controls = document.createElement("div");
-      controls.className = "map-controls";
+      controls.className = "encounter-controls";
       controls.append(
         createButton(document, {
           action: "rename-map",
@@ -99,7 +136,7 @@ export function createGmView(document) {
           action: "set-active-map",
           disabled: map.id === campaign.activeMapId,
           mapId: map.id,
-          text: map.id === campaign.activeMapId ? "Active" : "Show to players"
+          text: map.id === campaign.activeMapId ? "Shown" : "Show to Players"
         })
       );
 
@@ -107,7 +144,7 @@ export function createGmView(document) {
       meta.className = "muted";
       meta.textContent = map.originalFileName || map.file;
 
-      item.append(name, meta, controls);
+      item.append(openForPrep, name, status, meta, controls);
       elements.mapList.append(item);
     });
   }
@@ -126,7 +163,7 @@ export function createGmView(document) {
     hideCampaign() {
       elements.campaignPanel.hidden = true;
     },
-    renderCampaign(campaign) {
+    renderCampaign(campaign, selectedEncounterId = null) {
       if (!campaign) {
         elements.campaignPanel.hidden = true;
         return;
@@ -135,8 +172,8 @@ export function createGmView(document) {
       elements.campaignPanel.hidden = false;
       elements.campaignHeading.textContent = campaign.name;
       elements.campaignMessage.textContent = campaign.maps.length === 0 ? "Add a map to begin." : "";
-      renderMaps(campaign);
-      renderActiveMap(campaign);
+      renderMaps(campaign, selectedEncounterId);
+      renderSelectedEncounter(campaign, selectedEncounterId);
     },
     renderLibrary({ campaigns, dataRoot, diagnostics }) {
       elements.campaignList.replaceChildren();

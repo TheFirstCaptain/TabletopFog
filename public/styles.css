@@ -235,8 +235,13 @@ h3 {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
 }
 
+.map-list {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+}
+
 .campaign-card,
-.map-item {
+.map-item,
+.encounter-card {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
@@ -325,25 +330,78 @@ h3 {
   margin-top: 1rem;
 }
 
-.map-item {
+.map-item,
+.encounter-card {
   display: grid;
   grid-template-columns: minmax(12rem, 1fr);
   gap: 0.65rem;
 }
 
-.map-item[data-active="true"] {
+.map-item[data-active="true"],
+.encounter-card[data-shown="true"] {
   border-color: var(--accent);
   background: var(--surface-strong);
 }
 
-.map-item p {
+.encounter-card[data-selected="true"] {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.map-item p,
+.encounter-card p {
   margin-bottom: 0;
 }
 
+.encounter-open-button {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+.encounter-open-button:hover:not(:disabled) {
+  background: transparent;
+}
+
+.encounter-thumbnail {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--stage);
+}
+
+.encounter-status,
+.encounter-controls,
 .map-controls {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.status-pill {
+  display: inline-flex;
+  min-height: 1.75rem;
+  align-items: center;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+}
+
+.secondary-pill {
+  background: var(--surface);
+  color: var(--accent-strong);
 }
 
 .icon-button {

@@ -47,7 +47,18 @@ export function wireGmEvents(elements, actions) {
 
   elements.mapList.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-action]");
-    if (!button) return;
+    if (!button) {
+      const card = event.target.closest(".encounter-card[data-map-id]");
+      if (card && !event.target.closest("input, textarea, select")) {
+        actions.selectEncounter(card.dataset.mapId);
+      }
+      return;
+    }
+
+    if (button.dataset.action === "select-encounter") {
+      actions.selectEncounter(button.dataset.mapId);
+      return;
+    }
 
     if (button.dataset.action === "rename-map") {
       const name = button.closest("article").querySelector("input").value;
