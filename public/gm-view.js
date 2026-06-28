@@ -43,6 +43,7 @@ export function createGmView(document) {
     pageTitle: document.querySelector("#page-title"),
     status: document.querySelector("#connection-status"),
     workspaceEmpty: document.querySelector("#workspace-empty"),
+    workspaceGrid: document.querySelector(".workspace-grid"),
     workspaceShowToPlayers: document.querySelector("#workspace-show-to-players")
   };
   const navigation = createGmNavigation(elements);
@@ -71,9 +72,12 @@ export function createGmView(document) {
     }
 
     const shownToPlayers = selectedEncounter.id === campaign.activeMapId;
+    const shownEncounter = campaign.maps.find((map) => map.id === campaign.activeMapId);
     navigation.showWorkspace(campaign, selectedEncounter);
     elements.selectedEncounterHeading.textContent = selectedEncounter.name;
-    elements.selectedEncounterStatus.textContent = shownToPlayers ? "Shown to Players" : "Not Shown to Players";
+    elements.selectedEncounterStatus.textContent = shownToPlayers
+      ? `Selected for Prep: ${selectedEncounter.name}. Shown to Players.`
+      : `Selected for Prep: ${selectedEncounter.name}. Shown to Players: ${shownEncounter?.name || "None"}.`;
     elements.workspaceShowToPlayers.disabled = shownToPlayers;
     elements.workspaceShowToPlayers.dataset.mapId = selectedEncounter.id;
     activeMapRenderer.setMap({ ...selectedEncounter, campaignId: campaign.id });

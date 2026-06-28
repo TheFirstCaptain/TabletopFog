@@ -492,7 +492,8 @@ test("encounter cards open a workspace without changing the player display", asy
   await expect(page.getByLabel("Breadcrumb")).toHaveText("Campaign Library / The Long Walk / cave");
   await expect(page.getByRole("button", { name: /^Back to/ })).toHaveCount(1);
   await expect(page.getByRole("heading", { level: 3, name: "cave" })).toBeVisible();
-  await expect(page.getByText("Not Shown to Players", { exact: true })).toBeVisible();
+  await expect(page.locator("#selected-encounter-status")).toContainText("Selected for Prep: cave");
+  await expect(page.locator("#selected-encounter-status")).toContainText("Shown to Players: forest");
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeWorkspaceOpen);
 
@@ -659,13 +660,59 @@ test("GM workspace shell previews selected encounter without changing the player
   await caveCard.getByRole("button", { name: "Open cave for prep" }).click();
   await expect(page.getByRole("heading", { level: 3, name: "cave" })).toBeVisible();
   await expect(page.getByRole("img", { name: "Map: cave" })).toBeVisible();
-  await expect(page.getByText("Not Shown to Players", { exact: true })).toBeVisible();
+  await expect(page.locator("#selected-encounter-status")).toContainText("Selected for Prep: cave");
+  await expect(page.locator("#selected-encounter-status")).toContainText("Shown to Players: forest");
   await expect(page.getByRole("button", { name: "Show to Players from workspace" })).toBeVisible();
-  await expect(page.getByText("Tools", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Future Tools" })).toBeVisible();
   await expect(page.getByRole("button", { name: /fog|brush|reveal|hide/i })).toHaveCount(0);
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeWorkspaceOpen);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  const desktopWorkspaceLayout = await page.evaluate(() => {
+    const grid = document.querySelector(".workspace-grid").getBoundingClientRect();
+    const workspace = document.querySelector("#encounter-workspace").getBoundingClientRect();
+    const map = document.querySelector(".gm-map-stage").getBoundingClientRect();
+    const dock = document.querySelector(".future-tools-panel").getBoundingClientRect();
+    const action = document.querySelector("#workspace-show-to-players").getBoundingClientRect();
+    const canvas = document.querySelector("#active-map-canvas");
+    return {
+      actionAreaSmallerThanMap: action.width * action.height < map.width * map.height * 0.2,
+      dockRightOfMap: dock.left > map.right,
+      mapAreaGreaterThanDock: map.width * map.height > dock.width * dock.height,
+      renderedHeight: Number(canvas.dataset.drawHeight),
+      renderedWidth: Number(canvas.dataset.drawWidth),
+      workspaceSpansGrid: workspace.width > grid.width * 0.95
+    };
+  });
+  expect(desktopWorkspaceLayout).toEqual({
+    actionAreaSmallerThanMap: true,
+    dockRightOfMap: true,
+    mapAreaGreaterThanDock: true,
+    renderedHeight: expect.any(Number),
+    renderedWidth: expect.any(Number),
+    workspaceSpansGrid: true
+  });
+  expect(desktopWorkspaceLayout.renderedHeight).toBeGreaterThan(0);
+  expect(desktopWorkspaceLayout.renderedWidth).toBeGreaterThan(0);
+
+  await page.setViewportSize({ height: 768, width: 1024 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  const chromebookWorkspaceLayout = await page.evaluate(() => {
+    const grid = document.querySelector(".workspace-grid").getBoundingClientRect();
+    const workspace = document.querySelector("#encounter-workspace").getBoundingClientRect();
+    const map = document.querySelector(".gm-map-stage").getBoundingClientRect();
+    const dock = document.querySelector(".future-tools-panel").getBoundingClientRect();
+    return {
+      dockRightOfMap: dock.left > map.right,
+      mapAreaGreaterThanDock: map.width * map.height > dock.width * dock.height,
+      workspaceSpansGrid: workspace.width > grid.width * 0.95
+    };
+  });
+  expect(chromebookWorkspaceLayout).toEqual({
+    dockRightOfMap: true,
+    mapAreaGreaterThanDock: true,
+    workspaceSpansGrid: true
+  });
 
   await page.getByRole("button", { name: "Back to Campaign" }).click();
   await expect(caveCard.getByText("Selected for Prep", { exact: true })).toBeVisible();
@@ -675,13 +722,26 @@ test("GM workspace shell previews selected encounter without changing the player
   await caveCard.getByRole("button", { name: "Open cave for prep" }).click();
   await page.getByRole("button", { name: "Show to Players from workspace" }).click();
   await expect(player.getByRole("img", { name: "Map: cave" })).toBeVisible();
-  await expect(page.locator("#selected-encounter-status")).toHaveText("Shown to Players");
+  await expect(page.locator("#selected-encounter-status")).toContainText("Selected for Prep: cave");
+  await expect(page.locator("#selected-encounter-status")).toContainText("Shown to Players");
   await page.getByRole("button", { name: "Back to Campaign" }).click();
   await expect(caveCard.locator(".status-pill").filter({ hasText: "Shown to Players" })).toBeVisible();
 
   await page.setViewportSize({ height: 844, width: 390 });
   await caveCard.getByRole("button", { name: "Open cave for prep" }).click();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  const narrowWorkspaceLayout = await page.evaluate(() => {
+    const map = document.querySelector(".gm-map-stage").getBoundingClientRect();
+    const dock = document.querySelector(".future-tools-panel").getBoundingClientRect();
+    return {
+      dockBelowMap: dock.top > map.bottom,
+      mapAreaGreaterThanDock: map.width * map.height > dock.width * dock.height
+    };
+  });
+  expect(narrowWorkspaceLayout).toEqual({
+    dockBelowMap: true,
+    mapAreaGreaterThanDock: true
+  });
 });
 
 test("active map uses centered contain geometry across table viewports", async ({ app, page, context }) => {

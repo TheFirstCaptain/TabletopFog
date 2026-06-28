@@ -552,11 +552,18 @@ Steps:
 
 1. Open a different encounter workspace from the encounter gallery.
 2. Confirm the workspace shows the selected/editing encounter name and map.
-3. Confirm the workspace indicates whether this encounter is currently shown to players.
+3. Confirm the workspace status identifies both the selected/editing encounter
+   and the encounter currently `Shown to Players` when they differ.
 4. Navigate back to the encounter gallery.
 5. Return to the workspace.
-6. Confirm the workspace includes reserved future fog-tool space without fog controls.
-7. Click the workspace `Show to Players` action.
+6. On desktop or Chromebook-sized screens, confirm the map is the dominant
+   workspace element and the reserved future tool dock sits laterally beside it.
+7. On a narrow screen, confirm the reserved future tool dock stacks below the
+   map and the page has no horizontal overflow.
+8. Confirm the workspace includes reserved future fog-tool space without fog controls.
+9. Confirm `Show to Players` sits in a dedicated running-actions area near the
+   title/status, not over the map.
+10. Click the workspace `Show to Players` action.
 
 Expected result:
 
@@ -564,7 +571,9 @@ Expected result:
 - The GM can inspect or prep one encounter while another remains shown to players.
 - Player Display remains unchanged until `Show to Players` is clicked.
 - Workspace navigation back to the encounter gallery is clear.
-- The layout has room for future fog tools without adding fog controls yet.
+- The workspace makes the map prominent, keeps future tool space reserved
+  without adding fog controls yet, and remains usable at desktop,
+  Chromebook-sized, and narrow viewports.
 - Rename, reorder, and upload remain gallery workflows for this feature.
 
 ## Milestone 3 Follow-Up: Navigation Simplification

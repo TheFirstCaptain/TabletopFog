@@ -1,5 +1,6 @@
 export function createGmNavigation(elements) {
   function setWorkspaceOpen(open) {
+    elements.workspaceGrid.dataset.workspaceOpen = String(open);
     elements.encounterWorkspace.hidden = !open;
     elements.encounterGallery.hidden = open;
     elements.workspaceEmpty.hidden = open;

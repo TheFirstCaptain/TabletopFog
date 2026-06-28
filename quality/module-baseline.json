@@ -15,7 +15,7 @@
       "responsibility": "Translate static and delegated GM campaign, campaign-card metadata, encounter gallery, encounter workspace, and map DOM events into controller actions."
     },
     "public/gm-navigation.js": {
-      "baselineLines": 34,
+      "baselineLines": 35,
       "responsibility": "Render GM navigation screen state, informational breadcrumbs, and Back-action visibility across the campaign library, campaign, and encounter workspace."
     },
     "public/gm-state.js": {
@@ -23,7 +23,7 @@
       "responsibility": "Maintain GM campaign library, current campaign, GM-local selected encounter, and workspace-open client state."
     },
     "public/gm-view.js": {
-      "baselineLines": 352,
+      "baselineLines": 356,
       "responsibility": "Render the GM campaign card library, campaign-card metadata editing, encounter cards, encounter workspace shell, map controls, messages, status, and shared-canvas map preview."
     },
     "public/gm.js": {

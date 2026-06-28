@@ -45,3 +45,4 @@ Use this tracker for known defects, regressions, build failures, browser/device 
 | B-006 | Harness Repository Test Rejects Current-Dated Evidence | Resolved | P2 | [B-006.md](./B-006.md) | 2026-06-21 | Live-repository validation uses the current clock and passes full quality. |
 | B-007 | Data Root Path Overflows Narrow GM Layout | Resolved | P3 | [B-007.md](./B-007.md) | 2026-06-21 | Scoped path wrapping passes the 390 px Chromium regression and full quality. |
 | B-008 | Campaign Details Edit Cannot Change Campaign Name | Resolved | P3 | [B-008.md](./B-008.md) | 2026-06-28 | Campaign display-name editing now uses the existing GM-only campaign details flow without renaming local folders. |
+| B-009 | Encounter Workspace Narrows After Opening Encounter | Resolved | P3 | [B-009.md](./B-009.md) | 2026-06-28 | Focused workspace now spans the campaign content area after opening an encounter, with Chromium regression coverage. |
