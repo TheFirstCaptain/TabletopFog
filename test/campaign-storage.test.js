@@ -307,15 +307,21 @@ test("updates campaign card metadata while preserving unknown fields", (t) => {
 
   const updated = storage.updateCampaignMetadata("The Long Walk", {
     description: "Roads through a haunted borderland.",
-    icon: "🛡️"
+    icon: "🛡️",
+    name: "The Longer Walk"
   });
   const saved = JSON.parse(fs.readFileSync(campaignPath, "utf8"));
 
+  assert.equal(updated.id, "The Long Walk");
+  assert.equal(updated.name, "The Longer Walk");
   assert.equal(updated.description, "Roads through a haunted borderland.");
   assert.equal(updated.icon, "🛡️");
+  assert.equal(saved.name, "The Longer Walk");
   assert.equal(saved.description, "Roads through a haunted borderland.");
   assert.equal(saved.icon, "🛡️");
   assert.deepEqual(saved.externalMetadata, { source: "future-version" });
+  assert.equal(fs.existsSync(path.join(root, "The Long Walk", "campaign.json")), true);
+  assert.equal(fs.existsSync(path.join(root, "The Longer Walk", "campaign.json")), false);
 });
 
 test("rejects invalid campaign card metadata without changing storage", (t) => {
@@ -344,6 +350,15 @@ test("rejects invalid campaign card metadata without changing storage", (t) => {
     /icon/
   );
   assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+
+  assert.throws(
+    () =>
+      storage.updateCampaignMetadata(campaign.id, {
+        name: "???"
+      }),
+    /name/
+  );
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
 });
 
 test("campaign card metadata patches preserve omitted fields and reject unsupported shapes", (t) => {
@@ -368,6 +383,13 @@ test("campaign card metadata patches preserve omitted fields and reject unsuppor
   assert.equal(iconOnly.description, "Updated description.");
   assert.equal(iconOnly.icon, "🔥");
 
+  const nameOnly = storage.updateCampaignMetadata(campaign.id, {
+    name: "The Longer Walk"
+  });
+  assert.equal(nameOnly.name, "The Longer Walk");
+  assert.equal(nameOnly.description, "Updated description.");
+  assert.equal(nameOnly.icon, "🔥");
+
   const campaignPath = path.join(root, campaign.id, "campaign.json");
   const originalMetadata = fs.readFileSync(campaignPath, "utf8");
 
@@ -377,7 +399,10 @@ test("campaign card metadata patches preserve omitted fields and reject unsuppor
   assert.throws(() => storage.updateCampaignMetadata(campaign.id, { icon: { bad: true } }), /icon/);
   assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
 
-  assert.throws(() => storage.updateCampaignMetadata(campaign.id, { unknown: "field" }), /description or icon/);
+  assert.throws(() => storage.updateCampaignMetadata(campaign.id, { name: ["bad"] }), /name/);
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+
+  assert.throws(() => storage.updateCampaignMetadata(campaign.id, { unknown: "field" }), /name, description, or icon/);
   assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
 });
 

@@ -11,7 +11,7 @@ const MAP_EXTRA_FIELDS = Symbol("mapExtraFields");
 const MAX_CAMPAIGN_DESCRIPTION_LENGTH = 160;
 const MAX_CAMPAIGN_ICON_LENGTH = 4;
 const campaignFields = new Set(["version", "name", "description", "icon", "activeMapId", "maps"]);
-const metadataFields = new Set(["description", "icon"]);
+const metadataFields = new Set(["description", "icon", "name"]);
 const mapFields = new Set(["id", "name", "originalFileName", "file", "order", "fog"]);
 
 function getDefaultDataRoot(env = process.env) {
@@ -437,17 +437,25 @@ function createCampaignStorage(options = {}) {
         throw createUserError(400, "Campaign metadata must be an object.");
       }
 
-      if (!Object.hasOwn(metadata, "description") && !Object.hasOwn(metadata, "icon")) {
-        throw createUserError(400, "Campaign metadata must include description or icon.");
+      if (
+        !Object.hasOwn(metadata, "description") &&
+        !Object.hasOwn(metadata, "icon") &&
+        !Object.hasOwn(metadata, "name")
+      ) {
+        throw createUserError(400, "Campaign metadata must include name, description, or icon.");
       }
 
       Object.keys(metadata).forEach((key) => {
         if (!metadataFields.has(key)) {
-          throw createUserError(400, "Campaign metadata must include only description or icon.");
+          throw createUserError(400, "Campaign metadata must include only name, description, or icon.");
         }
       });
 
       const campaign = readCampaign(campaignId);
+
+      if (Object.hasOwn(metadata, "name")) {
+        campaign.name = normalizeCampaignName(metadata.name);
+      }
 
       if (Object.hasOwn(metadata, "description")) {
         campaign.description = normalizeCampaignDescription(metadata.description);
@@ -460,6 +468,20 @@ function createCampaignStorage(options = {}) {
       return saveCampaign(campaign);
     }
   };
+}
+
+function normalizeCampaignName(value) {
+  if (typeof value !== "string") {
+    throw createUserError(400, "Campaign name must be text.");
+  }
+
+  const name = value.trim();
+
+  if (!normalizePathSegment(name)) {
+    throw createUserError(400, "A valid campaign name is required.");
+  }
+
+  return name;
 }
 
 function normalizeCampaignDescription(value) {

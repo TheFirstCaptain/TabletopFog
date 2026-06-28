@@ -42,17 +42,24 @@
           <button id="back-to-library" class="secondary" type="button">Back to Campaign Library</button>
         </div>
 
-        <form id="map-form" class="inline-form">
-          <label for="map-file">Add map</label>
-          <input id="map-file" name="map-file" type="file" accept="image/*" required />
-          <button type="submit">Add</button>
-        </form>
-
         <p id="campaign-message" class="muted" aria-live="polite"></p>
 
         <div class="workspace-grid">
-          <div id="encounter-gallery">
-            <h3>Encounters</h3>
+          <div id="encounter-gallery" class="encounter-gallery">
+            <div class="encounter-gallery-heading">
+              <div>
+                <h3>Encounters</h3>
+                <p class="muted">Browse prepared encounters and choose what players see.</p>
+              </div>
+            </div>
+            <form id="map-form" class="add-encounter-form" aria-label="Add Encounter">
+              <div>
+                <p class="eyebrow">Add Encounter</p>
+                <label for="map-file">Add map</label>
+              </div>
+              <input id="map-file" name="map-file" type="file" accept="image/*" required />
+              <button type="submit">Add</button>
+            </form>
             <div id="map-list" class="map-list" aria-live="polite"></div>
           </div>
 

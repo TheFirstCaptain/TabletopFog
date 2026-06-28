@@ -409,8 +409,8 @@ Steps:
    icon, and lightweight metadata.
 4. Click a campaign card.
 5. Return to the campaign landing page.
-6. Edit the campaign emoji icon and short description.
-7. Reload the page and confirm the edited emoji and description persist.
+6. Edit the campaign name, emoji icon, and short description.
+7. Reload the page and confirm the edited name, emoji, and description persist.
 8. Try an invalid metadata edit and confirm a GM-visible validation error appears.
 9. Confirm editing campaign metadata does not reload or change the Player Display.
 10. Create a new campaign from the landing page.
@@ -421,7 +421,8 @@ Expected result:
 
 - The campaign landing page keeps the fantasy/parchment theme.
 - Campaign cards open the selected campaign.
-- Emoji icons and descriptions are editable, persisted, and shown on campaign cards.
+- Campaign names, emoji icons, and descriptions are editable, persisted, and
+  shown on campaign cards.
 - Invalid metadata edits are rejected without corrupting campaign files.
 - Metadata-only edits do not change the shown-to-players map or force a Player
   Display reload.
@@ -431,6 +432,45 @@ Expected result:
 - Campaign search/filtering and uploaded campaign images remain deferred.
 - No fog, token, notes, member, character, cloud, or VTT-style navigation
   controls are present.
+
+### Test: Campaign Cards Remain Calm With Long Text
+
+Prerequisites:
+
+- Local server is running on the GM host machine.
+- Multiple campaigns exist, including one with a long campaign name, one with a
+  160-character description, one with no description, and one with a long
+  `Shown to Players` encounter name.
+- At least one invalid campaign folder exists for diagnostic coverage.
+- Player Display is open in a separate browser view with a known shown-to-players
+  encounter.
+
+Steps:
+
+1. Open `/gm`.
+2. Confirm campaign cards keep the campaign icon, campaign name, description,
+   and metadata visually distinct.
+3. Confirm long descriptions are clamped to two lines.
+4. Confirm long `Shown to Players` metadata remains quiet and secondary.
+5. Hover a campaign card and confirm the hover state is visible but restrained.
+6. Navigate by keyboard and confirm focus remains visible on real controls such
+   as `Open`, `Edit`, form fields, `Save`, and `Cancel`.
+7. Open edit mode for a campaign card and confirm the card remains usable.
+8. Repeat at Chromebook-sized and narrow viewports.
+9. Confirm invalid campaign diagnostics remain visible.
+10. Open a campaign from a card and confirm normal navigation still works.
+11. Return to the Player Display and confirm the shown encounter did not change
+    during card review, hover, focus, edit mode, or campaign opening.
+
+Expected result:
+
+- Campaign cards remain cards, not tables or dashboards.
+- Long campaign names, descriptions, and shown-to-players metadata stay inside
+  each card without horizontal overflow.
+- Missing descriptions use the existing fallback.
+- Hover and focus states are clear, accessible, and restrained.
+- Campaign creation, opening, metadata editing, invalid diagnostics, and Player
+  Display behavior remain unchanged.
 
 ## Milestone 3 Follow-Up: Encounter Gallery
 
@@ -459,6 +499,44 @@ Expected result:
 - The Player Display changes only after the explicit `Show to Players` action.
 - Existing storage may still use `maps`, and existing `activeMapId` terminology
   represents the shown-to-players map until a reviewed migration changes it.
+
+### Test: Encounter Gallery Is Browse-First
+
+Prerequisites:
+
+- A campaign exists with zero, one, and multiple encounter states available for
+  review.
+- Test encounters include long encounter names plus landscape, portrait, and
+  square map images.
+- GM View and Player Display are open.
+- One encounter is already shown to players.
+
+Steps:
+
+1. Open the campaign from the Campaign Library.
+2. Confirm Add Encounter uses the existing map upload path but appears as a
+   restrained secondary affordance inside the encounter gallery.
+3. Add or inspect several encounters with varied thumbnail aspect ratios.
+4. Confirm thumbnails are visually prominent and remain inside their cards.
+5. Confirm long encounter names wrap inside cards without horizontal overflow.
+6. Confirm `Shown to Players` and `Selected for Prep` appear as restrained,
+   distinct text badges.
+7. Confirm Rename, Up, Down, and `Show to Players` controls remain available
+   but do not visually dominate browsing.
+8. Open an encounter that is not shown to players.
+9. Confirm the Player Display does not change.
+10. Use `Show to Players` and confirm the Player Display changes only then.
+11. Repeat at Chromebook-sized and narrow widths.
+
+Expected result:
+
+- Encounter cards feel like browsing prepared encounters rather than managing
+  files.
+- The map thumbnail, encounter name, and shown/editing status carry the card
+  hierarchy.
+- Add Encounter, rename, reorder, upload, and explicit show behavior still work.
+- The gallery remains responsive and touch-friendly without horizontal
+  overflow.
 
 ## Milestone 3 Follow-Up: Encounter Workspace
 

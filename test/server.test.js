@@ -249,7 +249,8 @@ test("updates campaign card metadata through GM API only", async (t) => {
     const updated = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/metadata`, {
       body: JSON.stringify({
         description: "Roads through a haunted borderland.",
-        icon: "🛡️"
+        icon: "🛡️",
+        name: "The Longer Walk"
       }),
       headers: gmHeaders(port, { "content-type": "application/json" }),
       method: "PATCH"
@@ -277,6 +278,11 @@ test("updates campaign card metadata through GM API only", async (t) => {
       headers: gmHeaders(port, { "content-type": "application/json" }),
       method: "PATCH"
     });
+    const partialName = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/metadata`, {
+      body: JSON.stringify({ name: "The Longest Walk" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PATCH"
+    });
     const invalidType = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/metadata`, {
       body: JSON.stringify({ description: ["bad"] }),
       headers: gmHeaders(port, { "content-type": "application/json" }),
@@ -289,8 +295,11 @@ test("updates campaign card metadata through GM API only", async (t) => {
     });
 
     assert.equal(updated.statusCode, 200);
+    assert.equal(updated.json.campaign.id, "The Long Walk");
+    assert.equal(updated.json.campaign.name, "The Longer Walk");
     assert.equal(updated.json.campaign.description, "Roads through a haunted borderland.");
     assert.equal(updated.json.campaign.icon, "🛡️");
+    assert.equal(list.json.campaigns[0].name, "The Longer Walk");
     assert.equal(list.json.campaigns[0].description, "Roads through a haunted borderland.");
     assert.equal(list.json.campaigns[0].icon, "🛡️");
     assert.equal(playerRejected.statusCode, 403);
@@ -299,13 +308,18 @@ test("updates campaign card metadata through GM API only", async (t) => {
     assert.equal(invalidEmpty.statusCode, 400);
     assert.match(invalidEmpty.json.error, /Campaign metadata/);
     assert.equal(partialIcon.statusCode, 200);
+    assert.equal(partialIcon.json.campaign.name, "The Longer Walk");
     assert.equal(partialIcon.json.campaign.description, "Roads through a haunted borderland.");
     assert.equal(partialIcon.json.campaign.icon, "🔥");
+    assert.equal(partialName.statusCode, 200);
+    assert.equal(partialName.json.campaign.name, "The Longest Walk");
+    assert.equal(partialName.json.campaign.icon, "🔥");
     assert.equal(invalidType.statusCode, 400);
     assert.match(invalidType.json.error, /description/);
     assert.equal(unknownField.statusCode, 400);
-    assert.match(unknownField.json.error, /description or icon/);
-    assert.equal(JSON.parse(fs.readFileSync(campaignPath, "utf8")).description, "Roads through a haunted borderland.");
+    assert.match(unknownField.json.error, /name, description, or icon/);
+    assert.equal(JSON.parse(fs.readFileSync(campaignPath, "utf8")).name, "The Longest Walk");
+    assert.equal(fs.existsSync(path.join(dataRoot, "The Longest Walk", "campaign.json")), false);
     assert.equal(stateStore.getState().campaign.description, undefined);
   } finally {
     await close(server, io);

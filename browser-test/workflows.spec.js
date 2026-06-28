@@ -58,6 +58,18 @@ async function addMap(page, name) {
   await expect(page.getByRole("textbox", { name: `Encounter name for ${name.replace(/\.png$/, "")}` })).toBeVisible();
 }
 
+function writeCampaignRecord(dataRoot, folderName, campaign) {
+  const campaignDirectory = path.join(dataRoot, folderName);
+  fs.mkdirSync(campaignDirectory, { recursive: true });
+  fs.writeFileSync(path.join(campaignDirectory, "campaign.json"), `${JSON.stringify(campaign, null, 2)}\n`);
+}
+
+function rgbFromHex(hex) {
+  const value = hex.replace("#", "");
+  const channels = [0, 2, 4].map((offset) => Number.parseInt(value.slice(offset, offset + 2), 16));
+  return `rgb(${channels.join(", ")})`;
+}
+
 test("GM creates, reopens, uploads, renames, and reorders campaign maps", async ({ app, page }) => {
   await openGm(page, app.baseURL);
   await expect(page.getByText(app.dataRoot, { exact: true })).toHaveCount(0);
@@ -99,7 +111,7 @@ test("GM creates, reopens, uploads, renames, and reorders campaign maps", async 
   await expect(page.getByRole("button", { name: "Down" }).nth(1)).toBeDisabled();
 });
 
-test("GM edits campaign card emoji and description without changing player display", async ({ app, page, context }) => {
+test("GM edits campaign card details without changing player display", async ({ app, page, context }) => {
   const player = await context.newPage();
   let playerAssetRequests = 0;
   await player.route("**/api/player/active-map/asset*", (route) => {
@@ -122,20 +134,31 @@ test("GM edits campaign card emoji and description without changing player displ
   await card.getByRole("button", { name: "Edit campaign details" }).click();
   await card.getByRole("heading", { name: "The Long Walk" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Campaign Library" })).toBeVisible();
+  await card.getByLabel("Campaign name").fill("The Longer Walk");
   await card.getByLabel("Campaign icon").fill("🛡️");
   await card.getByLabel("Campaign description").fill("Roads through a haunted borderland.");
   await card.getByRole("button", { name: "Save campaign details" }).click();
-  await expect(card.getByText("Roads through a haunted borderland.")).toBeVisible();
-  await expect(card.getByText("🛡️")).toBeVisible();
+  const renamedCard = page.locator(".campaign-card").filter({ hasText: "The Longer Walk" });
+  await expect(renamedCard.getByRole("heading", { name: "The Longer Walk" })).toBeVisible();
+  await expect(renamedCard.getByText("Roads through a haunted borderland.")).toBeVisible();
+  await expect(renamedCard.getByText("🛡️")).toBeVisible();
+  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeMetadataEdit);
+
+  await renamedCard.getByRole("button", { name: "Edit campaign details" }).click();
+  await renamedCard.getByLabel("Campaign name").fill("???");
+  await renamedCard.getByRole("button", { name: "Save campaign details" }).click();
+  await expect(renamedCard.getByText(/valid campaign name/i)).toBeVisible();
+  await expect(renamedCard.getByRole("heading", { name: "The Longer Walk" })).toBeVisible();
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeMetadataEdit);
 
   await page.reload();
   await expect(page.getByRole("heading", { level: 1, name: "Campaign Library" })).toBeVisible();
-  const reloadedCard = page.locator(".campaign-card").filter({ hasText: "The Long Walk" });
+  const reloadedCard = page.locator(".campaign-card").filter({ hasText: "The Longer Walk" });
   await expect(reloadedCard.getByText("Roads through a haunted borderland.")).toBeVisible();
   await expect(reloadedCard.getByText("🛡️")).toBeVisible();
   await reloadedCard.click();
-  await expect(page.getByRole("heading", { level: 2, name: "The Long Walk" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "The Longer Walk" })).toBeVisible();
+  await expect(page.getByLabel("Breadcrumb")).toHaveText("Campaign Library / The Longer Walk");
   await page.evaluate(async () => {
     const response = await fetch(`/api/campaigns/${encodeURIComponent("The Long Walk")}/metadata`, {
       body: JSON.stringify({
@@ -149,7 +172,7 @@ test("GM edits campaign card emoji and description without changing player displ
     if (!response.ok) throw new Error("Metadata update failed.");
   });
   await page.getByRole("button", { name: "Back to Campaign Library" }).click();
-  const refreshedCard = page.locator(".campaign-card").filter({ hasText: "The Long Walk" });
+  const refreshedCard = page.locator(".campaign-card").filter({ hasText: "The Longer Walk" });
   await expect(refreshedCard.getByText("Current campaign metadata stays fresh.")).toBeVisible();
   await expect(refreshedCard.getByText("🔥")).toBeVisible();
 });
@@ -181,6 +204,146 @@ test("campaign landing cards keep diagnostics and deferred controls out of scope
 
   await page.setViewportSize({ height: 844, width: 390 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test("campaign cards keep long text, metadata, hover, and focus presentation restrained", async ({ app, page }) => {
+  const longDescription =
+    "Ancient roads, ruined towers, borderland villages, rival patrols, secret shrines, and weathered maps pull this campaign across the western marches at dusk now!!";
+  const longCampaignName = "The Western Borderlands Expedition With A Very Long Campaign Title";
+  const shownEncounterName = "Moonlit Causeway Beneath The Old Watchtower";
+  writeCampaignRecord(app.dataRoot, "Amber Keep", {
+    activeMapId: null,
+    maps: [],
+    name: "Amber Keep",
+    version: 1
+  });
+  writeCampaignRecord(app.dataRoot, "Black River", {
+    description: "A tighter campaign description.",
+    icon: "🔥",
+    activeMapId: null,
+    maps: [],
+    name: "Black River",
+    version: 1
+  });
+  writeCampaignRecord(app.dataRoot, longCampaignName, {
+    description: longDescription,
+    icon: "🛡️",
+    activeMapId: "causeway",
+    maps: [
+      {
+        file: "causeway.png",
+        fog: [],
+        id: "causeway",
+        name: shownEncounterName,
+        order: 1,
+        originalFileName: "causeway.png"
+      }
+    ],
+    name: longCampaignName,
+    version: 1
+  });
+  fs.mkdirSync(path.join(app.dataRoot, "Broken Campaign"));
+  fs.writeFileSync(path.join(app.dataRoot, "Broken Campaign", "campaign.json"), "{not-json");
+
+  await page.setViewportSize({ height: 768, width: 1366 });
+  await openGm(page, app.baseURL);
+  await expect(page.locator(".campaign-card")).toHaveCount(3);
+  await expect(page.getByText(/Skipped campaign "Broken Campaign"/)).toBeVisible();
+
+  const longCard = page.locator(".campaign-card").filter({ hasText: longCampaignName });
+  await expect(longCard.getByRole("heading", { name: longCampaignName })).toBeVisible();
+  await expect(longCard.getByText(longDescription)).toBeVisible();
+  await expect(longCard.locator(".campaign-card-meta")).toContainText(`Shown to Players: ${shownEncounterName}`);
+
+  const expectedCardStyles = await page.evaluate(() => {
+    const rootStyle = getComputedStyle(document.documentElement);
+    return {
+      accent: rootStyle.getPropertyValue("--accent").trim(),
+      focus: rootStyle.getPropertyValue("--focus").trim(),
+      muted: rootStyle.getPropertyValue("--muted").trim(),
+      surface: rootStyle.getPropertyValue("--surface").trim(),
+      surfaceStrong: rootStyle.getPropertyValue("--surface-strong").trim()
+    };
+  });
+  const presentation = await longCard.evaluate((card) => {
+    const cardBox = card.getBoundingClientRect();
+    const titleBox = card.querySelector("h3").getBoundingClientRect();
+    const description = card.querySelector(".campaign-description");
+    const descriptionBox = description.getBoundingClientRect();
+    const descriptionStyle = getComputedStyle(description);
+    const meta = card.querySelector(".campaign-card-meta");
+    const metaBox = meta.getBoundingClientRect();
+    const metaStyle = getComputedStyle(meta);
+    return {
+      descriptionBottomWithinCard: descriptionBox.bottom <= cardBox.bottom,
+      descriptionClamp: descriptionStyle.webkitLineClamp,
+      descriptionOverflow: descriptionStyle.overflow,
+      descriptionWithinCard: descriptionBox.left >= cardBox.left && descriptionBox.right <= cardBox.right,
+      metaColor: metaStyle.color,
+      metaWithinCard: metaBox.left >= cardBox.left && metaBox.right <= cardBox.right,
+      titleWithinCard: titleBox.left >= cardBox.left && titleBox.right <= cardBox.right
+    };
+  });
+  expect(presentation).toEqual({
+    descriptionBottomWithinCard: true,
+    descriptionClamp: "2",
+    descriptionOverflow: "hidden",
+    descriptionWithinCard: true,
+    metaColor: rgbFromHex(expectedCardStyles.muted),
+    metaWithinCard: true,
+    titleWithinCard: true
+  });
+
+  const beforeHover = await longCard.evaluate((card) => getComputedStyle(card).backgroundColor);
+  const longCardBox = await longCard.boundingBox();
+  if (!longCardBox) {
+    throw new Error("Expected long campaign card to have a bounding box.");
+  }
+  await page.mouse.move(longCardBox.x + longCardBox.width / 2, longCardBox.y + longCardBox.height / 2);
+  await expect.poll(() => longCard.evaluate((card) => card.matches(":hover"))).toBe(true);
+  expect(beforeHover).toBe(rgbFromHex(expectedCardStyles.surface));
+  await expect
+    .poll(() =>
+      longCard.evaluate((card) => {
+        const computed = getComputedStyle(card);
+        return {
+          background: computed.backgroundColor,
+          border: computed.borderColor
+        };
+      })
+    )
+    .toEqual({
+      background: rgbFromHex(expectedCardStyles.surfaceStrong),
+      border: rgbFromHex(expectedCardStyles.accent)
+    });
+
+  await longCard.getByRole("button", { name: "Open" }).focus();
+  const focus = await longCard.getByRole("button", { name: "Open" }).evaluate((button) => {
+    const computed = getComputedStyle(button);
+    return {
+      color: computed.outlineColor,
+      style: computed.outlineStyle,
+      width: computed.outlineWidth
+    };
+  });
+  expect(focus).toEqual({
+    color: rgbFromHex(expectedCardStyles.focus),
+    style: "solid",
+    width: "3px"
+  });
+
+  const emptyDescriptionCard = page.locator(".campaign-card").filter({ hasText: "Amber Keep" });
+  await expect(emptyDescriptionCard.getByText("No description yet.")).toBeVisible();
+  await emptyDescriptionCard.getByRole("button", { name: "Edit campaign details" }).click();
+  await expect(emptyDescriptionCard.getByLabel("Campaign description")).toBeVisible();
+
+  await page.setViewportSize({ height: 844, width: 390 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expect(emptyDescriptionCard.getByLabel("Campaign icon")).toBeVisible();
+  await expect(emptyDescriptionCard.getByRole("button", { name: "Save campaign details" })).toBeVisible();
+
+  await longCard.getByRole("button", { name: "Open" }).click();
+  await expect(page.getByRole("heading", { level: 2, name: longCampaignName })).toBeVisible();
 });
 
 test("player follows active-map changes and remains read-only", async ({ app, page, context }) => {
@@ -320,7 +483,7 @@ test("encounter cards open a workspace without changing the player display", asy
   await forestCard.getByRole("button", { name: "Show to Players", exact: true }).click();
   await player.goto(`${app.baseURL}/player`);
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
-  await expect(forestCard.getByText("Shown to Players", { exact: true })).toBeVisible();
+  await expect(forestCard.locator(".status-pill").filter({ hasText: "Shown to Players" })).toBeVisible();
   const playerAssetRequestsBeforeWorkspaceOpen = playerAssetRequests;
 
   await caveCard.getByRole("button", { name: "Open cave for prep" }).focus();
@@ -329,7 +492,7 @@ test("encounter cards open a workspace without changing the player display", asy
   await expect(page.getByLabel("Breadcrumb")).toHaveText("Campaign Library / The Long Walk / cave");
   await expect(page.getByRole("button", { name: /^Back to/ })).toHaveCount(1);
   await expect(page.getByRole("heading", { level: 3, name: "cave" })).toBeVisible();
-  await expect(page.getByText("Not shown to players", { exact: true })).toBeVisible();
+  await expect(page.getByText("Not Shown to Players", { exact: true })).toBeVisible();
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeWorkspaceOpen);
 
@@ -337,7 +500,128 @@ test("encounter cards open a workspace without changing the player display", asy
   await expect(caveCard.getByText("Selected for Prep", { exact: true })).toBeVisible();
   await caveCard.getByRole("button", { name: "Show to Players", exact: true }).click();
   await expect(player.getByRole("img", { name: "Map: cave" })).toBeVisible();
-  await expect(caveCard.getByText("Shown to Players", { exact: true })).toBeVisible();
+  await expect(caveCard.locator(".status-pill").filter({ hasText: "Shown to Players" })).toBeVisible();
+});
+
+test("encounter gallery presentation remains browsable and responsive", async ({ app, page, context }) => {
+  const player = await context.newPage();
+  let playerAssetRequests = 0;
+  await player.route("**/api/player/active-map/asset*", (route) => {
+    playerAssetRequests += 1;
+    return route.continue();
+  });
+
+  await page.setViewportSize({ height: 768, width: 1366 });
+  await openGm(page, app.baseURL);
+  await createCampaign(page, "Gallery Campaign");
+  await expect(page.locator(".encounter-card")).toHaveCount(0);
+  await expect(page.locator("#map-form")).toContainText("Add Encounter");
+
+  await page
+    .getByLabel("Add map")
+    .setInputFiles(await sizedPngFile(page, "wide-crossing.png", 240, 100, "#284b63", "#d9b978"));
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "Encounter name for wide-crossing" })).toBeVisible();
+  await page
+    .getByLabel("Add map")
+    .setInputFiles(await sizedPngFile(page, "tall-tower.png", 90, 180, "#2c2430", "#b08968"));
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "Encounter name for tall-tower" })).toBeVisible();
+  await page.getByLabel("Add map").setInputFiles(await sizedPngFile(page, "square-keep.png", 140, 140, "#254117"));
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "Encounter name for square-keep" })).toBeVisible();
+
+  const longEncounterName = "Moonlit Causeway Beneath The Old Watchtower And Broken Gate";
+  const longNameInput = page.getByRole("textbox", { name: "Encounter name for wide-crossing" });
+  await longNameInput.fill(longEncounterName);
+  await page.getByRole("button", { name: "Rename" }).first().click();
+  await expect(page.getByRole("textbox", { name: `Encounter name for ${longEncounterName}` })).toHaveValue(
+    longEncounterName
+  );
+
+  const longCard = page.locator(".encounter-card").filter({ hasText: longEncounterName });
+  const tallCard = page.locator(".encounter-card").filter({ hasText: "tall-tower" });
+  const squareCard = page.locator(".encounter-card").filter({ hasText: "square-keep" });
+  await expect(page.locator(".encounter-card")).toHaveCount(3);
+
+  await longCard.getByRole("button", { name: "Show to Players", exact: true }).click();
+  await player.goto(`${app.baseURL}/player`);
+  await expect(player.getByRole("img", { name: `Map: ${longEncounterName}` })).toBeVisible();
+  await expect(longCard.locator(".status-pill").filter({ hasText: "Shown to Players" })).toBeVisible();
+  await expect(longCard.getByRole("button", { name: "Shown to Players" })).toBeDisabled();
+
+  const galleryLayout = await page.evaluate(() => {
+    const cards = [...document.querySelectorAll(".encounter-card")];
+    return {
+      addEncounterArea: document.querySelector("#map-form").getBoundingClientRect().height,
+      cards: cards.map((card) => {
+        const cardBox = card.getBoundingClientRect();
+        const thumbnailBox = card.querySelector(".encounter-thumbnail").getBoundingClientRect();
+        const titleBox = card.querySelector(".encounter-name").getBoundingClientRect();
+        const adminBox = card.querySelector(".encounter-admin").getBoundingClientRect();
+        const controlsBox = card.querySelector(".encounter-controls").getBoundingClientRect();
+        return {
+          adminBelowTitle: adminBox.top > titleBox.bottom,
+          adminWithinCard: adminBox.left >= cardBox.left && adminBox.right <= cardBox.right,
+          controlsWithinCard: controlsBox.left >= cardBox.left && controlsBox.right <= cardBox.right,
+          thumbnailProminent: thumbnailBox.height > controlsBox.height,
+          thumbnailWithinCard: thumbnailBox.left >= cardBox.left && thumbnailBox.right <= cardBox.right,
+          titleWithinCard: titleBox.left >= cardBox.left && titleBox.right <= cardBox.right
+        };
+      }),
+      firstCardArea: cards[0].getBoundingClientRect().height
+    };
+  });
+  expect(galleryLayout.addEncounterArea).toBeLessThan(galleryLayout.firstCardArea);
+  expect(galleryLayout.cards).toEqual([
+    {
+      adminBelowTitle: true,
+      adminWithinCard: true,
+      controlsWithinCard: true,
+      thumbnailProminent: true,
+      thumbnailWithinCard: true,
+      titleWithinCard: true
+    },
+    {
+      adminBelowTitle: true,
+      adminWithinCard: true,
+      controlsWithinCard: true,
+      thumbnailProminent: true,
+      thumbnailWithinCard: true,
+      titleWithinCard: true
+    },
+    {
+      adminBelowTitle: true,
+      adminWithinCard: true,
+      controlsWithinCard: true,
+      thumbnailProminent: true,
+      thumbnailWithinCard: true,
+      titleWithinCard: true
+    }
+  ]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+  const playerAssetRequestsBeforeOpen = playerAssetRequests;
+  await tallCard.getByRole("button", { name: "Open tall-tower for prep" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Encounter Workspace" })).toBeVisible();
+  await expect(player.getByRole("img", { name: `Map: ${longEncounterName}` })).toBeVisible();
+  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeOpen);
+
+  await page.getByRole("button", { name: "Back to Campaign" }).click();
+  await expect(tallCard.getByText("Selected for Prep", { exact: true })).toBeVisible();
+  await squareCard.getByRole("button", { name: "Up" }).click();
+  await expect
+    .poll(() =>
+      page
+        .getByRole("textbox", { name: /^Encounter name for/ })
+        .evaluateAll((inputs) => inputs.map((input) => input.value))
+    )
+    .toEqual([longEncounterName, "square-keep", "tall-tower"]);
+
+  await page.setViewportSize({ height: 844, width: 390 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expect(longCard.getByRole("button", { name: "Rename" })).toBeVisible();
+  await expect(longCard.getByRole("button", { name: "Shown to Players" })).toBeDisabled();
 });
 
 test("GM workspace shell previews selected encounter without changing the player display", async ({
@@ -375,7 +659,7 @@ test("GM workspace shell previews selected encounter without changing the player
   await caveCard.getByRole("button", { name: "Open cave for prep" }).click();
   await expect(page.getByRole("heading", { level: 3, name: "cave" })).toBeVisible();
   await expect(page.getByRole("img", { name: "Map: cave" })).toBeVisible();
-  await expect(page.getByText("Not shown to players", { exact: true })).toBeVisible();
+  await expect(page.getByText("Not Shown to Players", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Show to Players from workspace" })).toBeVisible();
   await expect(page.getByText("Tools", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /fog|brush|reveal|hide/i })).toHaveCount(0);
@@ -391,9 +675,9 @@ test("GM workspace shell previews selected encounter without changing the player
   await caveCard.getByRole("button", { name: "Open cave for prep" }).click();
   await page.getByRole("button", { name: "Show to Players from workspace" }).click();
   await expect(player.getByRole("img", { name: "Map: cave" })).toBeVisible();
-  await expect(page.getByText("Shown to players", { exact: true })).toBeVisible();
+  await expect(page.locator("#selected-encounter-status")).toHaveText("Shown to Players");
   await page.getByRole("button", { name: "Back to Campaign" }).click();
-  await expect(caveCard.getByText("Shown to Players", { exact: true })).toBeVisible();
+  await expect(caveCard.locator(".status-pill").filter({ hasText: "Shown to Players" })).toBeVisible();
 
   await page.setViewportSize({ height: 844, width: 390 });
   await caveCard.getByRole("button", { name: "Open cave for prep" }).click();
@@ -556,7 +840,7 @@ test("stale image completion cannot replace a newer active map", async ({ app, p
 
   await page.getByRole("button", { name: "Show to Players", exact: true }).first().click();
   await expect.poll(() => Boolean(delayedRoute)).toBe(true);
-  await expect(page.getByRole("button", { name: "Shown" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Shown to Players" })).toBeVisible();
   await page.getByRole("button", { name: "Show to Players", exact: true }).click();
   const canvas = player.getByRole("img", { name: "Map: cave" });
   await expect(canvas).toBeVisible();

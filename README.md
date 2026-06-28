@@ -27,21 +27,24 @@ contain scaling. Player Zoom out, Fit map, Zoom in, drag, and pinch controls
 change only that browser's local viewport; they do not mutate campaign state or
 change the GM View or another Player Display.
 
-The GM campaign landing page now uses campaign cards with emoji icons, editable
-short descriptions, map counts, and preserved invalid-campaign diagnostics.
-Search/filtering and uploaded campaign images remain deferred.
+The GM campaign landing page now uses calm campaign cards with balanced emoji
+icons, editable names and two-line descriptions, quiet map and
+`Shown to Players` metadata, restrained hover/focus states, and preserved
+invalid-campaign diagnostics. Search/filtering and uploaded campaign images
+remain deferred.
 
-Opening a campaign now shows encounter cards with map thumbnails, rename and
-reorder controls, selected-for-prep status, and explicit card-level
-`Show to Players` actions. Opening an encounter for prep enters a focused GM
-workspace shell with the selected map, shown/not-shown status, informational
-breadcrumbs, a single `Back to Campaign` action, and a workspace-level
-`Show to Players` action. Campaign screens use `Back to Campaign Library`, and
-normal GM UI avoids showing local filesystem paths. Opening or navigating the
-workspace does not change the Player Display. Existing storage still uses
-`maps` and `activeMapId`, where `activeMapId` is an implementation detail
-meaning the encounter currently shown to players until a reviewed migration
-chooses clearer names. The UI should say `Shown to Players`.
+Opening a campaign now shows browse-first encounter cards with larger map
+thumbnails, quiet management controls, `Selected for Prep` and
+`Shown to Players` status badges, and explicit card-level `Show to Players`
+actions. Opening an encounter for prep enters a focused GM workspace shell with
+the selected map, shown/not-shown status, informational breadcrumbs, a single
+`Back to Campaign` action, and a workspace-level `Show to Players` action.
+Campaign screens use `Back to Campaign Library`, and normal GM UI avoids
+showing local filesystem paths. Opening or navigating the workspace does not
+change the Player Display. Existing storage still uses `maps` and
+`activeMapId`, where `activeMapId` is an implementation detail meaning the
+encounter currently shown to players until a reviewed migration chooses clearer
+names. The UI should say `Shown to Players`.
 
 Completed local-connectivity work proved:
 

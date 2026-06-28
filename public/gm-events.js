@@ -43,7 +43,8 @@ export function wireGmEvents(elements, actions) {
     event.preventDefault();
     actions.updateCampaignMetadata(form.dataset.campaignId, {
       description: form.querySelector("[name='campaign-description']").value,
-      icon: form.querySelector("[name='campaign-icon']").value
+      icon: form.querySelector("[name='campaign-icon']").value,
+      name: form.querySelector("[name='campaign-name']").value
     });
   });
 

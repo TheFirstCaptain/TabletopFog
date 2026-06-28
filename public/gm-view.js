@@ -73,7 +73,7 @@ export function createGmView(document) {
     const shownToPlayers = selectedEncounter.id === campaign.activeMapId;
     navigation.showWorkspace(campaign, selectedEncounter);
     elements.selectedEncounterHeading.textContent = selectedEncounter.name;
-    elements.selectedEncounterStatus.textContent = shownToPlayers ? "Shown to players" : "Not shown to players";
+    elements.selectedEncounterStatus.textContent = shownToPlayers ? "Shown to Players" : "Not Shown to Players";
     elements.workspaceShowToPlayers.disabled = shownToPlayers;
     elements.workspaceShowToPlayers.dataset.mapId = selectedEncounter.id;
     activeMapRenderer.setMap({ ...selectedEncounter, campaignId: campaign.id });
@@ -106,11 +106,6 @@ export function createGmView(document) {
       title.className = "encounter-name";
       title.textContent = map.name;
 
-      const name = document.createElement("input");
-      name.type = "text";
-      name.value = map.name;
-      name.setAttribute("aria-label", `Encounter name for ${map.name}`);
-
       const status = document.createElement("div");
       status.className = "encounter-status";
       if (map.id === campaign.activeMapId) {
@@ -125,6 +120,15 @@ export function createGmView(document) {
         selected.textContent = "Selected for Prep";
         status.append(selected);
       }
+
+      const summary = document.createElement("div");
+      summary.className = "encounter-summary";
+      summary.append(title, status);
+
+      const name = document.createElement("input");
+      name.type = "text";
+      name.value = map.name;
+      name.setAttribute("aria-label", `Encounter name for ${map.name}`);
 
       const controls = document.createElement("div");
       controls.className = "encounter-controls";
@@ -153,11 +157,15 @@ export function createGmView(document) {
           action: "set-active-map",
           disabled: map.id === campaign.activeMapId,
           mapId: map.id,
-          text: map.id === campaign.activeMapId ? "Shown" : "Show to Players"
+          text: map.id === campaign.activeMapId ? "Shown to Players" : "Show to Players"
         })
       );
 
-      item.append(openForPrep, title, name, status, controls);
+      const admin = document.createElement("div");
+      admin.className = "encounter-admin";
+      admin.append(name, controls);
+
+      item.append(openForPrep, summary, admin);
       elements.mapList.append(item);
     });
   }
@@ -227,11 +235,20 @@ export function createGmView(document) {
         description.className = "campaign-description";
         description.textContent = campaign.description || "No description yet.";
 
-        const meta = document.createElement("p");
-        meta.className = "muted";
-        meta.textContent = `${campaign.mapCount} map${campaign.mapCount === 1 ? "" : "s"}${
-          campaign.activeMapName ? `, Shown to Players: ${campaign.activeMapName}` : ""
-        }`;
+        const meta = document.createElement("div");
+        meta.className = "campaign-card-meta muted";
+
+        const mapCount = document.createElement("span");
+        mapCount.className = "campaign-card-map-count";
+        mapCount.textContent = `${campaign.mapCount} map${campaign.mapCount === 1 ? "" : "s"}`;
+        meta.append(mapCount);
+
+        if (campaign.activeMapName) {
+          const shown = document.createElement("span");
+          shown.className = "campaign-card-shown";
+          shown.textContent = `Shown to Players: ${campaign.activeMapName}`;
+          meta.append(shown);
+        }
 
         body.append(title, description, meta);
 
@@ -257,6 +274,16 @@ export function createGmView(document) {
         form.className = "campaign-card-editor";
         form.dataset.action = "save-campaign-metadata";
         form.dataset.campaignId = campaign.id;
+
+        const nameLabel = document.createElement("label");
+        nameLabel.textContent = "Campaign name";
+        const nameInput = document.createElement("input");
+        nameInput.name = "campaign-name";
+        nameInput.type = "text";
+        nameInput.autocomplete = "off";
+        nameInput.required = true;
+        nameInput.value = campaign.name;
+        nameLabel.append(nameInput);
 
         const iconLabel = document.createElement("label");
         iconLabel.textContent = "Campaign icon";
@@ -295,7 +322,7 @@ export function createGmView(document) {
         message.className = "campaign-card-message muted";
         message.setAttribute("aria-live", "polite");
 
-        form.append(iconLabel, descriptionLabel, editorActions);
+        form.append(nameLabel, iconLabel, descriptionLabel, editorActions);
         item.append(icon, body, actions, form, message);
         elements.campaignList.append(item);
       });
