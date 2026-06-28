@@ -141,6 +141,16 @@ function createApp(options = {}) {
 
   app.put("/api/campaigns/:campaignId/active-map", requireGm, (request, response, next) => {
     try {
+      if (!Object.hasOwn(request.body || {}, "mapId")) {
+        response.status(400).json({ error: "Active map request must include mapId." });
+        return;
+      }
+
+      if (request.body.mapId !== null && typeof request.body.mapId !== "string") {
+        response.status(400).json({ error: "Active map id must be a string or null." });
+        return;
+      }
+
       const campaign = withAssetUrls(
         campaignStorage,
         campaignStorage.setActiveMap(request.params.campaignId, request.body.mapId)

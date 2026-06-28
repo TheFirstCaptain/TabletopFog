@@ -5,6 +5,7 @@ export function createGmState() {
     diagnostics: []
   };
   let currentCampaign = null;
+  let manageMode = false;
   let selectedEncounterId = null;
   let workspaceOpen = false;
 
@@ -18,6 +19,7 @@ export function createGmState() {
   return {
     closeCampaign() {
       currentCampaign = null;
+      manageMode = false;
       selectedEncounterId = null;
       workspaceOpen = false;
     },
@@ -39,10 +41,14 @@ export function createGmState() {
     getSelectedEncounterId() {
       return selectedEncounterId;
     },
+    isManageMode() {
+      return manageMode;
+    },
     isWorkspaceOpen() {
       return workspaceOpen;
     },
     openEncounter(mapId) {
+      manageMode = false;
       selectedEncounterId = mapId;
       workspaceOpen = true;
     },
@@ -59,6 +65,10 @@ export function createGmState() {
         dataRoot: payload.dataRoot,
         diagnostics: payload.diagnostics || []
       };
+    },
+    toggleManageMode() {
+      manageMode = !manageMode;
+      return manageMode;
     },
     synchronize(serverState) {
       if (currentCampaign && serverState.campaign && serverState.campaign.id === currentCampaign.id) {

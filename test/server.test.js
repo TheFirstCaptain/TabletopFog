@@ -125,6 +125,24 @@ function waitForActiveMap(client, expectedMapId) {
   });
 }
 
+function waitForNoActiveMap(client) {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error("Timed out waiting for no active map"));
+    }, 2000);
+
+    client.on("state:sync", (state) => {
+      if (
+        (state.campaign && state.campaign.activeMapId === null) ||
+        (Object.hasOwn(state, "activeMap") && state.activeMap === null)
+      ) {
+        clearTimeout(timeout);
+        resolve(state);
+      }
+    });
+  });
+}
+
 function gmHeaders(port, extra = {}) {
   return {
     referer: `https://127.0.0.1:${port}/gm`,
@@ -431,16 +449,41 @@ test("manages maps and broadcasts active map state", async (t) => {
       headers: gmHeaders(port, { "content-type": "application/json" }),
       method: "PUT"
     });
+    const missingMapId = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/active-map`, {
+      body: JSON.stringify({}),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+    const invalidMapId = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/active-map`, {
+      body: JSON.stringify({ mapId: 12 }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+    const playerClear = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/active-map`, {
+      body: JSON.stringify({ mapId: null }),
+      headers: playerHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+    const playerAsset = await getHttps(`${url}/api/player/active-map/asset`, {
+      headers: playerHeaders(port)
+    });
+    const playerState = await active;
+    const clearedState = waitForNoActiveMap(player);
+    const cleared = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/active-map`, {
+      body: JSON.stringify({ mapId: null }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
     const gmAsset = await getHttps(`${url}${first.json.map.assetUrl}`, {
       headers: gmHeaders(port)
     });
     const inactivePlayerAsset = await getHttps(`${url}${second.json.map.assetUrl}`, {
       headers: playerHeaders(port)
     });
-    const playerAsset = await getHttps(`${url}/api/player/active-map/asset`, {
+    const playerClearedState = await clearedState;
+    const clearedPlayerAsset = await getHttps(`${url}/api/player/active-map/asset`, {
       headers: playerHeaders(port)
     });
-    const playerState = await active;
 
     assert.equal(first.statusCode, 201);
     assert.equal(first.json.map.file, "maps/forest.png");
@@ -454,6 +497,11 @@ test("manages maps and broadcasts active map state", async (t) => {
       ]
     );
     assert.equal(selected.json.campaign.activeMapId, first.json.map.id);
+    assert.equal(cleared.statusCode, 200);
+    assert.equal(cleared.json.campaign.activeMapId, null);
+    assert.equal(missingMapId.statusCode, 400);
+    assert.equal(invalidMapId.statusCode, 400);
+    assert.equal(playerClear.statusCode, 403);
     assert.equal(playerState.activeMap.id, first.json.map.id);
     assert.equal(playerState.activeMap.campaignId, "The Long Walk");
     assert.equal(playerState.campaign, undefined);
@@ -463,7 +511,9 @@ test("manages maps and broadcasts active map state", async (t) => {
     assert.equal(inactivePlayerAsset.statusCode, 403);
     assert.equal(playerAsset.statusCode, 200);
     assert.deepEqual(playerAsset.rawBody, PNG_BYTES);
-    assert.equal(stateStore.getState().campaign.activeMapId, first.json.map.id);
+    assert.equal(playerClearedState.activeMap, null);
+    assert.equal(clearedPlayerAsset.statusCode, 404);
+    assert.equal(stateStore.getState().campaign.activeMapId, null);
   } finally {
     player.close();
     await close(server, io);

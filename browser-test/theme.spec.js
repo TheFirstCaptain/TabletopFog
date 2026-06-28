@@ -116,6 +116,7 @@ test("loads the local fantasy theme with accessible desktop and narrow layouts",
 
   await page.getByLabel("New campaign").fill("The Long Walk");
   await page.getByRole("button", { name: "Create" }).click();
+  await page.getByRole("button", { name: "Manage Encounters" }).click();
   await page.getByLabel("Add map").setInputFiles({
     buffer: PNG_BYTES,
     mimeType: "image/png",

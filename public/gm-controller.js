@@ -1,6 +1,11 @@
 export function createGmController({ api, socket, state, view }) {
   function renderCurrentCampaign() {
-    view.renderCampaign(state.getCurrentCampaign(), state.getSelectedEncounterId(), state.isWorkspaceOpen());
+    view.renderCampaign(
+      state.getCurrentCampaign(),
+      state.getSelectedEncounterId(),
+      state.isWorkspaceOpen(),
+      state.isManageMode()
+    );
   }
 
   async function loadCampaigns() {
@@ -85,7 +90,7 @@ export function createGmController({ api, socket, state, view }) {
     }
   }
 
-  async function setActiveMap(mapId) {
+  async function setShownEncounter(mapId) {
     try {
       const payload = await api.setActiveMap(state.getCurrentCampaign().id, mapId);
       state.setCurrentCampaign(payload.campaign);
@@ -108,8 +113,18 @@ export function createGmController({ api, socket, state, view }) {
   function showWorkspaceEncounter() {
     const selectedEncounterId = state.getSelectedEncounterId();
     if (selectedEncounterId) {
-      setActiveMap(selectedEncounterId);
+      toggleShownEncounter(selectedEncounterId);
     }
+  }
+
+  function toggleShownEncounter(mapId) {
+    const activeMapId = state.getCurrentCampaign()?.activeMapId || null;
+    setShownEncounter(mapId === activeMapId ? null : mapId);
+  }
+
+  function toggleManageMode() {
+    state.toggleManageMode();
+    renderCurrentCampaign();
   }
 
   function backToLibrary() {
@@ -127,8 +142,9 @@ export function createGmController({ api, socket, state, view }) {
       openCampaign,
       renameMap,
       selectEncounter,
-      setActiveMap,
+      toggleShownEncounter,
       showWorkspaceEncounter,
+      toggleManageMode,
       updateCampaignMetadata,
       uploadMap
     },

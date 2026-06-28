@@ -428,6 +428,12 @@ function createCampaignStorage(options = {}) {
     },
     setActiveMap(campaignId, mapId) {
       const campaign = readCampaign(campaignId);
+
+      if (mapId === null) {
+        campaign.activeMapId = null;
+        return saveCampaign(campaign);
+      }
+
       findMap(campaign, mapId);
       campaign.activeMapId = mapId;
       return saveCampaign(campaign);

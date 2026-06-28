@@ -36,14 +36,19 @@ remain deferred.
 Opening a campaign now shows browse-first encounter cards with larger map
 thumbnails, quiet management controls, `Selected for Prep` and
 `Shown to Players` status badges, and explicit card-level `Show to Players`
-actions. Opening an encounter for prep enters a focused GM workspace shell with
-the selected map as the dominant surface, selected-versus-shown status, a
-lateral reserved future tools dock on desktop/Chromebook-sized screens that
-stacks below the map on narrow screens, separate `Back to Campaign` navigation,
-and a workspace-level `Show to Players` running action near the title/status.
-Campaign screens use `Back to Campaign Library`, and normal GM UI avoids
-showing local filesystem paths. Opening or navigating the workspace does not
-change the Player Display. Existing storage still uses `maps` and
+actions. Clicking a currently shown encounter's `Shown to Players` action clears
+the Player Display back to its waiting state and returns the action to
+`Show to Players`. Normal browsing keeps upload, rename, and reorder
+administration behind `Manage Encounters`, with `Done Managing` returning to the
+calm browse-first gallery. Opening an encounter for prep enters a focused GM
+workspace shell with the selected map as the dominant surface,
+selected-versus-shown status, a lateral reserved future tools dock on
+desktop/Chromebook-sized screens that stacks below the map on narrow screens,
+separate `Back to Campaign` navigation, and a workspace-level `Show to Players`
+running action near the title/status that can also clear when it reads
+`Shown to Players`. Campaign screens use `Back to Campaign Library`, and normal
+GM UI avoids showing local filesystem paths. Opening or navigating the workspace
+does not change the Player Display. Existing storage still uses `maps` and
 `activeMapId`, where `activeMapId` is an implementation detail meaning the
 encounter currently shown to players until a reviewed migration chooses clearer
 names. The UI should say `Shown to Players`.

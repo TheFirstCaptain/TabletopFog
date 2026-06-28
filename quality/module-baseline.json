@@ -7,11 +7,11 @@
       "responsibility": "Send GM campaign, campaign-card metadata, and map API requests and convert failed responses into client errors."
     },
     "public/gm-controller.js": {
-      "baselineLines": 146,
+      "baselineLines": 162,
       "responsibility": "Coordinate GM campaign library, campaign-card metadata, encounter gallery, encounter workspace, map, view, and Socket.IO workflows."
     },
     "public/gm-events.js": {
-      "baselineLines": 81,
+      "baselineLines": 82,
       "responsibility": "Translate static and delegated GM campaign, campaign-card metadata, encounter gallery, encounter workspace, and map DOM events into controller actions."
     },
     "public/gm-navigation.js": {
@@ -19,11 +19,11 @@
       "responsibility": "Render GM navigation screen state, informational breadcrumbs, and Back-action visibility across the campaign library, campaign, and encounter workspace."
     },
     "public/gm-state.js": {
-      "baselineLines": 73,
+      "baselineLines": 83,
       "responsibility": "Maintain GM campaign library, current campaign, GM-local selected encounter, and workspace-open client state."
     },
     "public/gm-view.js": {
-      "baselineLines": 356,
+      "baselineLines": 383,
       "responsibility": "Render the GM campaign card library, campaign-card metadata editing, encounter cards, encounter workspace shell, map controls, messages, status, and shared-canvas map preview."
     },
     "public/gm.js": {
@@ -71,7 +71,7 @@
       "responsibility": "Prepare certificates, resolve LAN addresses, and start the local server workflow."
     },
     "server/campaign-storage.js": {
-      "baselineLines": 528,
+      "baselineLines": 534,
       "responsibility": "Manage campaign metadata, campaign-card metadata, map ordering, filesystem persistence, and asset containment.",
       "temporaryException": {
         "engineeringId": "E-002",
@@ -83,7 +83,7 @@
       "responsibility": "Resolve and load HTTPS certificate credentials."
     },
     "server/index.js": {
-      "baselineLines": 301,
+      "baselineLines": 311,
       "responsibility": "Compose HTTP routes, campaign-card metadata updates, role projection, Socket.IO synchronization, and HTTPS startup.",
       "temporaryException": {
         "engineeringId": "E-004",

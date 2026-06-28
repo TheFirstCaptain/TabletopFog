@@ -462,6 +462,36 @@ test("persists active map and reloads campaign state", (t) => {
   assert.equal(reloaded.maps[0].file, "maps/forest.png");
 });
 
+test("clears active map without changing encounter records", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const first = storage.addMap(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "forest.png"
+  });
+  const second = storage.addMap(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "cave.png"
+  });
+
+  storage.setActiveMap(campaign.id, first.id);
+  const cleared = storage.setActiveMap(campaign.id, null);
+  const reloaded = createCampaignStorage({ dataRoot: root }).getCampaign(campaign.id);
+
+  assert.equal(cleared.activeMapId, null);
+  assert.equal(reloaded.activeMapId, null);
+  assert.deepEqual(
+    reloaded.maps.map((map) => [map.id, map.name, map.file, map.order]),
+    [
+      [first.id, "forest", "maps/forest.png", 1],
+      [second.id, "cave", "maps/cave.png", 2]
+    ]
+  );
+});
+
 test("rejects map asset paths outside the maps folder", (t) => {
   const root = createTempRoot(t);
   const campaignDir = path.join(root, "The Long Walk");

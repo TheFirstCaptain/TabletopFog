@@ -358,14 +358,17 @@ Steps:
 1. Use `Show to Players` for the first map-backed encounter from the GM View.
 2. Confirm the GM View displays the first map.
 3. Confirm the Player Display displays the first map.
-4. Use `Show to Players` for the second map-backed encounter from the GM View.
-5. Confirm the GM View and Player Display update without manual player refresh.
-6. Use Zoom in, Zoom out, Fit map, drag pan, pinch zoom, and keyboard arrow pan
+4. Click the first encounter's `Shown to Players` action.
+5. Confirm the Player Display returns to its waiting state and the first
+   encounter action changes back to `Show to Players`.
+6. Use `Show to Players` for the second map-backed encounter from the GM View.
+7. Confirm the GM View and Player Display update without manual player refresh.
+8. Use Zoom in, Zoom out, Fit map, drag pan, pinch zoom, and keyboard arrow pan
    in the Player Display.
-7. Confirm the GM View and a second Player Display remain unchanged.
-8. Resize the browser window and test the Player Display on iPad and a TV-like
+9. Confirm the GM View and a second Player Display remain unchanged.
+10. Resize the browser window and test the Player Display on iPad and a TV-like
    landscape viewport.
-9. Disconnect and reconnect the player while zoomed, then refresh the page.
+11. Disconnect and reconnect the player while zoomed, then refresh the page.
 
 Expected result:
 
@@ -377,6 +380,8 @@ Expected result:
   same-map reconnect or resize.
 - Player viewport changes do not mutate campaign or session state and do not
   change the GM View or another Player Display viewport.
+- Clearing the shown encounter leaves no encounter marked `Shown to Players`
+  and does not delete, rename, or reorder any encounter.
 - Switching between campaigns resets the Player Display viewport even when both active
   maps have the same map ID.
 - If the active-map image cannot load, the player reports the error and does
@@ -521,12 +526,18 @@ Steps:
 5. Confirm long encounter names wrap inside cards without horizontal overflow.
 6. Confirm `Shown to Players` and `Selected for Prep` appear as restrained,
    distinct text badges.
-7. Confirm Rename, Up, Down, and `Show to Players` controls remain available
+7. Confirm `Show to Players` remains available in Normal Mode.
+8. Enter `Manage Encounters`.
+9. Confirm Add Encounter, Rename, Up, and Down controls remain available there
    but do not visually dominate browsing.
-8. Open an encounter that is not shown to players.
-9. Confirm the Player Display does not change.
-10. Use `Show to Players` and confirm the Player Display changes only then.
-11. Repeat at Chromebook-sized and narrow widths.
+10. Return to Normal Mode.
+11. Open an encounter that is not shown to players.
+12. Confirm the Player Display does not change.
+13. Use `Show to Players` and confirm the Player Display changes only then.
+14. Click that encounter's `Shown to Players` action and confirm the Player
+    Display returns to waiting state.
+15. Confirm the encounter action changes back to `Show to Players`.
+16. Repeat at Chromebook-sized and narrow widths.
 
 Expected result:
 
@@ -534,9 +545,53 @@ Expected result:
   files.
 - The map thumbnail, encounter name, and shown/editing status carry the card
   hierarchy.
-- Add Encounter, rename, reorder, upload, and explicit show behavior still work.
+- Add Encounter, rename, and reorder remain available through Manage Mode while
+  Normal Mode stays uncluttered.
+- Explicit show behavior remains available in Normal Mode.
+- Explicit shown behavior clears the Player Display and then returns to the
+  show action without editing encounter metadata.
 - The gallery remains responsive and touch-friendly without horizontal
   overflow.
+
+### Test: Encounter Gallery Separates Browsing From Managing
+
+Prerequisites:
+
+- A campaign exists with zero, one, and multiple encounter states available for
+  review.
+- GM View and Player Display are open.
+- One encounter is already shown to players.
+
+Steps:
+
+1. Open a campaign in Normal Mode.
+2. Confirm `Manage Encounters` is visible.
+3. Confirm Normal Mode shows encounter thumbnails, names, status badges,
+   open-for-prep actions, and explicit `Show to Players` actions.
+4. Confirm Normal Mode does not show Add Encounter upload, Rename, Up, Down, or
+   Delete controls.
+5. Open an encounter for prep and confirm the Player Display remains on the
+   previously shown encounter.
+6. Return to the campaign and choose `Manage Encounters`.
+7. Confirm `Done Managing`, Add Encounter upload, Rename, Up, and Down controls
+   are visible.
+8. Confirm Delete is not present.
+9. Rename and reorder encounters.
+10. Upload a valid encounter and confirm it appears.
+11. Attempt an invalid upload.
+12. Choose `Done Managing`.
+
+Expected result:
+
+- Normal Mode remains focused on browsing, opening, and explicitly showing
+  encounters to players.
+- Manage Mode exposes only the existing upload, rename, and reorder
+  administration controls.
+- Delete remains deferred and absent.
+- Rename, reorder, valid upload, and invalid upload do not change the Player
+  Display or the shown-to-players encounter.
+- Invalid upload preserves encounter names, order, and shown state.
+- Returning to Normal Mode hides administration controls again.
 
 ## Milestone 3 Follow-Up: Encounter Workspace
 
@@ -564,12 +619,17 @@ Steps:
 9. Confirm `Show to Players` sits in a dedicated running-actions area near the
    title/status, not over the map.
 10. Click the workspace `Show to Players` action.
+11. Click the workspace `Shown to Players` action.
+12. Confirm the workspace status changes to `Shown to Players: None` and the
+    workspace action changes back to `Show to Players`.
 
 Expected result:
 
 - The workspace uses the existing canvas renderer for the GM map view.
 - The GM can inspect or prep one encounter while another remains shown to players.
 - Player Display remains unchanged until `Show to Players` is clicked.
+- The workspace `Shown to Players` action clears the Player Display without
+  changing the selected/editing encounter.
 - Workspace navigation back to the encounter gallery is clear.
 - The workspace makes the map prominent, keeps future tool space reserved
   without adding fog controls yet, and remains usable at desktop,

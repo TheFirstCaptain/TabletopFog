@@ -11,6 +11,7 @@ export function wireGmEvents(elements, actions) {
 
   elements.backToLibrary.addEventListener("click", actions.backToLibrary);
   elements.backToEncounters.addEventListener("click", actions.backToEncounters);
+  elements.manageEncounters.addEventListener("click", actions.toggleManageMode);
   elements.workspaceShowToPlayers.addEventListener("click", actions.showWorkspaceEncounter);
 
   elements.campaignList.addEventListener("click", (event) => {
@@ -52,7 +53,7 @@ export function wireGmEvents(elements, actions) {
     const button = event.target.closest("button[data-action]");
     if (!button) {
       const card = event.target.closest(".encounter-card[data-map-id]");
-      if (card && !event.target.closest("input, textarea, select")) {
+      if (card && !event.target.closest("input, textarea, select, .encounter-admin")) {
         actions.selectEncounter(card.dataset.mapId);
       }
       return;
@@ -75,7 +76,7 @@ export function wireGmEvents(elements, actions) {
     } else if (button.dataset.action === "move-map-down") {
       actions.moveMap(index, index + 1);
     } else if (button.dataset.action === "set-active-map") {
-      actions.setActiveMap(button.dataset.mapId);
+      actions.toggleShownEncounter(button.dataset.mapId);
     }
   });
 }

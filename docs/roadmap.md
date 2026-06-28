@@ -134,11 +134,12 @@ Planned focused UI polish sequence before fog:
 
 - Complete: [F-005E](./features/F-005E.md), campaign card presentation.
 - Complete: [F-005F](./features/F-005F.md), encounter gallery presentation.
-- [F-005G](./features/F-005G.md): encounter workspace layout.
-- [F-005H](./features/F-005H.md): Manage Mode.
-- [F-005I](./features/F-005I.md): design language compliance review.
-- [F-005J](./features/F-005J.md): final UI polish.
-- [F-006](./features/F-006.md): manual fog of war.
+- Complete: [F-005G](./features/F-005G.md), encounter workspace layout.
+- Complete: [F-005H](./features/F-005H.md), Manage Mode.
+- Complete: [F-005K](./features/F-005K.md), clear shown encounter.
+- Proposed: [F-005I](./features/F-005I.md), design language compliance review.
+- Proposed: [F-005J](./features/F-005J.md), final UI polish.
+- Proposed: [F-006](./features/F-006.md), manual fog of war.
 
 Status:
 
@@ -149,7 +150,8 @@ Status:
 - Complete: [F-005E](./features/F-005E.md), campaign card presentation.
 - Complete: [F-005F](./features/F-005F.md), encounter gallery presentation.
 - Complete: [F-005G](./features/F-005G.md), encounter workspace layout.
-- Proposed: [F-005H](./features/F-005H.md), Manage Mode.
+- Complete: [F-005H](./features/F-005H.md), Manage Mode.
+- Complete: [F-005K](./features/F-005K.md), clear shown encounter.
 - Proposed: [F-005I](./features/F-005I.md), design language compliance review.
 - Proposed: [F-005J](./features/F-005J.md), final UI polish.
 
@@ -160,8 +162,9 @@ Acceptance criteria:
 - Clicking an encounter card opens a selected/editing encounter workspace.
 - Clicking or opening an encounter does not automatically change the Player Display.
 - Showing an encounter to players is an explicit `Show to Players` action.
+- Clearing the shown encounter is an explicit `Shown to Players` action.
 - The GM may prep one encounter while a different encounter remains shown to players.
-- The Player Display changes only when the GM explicitly shows an encounter to players.
+- The Player Display changes only when the GM explicitly shows or clears an encounter.
 - The current shown-to-players encounter is visually distinguished from the selected/editing encounter.
 - No fog controls, tokens, notes, initiative tracking, dynamic lighting, campaign members, characters, or VTT-style navigation are introduced.
 - Each proposed UI polish feature should remain small enough for one focused
