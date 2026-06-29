@@ -137,7 +137,7 @@ Planned focused UI polish sequence before fog:
 - Complete: [F-005G](./features/F-005G.md), encounter workspace layout.
 - Complete: [F-005H](./features/F-005H.md), Manage Mode.
 - Complete: [F-005K](./features/F-005K.md), clear shown encounter.
-- Active: [F-005L](./features/F-005L.md), delete encounters.
+- Complete: [F-005L](./features/F-005L.md), delete encounters.
 - Complete: [F-005M](./features/F-005M.md), delete campaigns.
 - Proposed: [F-005I](./features/F-005I.md), design language compliance review.
 - Proposed: [F-005J](./features/F-005J.md), final UI polish.
@@ -154,7 +154,7 @@ Status:
 - Complete: [F-005G](./features/F-005G.md), encounter workspace layout.
 - Complete: [F-005H](./features/F-005H.md), Manage Mode.
 - Complete: [F-005K](./features/F-005K.md), clear shown encounter.
-- Active: [F-005L](./features/F-005L.md), delete encounters.
+- Complete: [F-005L](./features/F-005L.md), delete encounters.
 - Complete: [F-005M](./features/F-005M.md), delete campaigns.
 - Proposed: [F-005I](./features/F-005I.md), design language compliance review.
 - Proposed: [F-005J](./features/F-005J.md), final UI polish.
