@@ -141,6 +141,7 @@ Planned focused UI polish sequence before fog:
 - Complete: [F-005M](./features/F-005M.md), delete campaigns.
 - Complete: [F-005I](./features/F-005I.md), design language compliance review.
 - Complete: [F-005J](./features/F-005J.md), final UI polish.
+- Proposed: [F-005N](./features/F-005N.md), encounter workspace map density.
 - Proposed: [F-006](./features/F-006.md), manual fog of war.
 
 Status:
@@ -158,6 +159,7 @@ Status:
 - Complete: [F-005M](./features/F-005M.md), delete campaigns.
 - Complete: [F-005I](./features/F-005I.md), design language compliance review.
 - Complete: [F-005J](./features/F-005J.md), final UI polish.
+- Proposed: [F-005N](./features/F-005N.md), encounter workspace map density.
 
 Acceptance criteria:
 
