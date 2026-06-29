@@ -3,16 +3,16 @@
   "roots": ["server", "public", "scripts"],
   "modules": {
     "public/gm-api.js": {
-      "baselineLines": 73,
-      "responsibility": "Send GM campaign, campaign-card metadata, and map API requests and convert failed responses into client errors."
+      "baselineLines": 78,
+      "responsibility": "Send GM campaign, campaign deletion, campaign-card metadata, and map API requests and convert failed responses into client errors."
     },
     "public/gm-controller.js": {
-      "baselineLines": 181,
-      "responsibility": "Coordinate GM campaign library, campaign-card metadata, encounter gallery, encounter workspace, map, view, and Socket.IO workflows."
+      "baselineLines": 201,
+      "responsibility": "Coordinate GM campaign library, campaign deletion, campaign-card metadata, encounter gallery, encounter workspace, map, view, and Socket.IO workflows."
     },
     "public/gm-events.js": {
-      "baselineLines": 87,
-      "responsibility": "Translate static and delegated GM campaign, campaign-card metadata, encounter gallery, encounter workspace, and map DOM events into controller actions."
+      "baselineLines": 90,
+      "responsibility": "Translate static and delegated GM campaign, campaign deletion, campaign-card metadata, encounter gallery, encounter workspace, and map DOM events into controller actions."
     },
     "public/gm-navigation.js": {
       "baselineLines": 35,
@@ -23,8 +23,8 @@
       "responsibility": "Maintain GM campaign library, current campaign, GM-local selected encounter, and workspace-open client state."
     },
     "public/gm-view.js": {
-      "baselineLines": 410,
-      "responsibility": "Render the GM campaign card library, campaign-card metadata editing, encounter cards, encounter workspace shell, map controls, messages, status, and shared-canvas map preview."
+      "baselineLines": 439,
+      "responsibility": "Render the GM campaign card library, campaign deletion controls, campaign-card metadata editing, encounter cards, encounter workspace shell, map controls, messages, status, and shared-canvas map preview."
     },
     "public/gm.js": {
       "baselineLines": 19,
@@ -71,8 +71,8 @@
       "responsibility": "Prepare certificates, resolve LAN addresses, and start the local server workflow."
     },
     "server/campaign-storage.js": {
-      "baselineLines": 561,
-      "responsibility": "Manage campaign metadata, campaign-card metadata, map ordering, filesystem persistence, and asset containment.",
+      "baselineLines": 570,
+      "responsibility": "Manage campaign metadata, campaign deletion, campaign-card metadata, map ordering, filesystem persistence, and asset containment.",
       "temporaryException": {
         "engineeringId": "E-002",
         "reason": "Schema, validation, serialization, and filesystem responsibilities are awaiting planned separation."
@@ -83,8 +83,8 @@
       "responsibility": "Resolve and load HTTPS certificate credentials."
     },
     "server/index.js": {
-      "baselineLines": 326,
-      "responsibility": "Compose HTTP routes, campaign-card metadata updates, role projection, Socket.IO synchronization, and HTTPS startup.",
+      "baselineLines": 347,
+      "responsibility": "Compose HTTP routes, campaign deletion, campaign-card metadata updates, role projection, Socket.IO synchronization, and HTTPS startup.",
       "temporaryException": {
         "engineeringId": "E-004",
         "reason": "HTTP, role, socket, and startup responsibilities are awaiting planned separation."

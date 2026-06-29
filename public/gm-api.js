@@ -21,6 +21,11 @@ export function createGmApi(fetchRequest) {
     listCampaigns() {
       return request("/api/campaigns");
     },
+    deleteCampaign(campaignId) {
+      return request(`/api/campaigns/${encodeURIComponent(campaignId)}`, {
+        method: "DELETE"
+      });
+    },
     openCampaign(campaignId) {
       return request(`/api/campaigns/${encodeURIComponent(campaignId)}`);
     },

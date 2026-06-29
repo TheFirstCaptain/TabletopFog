@@ -52,6 +52,36 @@ test("rejects empty and case-only duplicate campaign folders", (t) => {
   assert.throws(() => storage.createCampaign("the long walk"), /already exists/);
 });
 
+test("deletes campaigns with no maps", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const campaignDir = path.join(root, campaign.id);
+
+  storage.deleteCampaign(campaign.id);
+
+  assert.equal(fs.existsSync(campaignDir), false);
+  assert.deepEqual(storage.listCampaigns(), []);
+});
+
+test("rejects campaign deletes when maps remain", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const map = storage.addMap(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "forest.png"
+  });
+  const campaignPath = path.join(root, campaign.id, "campaign.json");
+  const originalMetadata = fs.readFileSync(campaignPath, "utf8");
+
+  assert.throws(() => storage.deleteCampaign(campaign.id), /encounters before deleting the campaign/);
+  assert.equal(fs.existsSync(path.join(root, campaign.id)), true);
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+  assert.equal(fs.existsSync(path.join(root, campaign.id, map.file)), true);
+});
+
 test("lists only folders with valid campaign metadata", (t) => {
   const root = createTempRoot(t);
   const storage = createCampaignStorage({ dataRoot: root });

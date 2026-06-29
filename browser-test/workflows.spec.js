@@ -191,6 +191,54 @@ test("GM edits campaign card details without changing player display", async ({ 
   await expect(refreshedCard.getByText("🔥")).toBeVisible();
 });
 
+test("GM deletes only empty campaigns after confirmation", async ({ app, page, context }) => {
+  const player = await context.newPage();
+  let playerAssetRequests = 0;
+  await player.route("**/api/player/active-map/asset*", (route) => {
+    playerAssetRequests += 1;
+    return route.continue();
+  });
+
+  await openGm(page, app.baseURL);
+  await createCampaign(page, "Empty Campaign");
+  await page.getByRole("button", { name: "Back to Campaign Library" }).click();
+  await createCampaign(page, "Campaign With Maps");
+  await addMap(page, "forest.png");
+  await page.getByRole("button", { name: "Show to Players", exact: true }).click();
+  await player.goto(`${app.baseURL}/player`);
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  const playerAssetRequestsBeforeDelete = playerAssetRequests;
+  await page.getByRole("button", { name: "Back to Campaign Library" }).click();
+
+  const emptyCard = page.locator(".campaign-card").filter({ hasText: "Empty Campaign" });
+  const filledCard = page.locator(".campaign-card").filter({ hasText: "Campaign With Maps" });
+
+  await expect(emptyCard.getByRole("button", { name: "Delete Empty Campaign" })).toBeEnabled();
+  await expect(filledCard.getByRole("button", { name: "Delete Campaign With Maps" })).toBeDisabled();
+  await expect(filledCard.getByText("Delete this campaign's encounters before deleting the campaign.")).toBeVisible();
+
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toContain('This permanently deletes "Empty Campaign".');
+    await dialog.dismiss();
+  });
+  await emptyCard.getByRole("button", { name: "Delete Empty Campaign" }).click();
+  await expect(emptyCard).toBeVisible();
+
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toContain("This can't be undone.");
+    await dialog.accept();
+  });
+  await emptyCard.getByRole("button", { name: "Delete Empty Campaign" }).click();
+
+  await expect(emptyCard).toHaveCount(0);
+  await expect(filledCard).toBeVisible();
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeDelete);
+  await page.reload();
+  await expect(page.locator(".campaign-card").filter({ hasText: "Empty Campaign" })).toHaveCount(0);
+  await expect(page.locator(".campaign-card").filter({ hasText: "Campaign With Maps" })).toBeVisible();
+});
+
 test("campaign landing cards keep diagnostics and deferred controls out of scope", async ({ app, page }) => {
   await page.setViewportSize({ height: 768, width: 1366 });
   await openGm(page, app.baseURL);

@@ -523,6 +523,7 @@ h4 {
   background: rgb(141 61 45 / 10%);
 }
 
+.campaign-delete-reason,
 .encounter-delete-reason {
   color: var(--muted);
   font-size: 0.875rem;

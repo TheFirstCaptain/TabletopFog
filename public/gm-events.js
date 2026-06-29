@@ -20,6 +20,9 @@ export function wireGmEvents(elements, actions) {
       const card = button.closest(".campaign-card");
       if (button.dataset.action === "open-campaign") {
         actions.openCampaign(button.dataset.campaignId);
+      } else if (button.dataset.action === "delete-campaign") {
+        event.preventDefault();
+        actions.deleteCampaign(button.dataset.campaignId);
       } else if (button.dataset.action === "edit-campaign") {
         event.preventDefault();
         card.hidden = false;

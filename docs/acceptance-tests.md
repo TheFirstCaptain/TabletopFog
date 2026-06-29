@@ -477,6 +477,36 @@ Expected result:
 - Campaign creation, opening, metadata editing, invalid diagnostics, and Player
   Display behavior remain unchanged.
 
+### Test: GM Deletes Empty Campaigns
+
+Prerequisites:
+
+- Local server is running on the GM host machine.
+- One campaign exists with no encounters.
+- One campaign exists with at least one encounter.
+- Player Display is open or otherwise known to be unaffected.
+
+Steps:
+
+1. Open `/gm` at the Campaign Library.
+2. Confirm each campaign card has a secondary `Delete...` action.
+3. Confirm the campaign with encounters has delete disabled and shows a visible
+   reason to delete its encounters first.
+4. Click delete for the empty campaign.
+5. Cancel the confirmation.
+6. Confirm the empty campaign still appears.
+7. Click delete for the empty campaign again.
+8. Confirm the deletion.
+9. Reload the Campaign Library.
+
+Expected result:
+
+- Campaign deletion requires confirmation.
+- Canceling leaves the empty campaign folder and card intact.
+- Confirming permanently removes the empty campaign folder and card.
+- Campaigns with encounters cannot be deleted from the UI or direct GM API.
+- Player Display remains read-only and unchanged by campaign deletion.
+
 ## Milestone 3 Follow-Up: Encounter Gallery
 
 ### Test: Opening an Encounter Does Not Show It to Players

@@ -235,6 +235,11 @@ export function createGmView(document) {
         `Delete encounter?\n\nThis permanently deletes "${name}" and its map file. This can't be undone.`
       );
     },
+    confirmDeleteCampaign(name) {
+      return document.defaultView.confirm(
+        `Delete campaign?\n\nThis permanently deletes "${name}". This can't be undone.`
+      );
+    },
     clearMapFile() {
       elements.mapFile.value = "";
     },
@@ -272,7 +277,7 @@ export function createGmView(document) {
       }
 
       elements.libraryMessage.textContent = "";
-      campaigns.forEach((campaign) => {
+      campaigns.forEach((campaign, index) => {
         const item = document.createElement("article");
         item.className = "campaign-card";
         item.dataset.campaignId = campaign.id;
@@ -326,7 +331,22 @@ export function createGmView(document) {
         });
         edit.setAttribute("aria-label", "Edit campaign details");
 
-        actions.append(open, edit);
+        const deleteBlockedReason =
+          campaign.mapCount > 0 ? "Delete this campaign's encounters before deleting the campaign." : "";
+        const deleteReasonId = `delete-campaign-reason-${index}`;
+        const deleteButton = createButton(document, {
+          action: "delete-campaign",
+          className: "secondary danger-secondary",
+          disabled: Boolean(deleteBlockedReason),
+          text: "Delete..."
+        });
+        deleteButton.dataset.campaignId = campaign.id;
+        deleteButton.setAttribute("aria-label", `Delete ${campaign.name}`);
+        if (deleteBlockedReason) {
+          deleteButton.setAttribute("aria-describedby", deleteReasonId);
+        }
+
+        actions.append(open, edit, deleteButton);
 
         const form = document.createElement("form");
         form.className = "campaign-card-editor";
@@ -380,7 +400,16 @@ export function createGmView(document) {
         message.className = "campaign-card-message muted";
         message.setAttribute("aria-live", "polite");
 
+        const deleteReason = document.createElement("p");
+        deleteReason.className = "campaign-delete-reason";
+        deleteReason.id = deleteReasonId;
+        deleteReason.textContent = deleteBlockedReason;
+        deleteReason.hidden = !deleteBlockedReason;
+
         form.append(nameLabel, iconLabel, descriptionLabel, editorActions);
+        if (deleteBlockedReason) {
+          actions.append(deleteReason);
+        }
         item.append(icon, body, actions, form, message);
         elements.campaignList.append(item);
       });

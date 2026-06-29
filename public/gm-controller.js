@@ -29,6 +29,25 @@ export function createGmController({ api, socket, state, view }) {
     }
   }
 
+  async function deleteCampaign(campaignId) {
+    const campaign = state.getLibrary().campaigns.find((candidate) => candidate.id === campaignId);
+
+    if (!campaign || !view.confirmDeleteCampaign(campaign.name)) {
+      return;
+    }
+
+    try {
+      state.setLibrary(await api.deleteCampaign(campaignId));
+      if (state.getCurrentCampaign()?.id === campaignId) {
+        state.closeCampaign();
+        view.hideCampaign();
+      }
+      view.renderLibrary(state.getLibrary());
+    } catch (error) {
+      view.setCampaignCardMessage(campaignId, error.message);
+    }
+  }
+
   async function openCampaign(campaignId) {
     try {
       const payload = await api.openCampaign(campaignId);
@@ -156,6 +175,7 @@ export function createGmController({ api, socket, state, view }) {
       backToLibrary,
       backToEncounters,
       createCampaign,
+      deleteCampaign,
       deleteMap,
       moveMap,
       openCampaign,

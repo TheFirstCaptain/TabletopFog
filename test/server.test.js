@@ -260,6 +260,92 @@ test("creates campaigns through GM API and lists them", async (t) => {
   }
 });
 
+test("deletes empty campaigns through GM API only", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const { server, io, stateStore } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+
+  try {
+    await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: "Empty Campaign" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: "Filled Campaign" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    await requestHttps(`${url}/api/campaigns/${encodeURIComponent("Filled Campaign")}/maps`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "forest.png"
+      }),
+      method: "POST"
+    });
+
+    const rejectedFilled = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("Filled Campaign")}`, {
+      headers: gmHeaders(port),
+      method: "DELETE"
+    });
+    const playerRejected = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("Empty Campaign")}`, {
+      headers: playerHeaders(port),
+      method: "DELETE"
+    });
+    const deleted = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("Empty Campaign")}`, {
+      headers: gmHeaders(port),
+      method: "DELETE"
+    });
+
+    assert.equal(rejectedFilled.statusCode, 409);
+    assert.match(rejectedFilled.json.error, /encounters before deleting the campaign/);
+    assert.equal(playerRejected.statusCode, 403);
+    assert.equal(deleted.statusCode, 200);
+    assert.deepEqual(
+      deleted.json.campaigns.map((campaign) => campaign.id),
+      ["Filled Campaign"]
+    );
+    assert.equal(fs.existsSync(path.join(dataRoot, "Empty Campaign")), false);
+    assert.equal(fs.existsSync(path.join(dataRoot, "Filled Campaign", "campaign.json")), true);
+    assert.equal(stateStore.getState().campaign.id, "Filled Campaign");
+  } finally {
+    await close(server, io);
+  }
+});
+
+test("deleting the open empty campaign clears shared campaign state", async (t) => {
+  const { server, io, stateStore } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot: createTempRoot(t)
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+
+  try {
+    await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: "Empty Campaign" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const deleted = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("Empty Campaign")}`, {
+      headers: gmHeaders(port),
+      method: "DELETE"
+    });
+
+    assert.equal(deleted.statusCode, 200);
+    assert.deepEqual(deleted.json.campaigns, []);
+    assert.equal(stateStore.getState().campaign, null);
+  } finally {
+    await close(server, io);
+  }
+});
+
 test("updates campaign card metadata through GM API only", async (t) => {
   const dataRoot = createTempRoot(t);
   const { server, io, stateStore } = createTabletopFogServer({

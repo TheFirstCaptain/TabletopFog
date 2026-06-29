@@ -41,9 +41,11 @@ the Player Display back to its waiting state and returns the action to
 `Show to Players`. Normal browsing keeps upload, rename, reorder, and confirmed
 permanent delete administration behind `Manage Encounters`; delete is blocked
 only for encounters currently `Shown to Players`, with `Done Managing`
-returning to the calm browse-first gallery. Opening an encounter for prep enters
-a focused GM
-workspace shell with the selected map as the dominant surface,
+returning to the calm browse-first gallery. Campaign Library cards also support
+confirmed permanent deletion for campaigns with no encounters; campaigns that
+still contain encounters show a disabled delete action with guidance to remove
+encounters first. Opening an encounter for prep enters a focused GM workspace
+shell with the selected map as the dominant surface,
 selected-versus-shown status, a lateral reserved future tools dock on
 desktop/Chromebook-sized screens that stacks below the map on narrow screens,
 separate `Back to Campaign` navigation, and a workspace-level `Show to Players`

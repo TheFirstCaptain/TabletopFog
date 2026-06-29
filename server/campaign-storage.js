@@ -378,6 +378,15 @@ function createCampaignStorage(options = {}) {
         throw error;
       }
     },
+    deleteCampaign(campaignId) {
+      const campaign = readCampaign(campaignId);
+
+      if (campaign.maps.length > 0) {
+        throw createUserError(409, "Delete this campaign's encounters before deleting the campaign.");
+      }
+
+      fs.rmSync(campaignDir(campaignId), { recursive: true, force: true });
+    },
     getCampaign(campaignId) {
       return readCampaign(campaignId);
     },

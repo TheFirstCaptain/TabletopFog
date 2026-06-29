@@ -69,6 +69,27 @@ function createApp(options = {}) {
     }
   });
 
+  app.delete("/api/campaigns/:campaignId", requireGm, (request, response, next) => {
+    try {
+      campaignStorage.deleteCampaign(request.params.campaignId);
+
+      if (stateStore.getState().campaign?.id === request.params.campaignId) {
+        const state = stateStore.setCampaign(null);
+        onStateChange(state);
+      }
+
+      const library = campaignStorage.getCampaignLibrary
+        ? campaignStorage.getCampaignLibrary()
+        : { campaigns: campaignStorage.listCampaigns(), diagnostics: [] };
+      response.json({
+        ...library,
+        dataRoot: campaignStorage.dataRoot
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.patch("/api/campaigns/:campaignId/metadata", requireGm, (request, response, next) => {
     try {
       if (!request.body || typeof request.body !== "object" || Array.isArray(request.body)) {
