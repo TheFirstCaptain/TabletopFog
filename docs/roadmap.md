@@ -139,7 +139,7 @@ Planned focused UI polish sequence before fog:
 - Complete: [F-005K](./features/F-005K.md), clear shown encounter.
 - Complete: [F-005L](./features/F-005L.md), delete encounters.
 - Complete: [F-005M](./features/F-005M.md), delete campaigns.
-- Proposed: [F-005I](./features/F-005I.md), design language compliance review.
+- Active: [F-005I](./features/F-005I.md), design language compliance review.
 - Proposed: [F-005J](./features/F-005J.md), final UI polish.
 - Proposed: [F-006](./features/F-006.md), manual fog of war.
 
@@ -156,7 +156,7 @@ Status:
 - Complete: [F-005K](./features/F-005K.md), clear shown encounter.
 - Complete: [F-005L](./features/F-005L.md), delete encounters.
 - Complete: [F-005M](./features/F-005M.md), delete campaigns.
-- Proposed: [F-005I](./features/F-005I.md), design language compliance review.
+- Active: [F-005I](./features/F-005I.md), design language compliance review.
 - Proposed: [F-005J](./features/F-005J.md), final UI polish.
 
 Acceptance criteria:
