@@ -38,6 +38,9 @@ function contrast(first, second) {
 }
 
 test("loads the local fantasy theme with accessible desktop and narrow layouts", async ({ app, page }) => {
+  const stylesheet = fs.readFileSync(path.join(__dirname, "..", "public", "styles.css"), "utf8");
+  expect(stylesheet).not.toMatch(/@keyframes|\b(?:animation|transition)(?:-[\w-]+)?\s*:/);
+
   fs.mkdirSync(path.join(app.dataRoot, "Broken Campaign"));
   fs.writeFileSync(path.join(app.dataRoot, "Broken Campaign", "campaign.json"), "{not-json");
   const fontResponses = [];
@@ -156,19 +159,31 @@ test("loads the local fantasy theme with accessible desktop and narrow layouts",
   const playerStyles = await page.evaluate(() => {
     const bar = getComputedStyle(document.querySelector(".player-status-bar"));
     const stage = getComputedStyle(document.querySelector(".map-stage"));
+    const controls = getComputedStyle(document.querySelector(".viewport-controls"));
+    const zoomButton = getComputedStyle(document.querySelector("#zoom-in"));
+    const statusBar = document.querySelector(".player-status-bar").getBoundingClientRect();
+    const mapStage = document.querySelector(".map-stage").getBoundingClientRect();
     return {
       barBackground: bar.backgroundColor,
       barColor: bar.color,
+      barHeight: statusBar.height,
       barWrap: bar.flexWrap,
-      stageBackground: stage.backgroundColor
+      controlsGap: controls.gap,
+      mapStageHeight: mapStage.height,
+      stageBackground: stage.backgroundColor,
+      zoomButtonMinHeight: zoomButton.minHeight,
+      zoomButtonMinWidth: zoomButton.minWidth
     };
   });
-  expect(playerStyles).toEqual({
-    barBackground: "rgb(247, 235, 207)",
-    barColor: "rgb(43, 33, 24)",
-    barWrap: "wrap",
-    stageBackground: "rgb(20, 17, 15)"
-  });
+  expect(playerStyles.barBackground).toBe("rgb(247, 235, 207)");
+  expect(playerStyles.barColor).toBe("rgb(43, 33, 24)");
+  expect(playerStyles.barWrap).toBe("wrap");
+  expect(playerStyles.controlsGap).toBe("6px");
+  expect(playerStyles.stageBackground).toBe("rgb(20, 17, 15)");
+  expect(playerStyles.zoomButtonMinHeight).toBe("36px");
+  expect(playerStyles.zoomButtonMinWidth).toBe("36px");
+  expect(playerStyles.barHeight).toBeLessThan(96);
+  expect(playerStyles.mapStageHeight).toBeGreaterThan(844 * 0.72);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 

@@ -578,7 +578,8 @@ test("selected prep encounter can be deleted when it is not shown to players", a
   await enterManageEncounters(page);
   await expect(soloCard.getByRole("button", { name: "Delete solo" })).toBeEnabled();
   page.once("dialog", async (dialog) => {
-    expect(dialog.message()).toContain('This permanently deletes "solo" and its map file.');
+    expect(dialog.message()).toContain('This permanently deletes the "solo" encounter.');
+    expect(dialog.message()).not.toContain("map file");
     await dialog.accept();
   });
   await soloCard.getByRole("button", { name: "Delete solo" }).click();
@@ -738,9 +739,32 @@ test("encounter gallery presentation remains browsable and responsive", async ({
   await expect(longCard.getByRole("button", { name: `Delete ${longEncounterName}` })).toBeDisabled();
   await expect(longCard.getByText("Shown to Players. Clear it from the Player Display before deleting.")).toBeVisible();
   await expect(tallCard.getByRole("button", { name: "Delete tall-tower" })).toBeEnabled();
+  const shownActionStyles = await longCard
+    .locator(".encounter-running")
+    .getByRole("button", { name: /Shown to Players - clear/ })
+    .evaluate((element) => {
+      const computed = getComputedStyle(element);
+      return {
+        background: computed.backgroundColor,
+        borderColor: computed.borderColor,
+        borderRadius: computed.borderRadius,
+        color: computed.color,
+        enabled: !element.disabled,
+        minHeight: computed.minHeight
+      };
+    });
+  expect(shownActionStyles).toEqual({
+    background: "rgb(247, 235, 207)",
+    borderColor: "rgb(74, 41, 24)",
+    borderRadius: "6px",
+    color: "rgb(74, 41, 24)",
+    enabled: true,
+    minHeight: "44px"
+  });
 
   page.once("dialog", async (dialog) => {
-    expect(dialog.message()).toContain('This permanently deletes "square-keep" and its map file.');
+    expect(dialog.message()).toContain('This permanently deletes the "square-keep" encounter.');
+    expect(dialog.message()).not.toContain("map file");
     await dialog.dismiss();
   });
   await squareCard.getByRole("button", { name: "Delete square-keep" }).click();
@@ -806,6 +830,7 @@ test("GM workspace shell previews selected encounter without changing the player
   await expect(page.getByRole("button", { name: "Show to Players from workspace" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Future Tools" })).toBeVisible();
   await expect(page.getByRole("button", { name: /fog|brush|reveal|hide/i })).toHaveCount(0);
+  await expect(page.locator(".future-tools-panel button, .future-tools-panel input")).toHaveCount(0);
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeWorkspaceOpen);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -813,11 +838,14 @@ test("GM workspace shell previews selected encounter without changing the player
     const grid = document.querySelector(".workspace-grid").getBoundingClientRect();
     const workspace = document.querySelector("#encounter-workspace").getBoundingClientRect();
     const map = document.querySelector(".gm-map-stage").getBoundingClientRect();
-    const dock = document.querySelector(".future-tools-panel").getBoundingClientRect();
+    const dockElement = document.querySelector(".future-tools-panel");
+    const dock = dockElement.getBoundingClientRect();
+    const dockStyles = getComputedStyle(dockElement);
     const action = document.querySelector("#workspace-show-to-players").getBoundingClientRect();
     const canvas = document.querySelector("#active-map-canvas");
     return {
       actionAreaSmallerThanMap: action.width * action.height < map.width * map.height * 0.2,
+      dockBackground: dockStyles.backgroundColor,
       dockRightOfMap: dock.left > map.right,
       mapAreaGreaterThanDock: map.width * map.height > dock.width * dock.height,
       renderedHeight: Number(canvas.dataset.drawHeight),
@@ -827,6 +855,7 @@ test("GM workspace shell previews selected encounter without changing the player
   });
   expect(desktopWorkspaceLayout).toEqual({
     actionAreaSmallerThanMap: true,
+    dockBackground: "rgba(0, 0, 0, 0)",
     dockRightOfMap: true,
     mapAreaGreaterThanDock: true,
     renderedHeight: expect.any(Number),

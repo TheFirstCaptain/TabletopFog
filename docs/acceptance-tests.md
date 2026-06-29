@@ -554,8 +554,9 @@ Steps:
 3. Add or inspect several encounters with varied thumbnail aspect ratios.
 4. Confirm thumbnails are visually prominent and remain inside their cards.
 5. Confirm long encounter names wrap inside cards without horizontal overflow.
-6. Confirm `Shown to Players` and `Selected for Prep` appear as restrained,
-   distinct text badges.
+6. Confirm `Shown to Players` and `Selected for Prep` remain visually distinct,
+   and that the `Shown to Players` clear action reads as an enabled control
+   rather than a passive badge.
 7. Confirm `Show to Players` remains available in Normal Mode.
 8. Enter `Manage Encounters`.
 9. Confirm Add Encounter, Rename, Up, Down, and Delete controls remain

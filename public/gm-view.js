@@ -63,7 +63,6 @@ export function createGmView(document) {
 
   function renderSelectedEncounter(campaign, selectedEncounterId, workspaceOpen) {
     const selectedEncounter = campaign.maps.find((map) => map.id === selectedEncounterId);
-
     if (!workspaceOpen || !selectedEncounter) {
       elements.selectedEncounterHeading.textContent = "Open an encounter";
       elements.selectedEncounterStatus.textContent = "Choose an encounter card to prep it here.";
@@ -71,7 +70,6 @@ export function createGmView(document) {
       activeMapRenderer.setMap(null);
       return;
     }
-
     const shownToPlayers = selectedEncounter.id === campaign.activeMapId;
     const shownEncounter = campaign.maps.find((map) => map.id === campaign.activeMapId);
     navigation.showWorkspace(campaign, selectedEncounter);
@@ -81,6 +79,7 @@ export function createGmView(document) {
       : `Selected for Prep: ${selectedEncounter.name}. Shown to Players: ${shownEncounter?.name || "None"}.`;
     elements.workspaceShowToPlayers.disabled = false;
     elements.workspaceShowToPlayers.dataset.mapId = selectedEncounter.id;
+    elements.workspaceShowToPlayers.dataset.state = shownToPlayers ? "shown" : "ready";
     elements.workspaceShowToPlayers.textContent = shownToPlayers ? "Shown to Players" : "Show to Players";
     elements.workspaceShowToPlayers.setAttribute(
       "aria-label",
@@ -157,6 +156,7 @@ export function createGmView(document) {
       );
       const runningButton = running.querySelector("button");
       if (map.id === campaign.activeMapId) {
+        runningButton.dataset.state = "shown";
         runningButton.setAttribute("aria-label", `Shown to Players - clear ${map.name} from Player Display`);
       }
 
@@ -232,7 +232,7 @@ export function createGmView(document) {
     },
     confirmDeleteEncounter(name) {
       return document.defaultView.confirm(
-        `Delete encounter?\n\nThis permanently deletes "${name}" and its map file. This can't be undone.`
+        `Delete encounter?\n\nThis permanently deletes the "${name}" encounter.\nThis can't be undone.`
       );
     },
     confirmDeleteCampaign(name) {
