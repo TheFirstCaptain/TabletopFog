@@ -492,6 +492,123 @@ test("clears active map without changing encounter records", (t) => {
   );
 });
 
+test("deletes an unshown unselected map and repairs order", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const first = storage.addMap(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "forest.png"
+  });
+  const second = storage.addMap(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "cave.png"
+  });
+  const third = storage.addMap(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "tower.png"
+  });
+  const deletedPath = path.join(root, campaign.id, second.file);
+
+  const updated = storage.deleteMap(campaign.id, second.id);
+  const reloaded = createCampaignStorage({ dataRoot: root }).getCampaign(campaign.id);
+
+  assert.deepEqual(
+    updated.maps.map((map) => [map.id, map.order]),
+    [
+      [first.id, 1],
+      [third.id, 2]
+    ]
+  );
+  assert.deepEqual(
+    reloaded.maps.map((map) => [map.id, map.file, map.order]),
+    [
+      [first.id, first.file, 1],
+      [third.id, third.file, 2]
+    ]
+  );
+  assert.equal(fs.existsSync(deletedPath), false);
+  assert.equal(fs.existsSync(path.join(root, campaign.id, first.file)), true);
+  assert.equal(fs.existsSync(path.join(root, campaign.id, third.file)), true);
+});
+
+test("rejected map deletes preserve campaign metadata and files", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const first = storage.addMap(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "forest.png"
+  });
+  const second = storage.addMap(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "cave.png"
+  });
+  storage.setActiveMap(campaign.id, first.id);
+  const campaignPath = path.join(root, campaign.id, "campaign.json");
+  const originalMetadata = fs.readFileSync(campaignPath, "utf8");
+  const cases = [
+    { action: () => storage.deleteMap(campaign.id, first.id), message: /Player Display/ },
+    { action: () => storage.deleteMap(campaign.id, "unknown"), message: /Map not found/ }
+  ];
+
+  cases.forEach(({ action, message }) => {
+    assert.throws(action, message);
+    assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+    assert.equal(fs.existsSync(path.join(root, campaign.id, first.file)), true);
+    assert.equal(fs.existsSync(path.join(root, campaign.id, second.file)), true);
+  });
+});
+
+test("deletes the selected prep map when it is not shown to players", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const only = storage.addMap(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "solo.png"
+  });
+  const deletedPath = path.join(root, campaign.id, only.file);
+
+  const updated = storage.deleteMap(campaign.id, only.id);
+
+  assert.deepEqual(updated.maps, []);
+  assert.equal(fs.existsSync(deletedPath), false);
+});
+
+test("rejects deleting map assets outside the maps folder", (t) => {
+  const root = createTempRoot(t);
+  const campaignDir = path.join(root, "The Long Walk");
+  const outsidePath = path.join(root, "outside.png");
+  fs.mkdirSync(path.join(campaignDir, "maps"), { recursive: true });
+  fs.writeFileSync(outsidePath, PNG_BYTES);
+  fs.writeFileSync(
+    path.join(campaignDir, "campaign.json"),
+    JSON.stringify(
+      {
+        name: "The Long Walk",
+        activeMapId: null,
+        maps: [{ id: "escape", name: "Escape", file: "../outside.png", order: 1, fog: [] }]
+      },
+      null,
+      2
+    )
+  );
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaignPath = path.join(campaignDir, "campaign.json");
+  const originalMetadata = fs.readFileSync(campaignPath, "utf8");
+
+  assert.throws(() => storage.deleteMap("The Long Walk", "escape"), /Invalid map asset path/);
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+  assert.equal(fs.existsSync(outsidePath), true);
+});
+
 test("rejects map asset paths outside the maps folder", (t) => {
   const root = createTempRoot(t);
   const campaignDir = path.join(root, "The Long Walk");

@@ -125,6 +125,20 @@ function createApp(options = {}) {
     }
   });
 
+  app.delete("/api/campaigns/:campaignId/maps/:mapId", requireGm, (request, response, next) => {
+    try {
+      const campaign = withAssetUrls(
+        campaignStorage,
+        campaignStorage.deleteMap(request.params.campaignId, request.params.mapId)
+      );
+      const state = stateStore.setCampaign(campaign);
+      onStateChange(state);
+      response.json({ campaign });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.put("/api/campaigns/:campaignId/maps/reorder", requireGm, (request, response, next) => {
     try {
       const campaign = withAssetUrls(
@@ -252,7 +266,8 @@ function projectStateForRole(state, role) {
           campaignId: campaign.id,
           id: activeMap.id,
           name: activeMap.name,
-          assetUrl: "/api/player/active-map/asset"
+          assetUrl: "/api/player/active-map/asset",
+          version: `${campaign.id}/${activeMap.id}`
         }
       : null,
     updatedAt: state.updatedAt,

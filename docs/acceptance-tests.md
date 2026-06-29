@@ -528,16 +528,25 @@ Steps:
    distinct text badges.
 7. Confirm `Show to Players` remains available in Normal Mode.
 8. Enter `Manage Encounters`.
-9. Confirm Add Encounter, Rename, Up, and Down controls remain available there
-   but do not visually dominate browsing.
-10. Return to Normal Mode.
-11. Open an encounter that is not shown to players.
-12. Confirm the Player Display does not change.
-13. Use `Show to Players` and confirm the Player Display changes only then.
-14. Click that encounter's `Shown to Players` action and confirm the Player
+9. Confirm Add Encounter, Rename, Up, Down, and Delete controls remain
+   available there but do not visually dominate browsing.
+10. Confirm Delete is disabled with a visible reason for encounters that are
+   `Shown to Players`.
+11. Confirm Delete remains available for encounters that are only
+   `Selected for Prep`.
+12. Cancel deletion of an encounter that is not shown to players.
+13. Confirm the encounter, map asset, order, and Player Display remain unchanged.
+14. Confirm deletion of an encounter that is not shown to players.
+15. Confirm the encounter is permanently removed, remaining order is repaired,
+   and the Player Display remains unchanged.
+16. Return to Normal Mode.
+17. Open an encounter that is not shown to players.
+18. Confirm the Player Display does not change.
+19. Use `Show to Players` and confirm the Player Display changes only then.
+20. Click that encounter's `Shown to Players` action and confirm the Player
     Display returns to waiting state.
-15. Confirm the encounter action changes back to `Show to Players`.
-16. Repeat at Chromebook-sized and narrow widths.
+21. Confirm the encounter action changes back to `Show to Players`.
+22. Repeat at Chromebook-sized and narrow widths.
 
 Expected result:
 
@@ -545,8 +554,10 @@ Expected result:
   files.
 - The map thumbnail, encounter name, and shown/editing status carry the card
   hierarchy.
-- Add Encounter, rename, and reorder remain available through Manage Mode while
-  Normal Mode stays uncluttered.
+- Add Encounter, rename, reorder, and confirmed delete remain available through
+  Manage Mode while Normal Mode stays uncluttered.
+- Permanent delete requires confirmation and is blocked only for encounters
+  shown to players.
 - Explicit show behavior remains available in Normal Mode.
 - Explicit shown behavior clears the Player Display and then returns to the
   show action without editing encounter metadata.
@@ -573,22 +584,33 @@ Steps:
 5. Open an encounter for prep and confirm the Player Display remains on the
    previously shown encounter.
 6. Return to the campaign and choose `Manage Encounters`.
-7. Confirm `Done Managing`, Add Encounter upload, Rename, Up, and Down controls
-   are visible.
-8. Confirm Delete is not present.
-9. Rename and reorder encounters.
-10. Upload a valid encounter and confirm it appears.
-11. Attempt an invalid upload.
-12. Choose `Done Managing`.
+7. Confirm `Done Managing`, Add Encounter upload, Rename, Up, Down, and Delete
+   controls are visible.
+8. Confirm Delete is blocked with visible reason text for the encounter
+   currently shown to players.
+9. Confirm Delete remains available for the encounter selected for prep when it
+   is not shown to players.
+10. Cancel deletion of an encounter that is not shown to players.
+11. Confirm the encounter list, order, files, selected prep badge, shown badge,
+    and Player Display remain unchanged.
+12. Confirm deletion of an encounter that is not shown to players.
+13. Confirm the encounter is removed, remaining order is repaired, and the
+    Player Display does not reload or change.
+14. Rename and reorder encounters.
+15. Upload a valid encounter and confirm it appears.
+16. Attempt an invalid upload.
+17. Choose `Done Managing`.
 
 Expected result:
 
 - Normal Mode remains focused on browsing, opening, and explicitly showing
   encounters to players.
-- Manage Mode exposes only the existing upload, rename, and reorder
+- Manage Mode exposes upload, rename, reorder, and confirmed permanent delete
   administration controls.
-- Delete remains deferred and absent.
-- Rename, reorder, valid upload, and invalid upload do not change the Player
+- Delete is blocked for shown-to-players encounters and remains available for
+  selected-for-prep encounters that are not shown.
+- Rename, reorder, valid upload, invalid upload, canceled delete, rejected
+  delete, and confirmed unshown/unselected delete do not change the Player
   Display or the shown-to-players encounter.
 - Invalid upload preserves encounter names, order, and shown state.
 - Returning to Normal Mode hides administration controls again.

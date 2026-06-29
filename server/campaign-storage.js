@@ -242,6 +242,32 @@ function createCampaignStorage(options = {}) {
     return map;
   }
 
+  function getContainedMapAssetPath(campaignId, map) {
+    const relativeFile = map.file.replace(/\\/g, "/");
+
+    if (!relativeFile.startsWith("maps/")) {
+      throw createUserError(400, "Invalid map asset path.");
+    }
+
+    const resolved = path.resolve(campaignDir(campaignId), map.file);
+    const mapsRoot = fs.realpathSync(mapsDir(campaignId));
+    let realAssetPath;
+
+    try {
+      realAssetPath = fs.realpathSync(resolved);
+    } catch (_error) {
+      throw createUserError(404, "Map asset not found.");
+    }
+
+    const relative = path.relative(mapsRoot, realAssetPath);
+
+    if (relative.startsWith("..") || path.isAbsolute(relative)) {
+      throw createUserError(400, "Invalid map asset path.");
+    }
+
+    return realAssetPath;
+  }
+
   function getCampaignLibrary() {
     ensureDataRoot();
     const campaigns = [];
@@ -359,35 +385,36 @@ function createCampaignStorage(options = {}) {
     getMapAsset(campaignId, mapId) {
       const campaign = readCampaign(campaignId);
       const map = findMap(campaign, mapId);
-      const relativeFile = map.file.replace(/\\/g, "/");
-
-      if (!relativeFile.startsWith("maps/")) {
-        throw createUserError(400, "Invalid map asset path.");
-      }
-
-      const resolved = path.resolve(campaignDir(campaignId), map.file);
-      const mapsRoot = fs.realpathSync(mapsDir(campaignId));
-      let realAssetPath;
-
-      try {
-        realAssetPath = fs.realpathSync(resolved);
-      } catch (_error) {
-        throw createUserError(404, "Map asset not found.");
-      }
-
-      const relative = path.relative(mapsRoot, realAssetPath);
-
-      if (relative.startsWith("..") || path.isAbsolute(relative)) {
-        throw createUserError(400, "Invalid map asset path.");
-      }
 
       return {
-        filePath: realAssetPath,
+        filePath: getContainedMapAssetPath(campaignId, map),
         map
       };
     },
     listCampaigns() {
       return getCampaignLibrary().campaigns;
+    },
+    deleteMap(campaignId, mapId) {
+      const campaign = readCampaign(campaignId);
+      const map = findMap(campaign, mapId);
+
+      if (map.id === campaign.activeMapId) {
+        throw createUserError(409, "Clear this encounter from the Player Display before deleting it.");
+      }
+
+      const assetPath = getContainedMapAssetPath(campaignId, map);
+      const deletePath = `${assetPath}.delete-${process.pid}-${Date.now()}`;
+      fs.renameSync(assetPath, deletePath);
+
+      try {
+        campaign.maps = campaign.maps.filter((candidate) => candidate.id !== map.id);
+        const savedCampaign = saveCampaign(campaign);
+        fs.rmSync(deletePath, { force: true });
+        return savedCampaign;
+      } catch (error) {
+        fs.renameSync(deletePath, assetPath);
+        throw error;
+      }
     },
     renameMap(campaignId, mapId, name) {
       const campaign = readCampaign(campaignId);

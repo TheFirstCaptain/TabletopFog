@@ -515,6 +515,32 @@ test("encounter cards open a workspace without changing the player display", asy
   await expect(caveCard.locator(".status-pill").filter({ hasText: "Shown to Players" })).toBeVisible();
 });
 
+test("selected prep encounter can be deleted when it is not shown to players", async ({ app, page }) => {
+  await openGm(page, app.baseURL);
+  await createCampaign(page, "Single Delete Campaign");
+  await uploadMapFile(page, await sizedPngFile(page, "solo.png", 120, 80, "#254117", "#6b8e23"));
+  await page.getByRole("button", { name: "Done Managing" }).click();
+
+  const soloCard = page.locator(".encounter-card").filter({ hasText: "solo" });
+  await soloCard.getByRole("button", { name: "Open solo for prep" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Encounter Workspace" })).toBeVisible();
+  await page.getByRole("button", { name: "Back to Campaign" }).click();
+  await expect(soloCard.getByText("Selected for Prep", { exact: true })).toBeVisible();
+
+  await enterManageEncounters(page);
+  await expect(soloCard.getByRole("button", { name: "Delete solo" })).toBeEnabled();
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toContain('This permanently deletes "solo" and its map file.');
+    await dialog.accept();
+  });
+  await soloCard.getByRole("button", { name: "Delete solo" }).click();
+
+  await expect(page.locator(".encounter-card")).toHaveCount(0);
+  await expect(page.getByText("Add a map to begin.", { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.locator(".encounter-card")).toHaveCount(0);
+});
+
 test("encounter gallery presentation remains browsable and responsive", async ({ app, page, context }) => {
   const player = await context.newPage();
   let playerAssetRequests = 0;
@@ -660,6 +686,34 @@ test("encounter gallery presentation remains browsable and responsive", async ({
         .evaluateAll((inputs) => inputs.map((input) => input.value))
     )
     .toEqual([longEncounterName, "square-keep", "tall-tower"]);
+  await expect(page.getByRole("button", { name: /^Delete/ })).toHaveCount(3);
+  await expect(longCard.getByRole("button", { name: `Delete ${longEncounterName}` })).toBeDisabled();
+  await expect(longCard.getByText("Shown to Players. Clear it from the Player Display before deleting.")).toBeVisible();
+  await expect(tallCard.getByRole("button", { name: "Delete tall-tower" })).toBeEnabled();
+
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toContain('This permanently deletes "square-keep" and its map file.');
+    await dialog.dismiss();
+  });
+  await squareCard.getByRole("button", { name: "Delete square-keep" }).click();
+  await expect(squareCard).toBeVisible();
+
+  const playerAssetRequestsBeforeDelete = playerAssetRequests;
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toContain("This can't be undone.");
+    await dialog.accept();
+  });
+  await squareCard.getByRole("button", { name: "Delete square-keep" }).click();
+  await expect(squareCard).toHaveCount(0);
+  await expect(player.getByRole("img", { name: `Map: ${longEncounterName}` })).toBeVisible();
+  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeDelete);
+  await expect
+    .poll(() =>
+      page
+        .getByRole("textbox", { name: /^Encounter name for/ })
+        .evaluateAll((inputs) => inputs.map((input) => input.value))
+    )
+    .toEqual([longEncounterName, "tall-tower"]);
 
   await page.setViewportSize({ height: 844, width: 390 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

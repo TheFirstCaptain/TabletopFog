@@ -31,6 +31,13 @@ export function createGmApi(fetchRequest) {
         method: "PATCH"
       });
     },
+    deleteMap(campaignId, mapId) {
+      return request(`/api/campaigns/${encodeURIComponent(campaignId)}/maps/${encodeURIComponent(mapId)}`, {
+        body: JSON.stringify({ selectedMapId: null }),
+        headers: { "content-type": "application/json" },
+        method: "DELETE"
+      });
+    },
     renameMap(campaignId, mapId, name) {
       return request(`/api/campaigns/${encodeURIComponent(campaignId)}/maps/${encodeURIComponent(mapId)}`, {
         body: JSON.stringify({ name }),

@@ -71,8 +71,7 @@ socket.on("state:sync", (state) => {
   renderer.setMap(
     state.activeMap
       ? {
-          ...state.activeMap,
-          version: state.version
+          ...state.activeMap
         }
       : null
   );

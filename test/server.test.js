@@ -36,16 +36,25 @@ function getHttps(url, options = {}) {
       });
     });
 
-    request.on("error", reject);
+    request.on("error", (error) => {
+      error.message = `${options.label || options.method || "GET"} ${url}: ${error.message}`;
+      reject(error);
+    });
   });
 }
 
 function requestHttps(url, options = {}) {
   return new Promise((resolve, reject) => {
+    const headers = { ...(options.headers || {}) };
+
+    if (options.body && !Object.hasOwn(headers, "content-length")) {
+      headers["content-length"] = String(Buffer.byteLength(options.body));
+    }
+
     const request = https.request(
       url,
       {
-        headers: options.headers,
+        headers,
         method: options.method || "GET",
         rejectUnauthorized: false
       },
@@ -68,7 +77,10 @@ function requestHttps(url, options = {}) {
       }
     );
 
-    request.on("error", reject);
+    request.on("error", (error) => {
+      error.message = `${options.label || options.method || "GET"} ${url}: ${error.message}`;
+      reject(error);
+    });
 
     if (options.body) {
       request.write(options.body);
@@ -468,17 +480,60 @@ test("manages maps and broadcasts active map state", async (t) => {
       headers: playerHeaders(port)
     });
     const playerState = await active;
+    const activeDelete = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(first.json.map.id)}`,
+      {
+        headers: gmHeaders(port, { "content-type": "application/json" }),
+        method: "DELETE"
+      }
+    );
+    const playerDelete = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(second.json.map.id)}`,
+      {
+        headers: playerHeaders(port, { "content-type": "application/json" }),
+        method: "DELETE"
+      }
+    );
+    const playerAfterDelete = new Promise((resolve) => {
+      player.on("state:sync", (state) => {
+        if (state.activeMap?.id === first.json.map.id) resolve(state);
+      });
+    });
+    const deleted = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(second.json.map.id)}`,
+      {
+        headers: gmHeaders(port, { "content-type": "application/json" }),
+        method: "DELETE"
+      }
+    );
+    const firstAssetUrl = `/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(
+      first.json.map.id
+    )}/asset`;
+    const secondAssetUrl = `/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(
+      second.json.map.id
+    )}/asset`;
+    const deletedAsset = await getHttps(`${url}${secondAssetUrl}`, {
+      headers: gmHeaders(port),
+      label: "deleted asset"
+    });
+    const activePlayerAssetAfterDelete = await getHttps(`${url}/api/player/active-map/asset`, {
+      headers: playerHeaders(port),
+      label: "active player asset after delete"
+    });
+    const playerDeleteState = await playerAfterDelete;
     const clearedState = waitForNoActiveMap(player);
     const cleared = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/active-map`, {
       body: JSON.stringify({ mapId: null }),
       headers: gmHeaders(port, { "content-type": "application/json" }),
       method: "PUT"
     });
-    const gmAsset = await getHttps(`${url}${first.json.map.assetUrl}`, {
-      headers: gmHeaders(port)
+    const gmAsset = await getHttps(`${url}${firstAssetUrl}`, {
+      headers: gmHeaders(port),
+      label: "gm first asset"
     });
-    const inactivePlayerAsset = await getHttps(`${url}${second.json.map.assetUrl}`, {
-      headers: playerHeaders(port)
+    const inactivePlayerAsset = await getHttps(`${url}${secondAssetUrl}`, {
+      headers: playerHeaders(port),
+      label: "inactive player asset"
     });
     const playerClearedState = await clearedState;
     const clearedPlayerAsset = await getHttps(`${url}/api/player/active-map/asset`, {
@@ -502,10 +557,22 @@ test("manages maps and broadcasts active map state", async (t) => {
     assert.equal(missingMapId.statusCode, 400);
     assert.equal(invalidMapId.statusCode, 400);
     assert.equal(playerClear.statusCode, 403);
+    assert.equal(activeDelete.statusCode, 409);
+    assert.equal(playerDelete.statusCode, 403);
+    assert.equal(deleted.statusCode, 200);
+    assert.deepEqual(
+      deleted.json.campaign.maps.map((map) => [map.id, map.order]),
+      [[first.json.map.id, 1]]
+    );
+    assert.equal(deletedAsset.statusCode, 404);
+    assert.equal(activePlayerAssetAfterDelete.statusCode, 200);
     assert.equal(playerState.activeMap.id, first.json.map.id);
     assert.equal(playerState.activeMap.campaignId, "The Long Walk");
+    assert.equal(playerState.activeMap.version, `The Long Walk/${first.json.map.id}`);
     assert.equal(playerState.campaign, undefined);
     assert.equal(playerState.activeMap.assetUrl, "/api/player/active-map/asset");
+    assert.equal(playerDeleteState.activeMap.id, first.json.map.id);
+    assert.equal(playerDeleteState.activeMap.version, playerState.activeMap.version);
     assert.equal(gmAsset.statusCode, 200);
     assert.deepEqual(gmAsset.rawBody, PNG_BYTES);
     assert.equal(inactivePlayerAsset.statusCode, 403);

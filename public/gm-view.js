@@ -167,6 +167,20 @@ export function createGmView(document) {
 
       const controls = document.createElement("div");
       controls.className = "encounter-controls";
+      const deleteBlockedReason =
+        map.id === campaign.activeMapId ? "Shown to Players. Clear it from the Player Display before deleting." : "";
+      const deleteReasonId = `delete-reason-${map.id}`;
+      const deleteButton = createButton(document, {
+        action: "delete-map",
+        className: "secondary danger-secondary",
+        disabled: Boolean(deleteBlockedReason),
+        mapId: map.id,
+        text: "Delete..."
+      });
+      deleteButton.setAttribute("aria-label", `Delete ${map.name}`);
+      if (deleteBlockedReason) {
+        deleteButton.setAttribute("aria-describedby", deleteReasonId);
+      }
       controls.append(
         createButton(document, {
           action: "rename-map",
@@ -187,13 +201,21 @@ export function createGmView(document) {
           disabled: index === campaign.maps.length - 1,
           index,
           text: "Down"
-        })
+        }),
+        deleteButton
       );
 
       const admin = document.createElement("div");
       admin.className = "encounter-admin";
       admin.hidden = !manageMode;
       admin.append(name, controls);
+      if (deleteBlockedReason) {
+        const reason = document.createElement("p");
+        reason.className = "encounter-delete-reason";
+        reason.id = deleteReasonId;
+        reason.textContent = deleteBlockedReason;
+        admin.append(reason);
+      }
 
       item.append(openForPrep, summary, running, admin);
       elements.mapList.append(item);
@@ -207,6 +229,11 @@ export function createGmView(document) {
     },
     clearCampaignName() {
       elements.campaignName.value = "";
+    },
+    confirmDeleteEncounter(name) {
+      return document.defaultView.confirm(
+        `Delete encounter?\n\nThis permanently deletes "${name}" and its map file. This can't be undone.`
+      );
     },
     clearMapFile() {
       elements.mapFile.value = "";

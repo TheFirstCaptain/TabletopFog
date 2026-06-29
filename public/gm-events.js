@@ -64,6 +64,11 @@ export function wireGmEvents(elements, actions) {
       return;
     }
 
+    if (button.dataset.action === "delete-map") {
+      actions.deleteMap(button.dataset.mapId);
+      return;
+    }
+
     if (button.dataset.action === "rename-map") {
       const name = button.closest("article").querySelector("input").value;
       actions.renameMap(button.dataset.mapId, name);

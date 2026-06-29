@@ -137,6 +137,7 @@ Planned focused UI polish sequence before fog:
 - Complete: [F-005G](./features/F-005G.md), encounter workspace layout.
 - Complete: [F-005H](./features/F-005H.md), Manage Mode.
 - Complete: [F-005K](./features/F-005K.md), clear shown encounter.
+- Active: [F-005L](./features/F-005L.md), delete encounters.
 - Proposed: [F-005I](./features/F-005I.md), design language compliance review.
 - Proposed: [F-005J](./features/F-005J.md), final UI polish.
 - Proposed: [F-006](./features/F-006.md), manual fog of war.
@@ -152,6 +153,7 @@ Status:
 - Complete: [F-005G](./features/F-005G.md), encounter workspace layout.
 - Complete: [F-005H](./features/F-005H.md), Manage Mode.
 - Complete: [F-005K](./features/F-005K.md), clear shown encounter.
+- Active: [F-005L](./features/F-005L.md), delete encounters.
 - Proposed: [F-005I](./features/F-005I.md), design language compliance review.
 - Proposed: [F-005J](./features/F-005J.md), final UI polish.
 
@@ -163,6 +165,8 @@ Acceptance criteria:
 - Clicking or opening an encounter does not automatically change the Player Display.
 - Showing an encounter to players is an explicit `Show to Players` action.
 - Clearing the shown encounter is an explicit `Shown to Players` action.
+- Deleting an encounter is a confirmed Manage Mode action and is blocked for
+  encounters shown to players.
 - The GM may prep one encounter while a different encounter remains shown to players.
 - The Player Display changes only when the GM explicitly shows or clears an encounter.
 - The current shown-to-players encounter is visually distinguished from the selected/editing encounter.

@@ -514,6 +514,22 @@ h4 {
   padding: 0.45rem 0.65rem;
 }
 
+.danger-secondary {
+  border-color: #8d3d2d;
+  color: #8d3d2d;
+}
+
+.danger-secondary:not(:disabled):hover {
+  background: rgb(141 61 45 / 10%);
+}
+
+.encounter-delete-reason {
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.25;
+  margin: 0;
+}
+
 .status-pill {
   display: inline-flex;
   min-height: 1.75rem;

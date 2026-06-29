@@ -77,6 +77,24 @@ export function createGmController({ api, socket, state, view }) {
     }
   }
 
+  async function deleteMap(mapId) {
+    const campaign = state.getCurrentCampaign();
+    const map = campaign?.maps.find((candidate) => candidate.id === mapId);
+
+    if (!campaign || !map || !view.confirmDeleteEncounter(map.name)) {
+      return;
+    }
+
+    try {
+      const payload = await api.deleteMap(campaign.id, mapId);
+      state.setCurrentCampaign(payload.campaign);
+      await loadCampaigns();
+      renderCurrentCampaign();
+    } catch (error) {
+      view.setCampaignMessage(error.message);
+    }
+  }
+
   async function moveMap(fromIndex, toIndex) {
     try {
       const payload = await api.reorderMaps(
@@ -138,6 +156,7 @@ export function createGmController({ api, socket, state, view }) {
       backToLibrary,
       backToEncounters,
       createCampaign,
+      deleteMap,
       moveMap,
       openCampaign,
       renameMap,
