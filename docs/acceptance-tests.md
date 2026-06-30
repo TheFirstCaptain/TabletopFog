@@ -549,8 +549,8 @@ Prerequisites:
 Steps:
 
 1. Open the campaign from the Campaign Library.
-2. Confirm Add Encounter uses the existing map upload path but appears as a
-   restrained secondary affordance inside the encounter gallery.
+2. Confirm Add Encounter uses the existing map upload path and appears as a
+   compact control in the upper-right of the encounter gallery header.
 3. Add or inspect several encounters with varied thumbnail aspect ratios.
 4. Confirm thumbnails are visually prominent and remain inside their cards.
 5. Confirm long encounter names wrap inside cards without horizontal overflow.
@@ -558,9 +558,9 @@ Steps:
    and that the `Shown to Players` clear action reads as an enabled control
    rather than a passive badge.
 7. Confirm `Show to Players` remains available in Normal Mode.
-8. Enter `Manage Encounters`.
-9. Confirm Add Encounter, Rename, Up, Down, and Delete controls remain
-   available there but do not visually dominate browsing.
+8. Confirm there is no `Manage Encounters` or `Done Managing` mode switch.
+9. Confirm Add Encounter, Rename, Up, Down, and Delete controls are directly
+   available on the Campaign page but do not visually dominate browsing.
 10. Confirm Delete is disabled with a visible reason for encounters that are
    `Shown to Players`.
 11. Confirm Delete remains available for encounters that are only
@@ -570,14 +570,13 @@ Steps:
 14. Confirm deletion of an encounter that is not shown to players.
 15. Confirm the encounter is permanently removed, remaining order is repaired,
    and the Player Display remains unchanged.
-16. Return to Normal Mode.
-17. Open an encounter that is not shown to players.
-18. Confirm the Player Display does not change.
-19. Use `Show to Players` and confirm the Player Display changes only then.
-20. Click that encounter's `Shown to Players` action and confirm the Player
+16. Open an encounter that is not shown to players.
+17. Confirm the Player Display does not change.
+18. Use `Show to Players` and confirm the Player Display changes only then.
+19. Click that encounter's `Shown to Players` action and confirm the Player
     Display returns to waiting state.
-21. Confirm the encounter action changes back to `Show to Players`.
-22. Repeat at Chromebook-sized and narrow widths.
+20. Confirm the encounter action changes back to `Show to Players`.
+21. Repeat at Chromebook-sized and narrow widths.
 
 Expected result:
 
@@ -585,8 +584,8 @@ Expected result:
   files.
 - The map thumbnail, encounter name, and shown/editing status carry the card
   hierarchy.
-- Add Encounter, rename, reorder, and confirmed delete remain available through
-  Manage Mode while Normal Mode stays uncluttered.
+- Add Encounter, rename, reorder, and confirmed delete remain directly
+  available from the Campaign page while staying visually quiet.
 - Permanent delete requires confirmation and is blocked only for encounters
   shown to players.
 - Explicit show behavior remains available in Normal Mode.
@@ -595,7 +594,7 @@ Expected result:
 - The gallery remains responsive and touch-friendly without horizontal
   overflow.
 
-### Test: Encounter Gallery Separates Browsing From Managing
+### Test: Encounter Gallery Keeps Management Direct But Quiet
 
 Prerequisites:
 
@@ -606,17 +605,18 @@ Prerequisites:
 
 Steps:
 
-1. Open a campaign in Normal Mode.
-2. Confirm `Manage Encounters` is visible.
-3. Confirm Normal Mode shows encounter thumbnails, names, status badges,
-   open-for-prep actions, and explicit `Show to Players` actions.
-4. Confirm Normal Mode does not show Add Encounter upload, Rename, Up, Down, or
-   Delete controls.
+1. Open a campaign.
+2. Confirm `Manage Encounters` and `Done Managing` are not visible.
+3. Confirm Add Encounter is a compact upper-right header control, not an
+   encounter-grid card.
+4. Confirm encounter cards show thumbnails, names, status badges,
+   open-for-prep actions, explicit `Show to Players` actions, and quiet
+   rename, reorder, and delete controls.
 5. Open an encounter for prep and confirm the Player Display remains on the
    previously shown encounter.
-6. Return to the campaign and choose `Manage Encounters`.
-7. Confirm `Done Managing`, Add Encounter upload, Rename, Up, Down, and Delete
-   controls are visible.
+6. Return to the campaign.
+7. Confirm Add Encounter upload, Rename, Up, Down, and Delete controls remain
+   available without a mode switch.
 8. Confirm Delete is blocked with visible reason text for the encounter
    currently shown to players.
 9. Confirm Delete remains available for the encounter selected for prep when it
@@ -630,21 +630,21 @@ Steps:
 14. Rename and reorder encounters.
 15. Upload a valid encounter and confirm it appears.
 16. Attempt an invalid upload.
-17. Choose `Done Managing`.
 
 Expected result:
 
-- Normal Mode remains focused on browsing, opening, and explicitly showing
-  encounters to players.
-- Manage Mode exposes upload, rename, reorder, and confirmed permanent delete
-  administration controls.
+- The Campaign page remains focused on browsing, opening, and explicitly
+  showing encounters to players.
+- Upload, rename, reorder, and confirmed permanent delete administration
+  controls remain directly available without a separate management mode.
 - Delete is blocked for shown-to-players encounters and remains available for
   selected-for-prep encounters that are not shown.
 - Rename, reorder, valid upload, invalid upload, canceled delete, rejected
   delete, and confirmed unshown/unselected delete do not change the Player
   Display or the shown-to-players encounter.
 - Invalid upload preserves encounter names, order, and shown state.
-- Returning to Normal Mode hides administration controls again.
+- Administration controls remain secondary to the thumbnail, encounter name,
+  selected/shown status, and running action.
 
 ## Milestone 3 Follow-Up: Encounter Workspace
 

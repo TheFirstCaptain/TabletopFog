@@ -50,17 +50,13 @@
                 <h3>Encounters</h3>
                 <p class="muted">Browse prepared encounters and open one to prep it.</p>
               </div>
-              <button id="manage-encounters" class="secondary" type="button">Manage Encounters</button>
+              <form id="map-form" class="add-encounter-form" aria-label="Add Encounter">
+                <label for="map-file" class="visually-hidden">Add map</label>
+                <input id="map-file" name="map-file" type="file" accept="image/*" required />
+                <button type="submit">Add</button>
+              </form>
             </div>
-            <form id="map-form" class="add-encounter-form" aria-label="Add Encounter">
-              <div>
-                <p class="eyebrow">Add Encounter</p>
-                <label for="map-file">Add map</label>
-              </div>
-              <input id="map-file" name="map-file" type="file" accept="image/*" required />
-              <button type="submit">Add</button>
-            </form>
-            <div id="map-list" class="map-list" aria-live="polite"></div>
+            <div id="map-list" class="map-list"></div>
           </div>
 
           <section
@@ -100,12 +96,6 @@
               </aside>
             </div>
           </section>
-
-          <div id="workspace-empty" class="active-map-panel">
-            <p class="eyebrow">Encounter Workspace</p>
-            <h3>Open an encounter</h3>
-            <p class="muted">Choose an encounter card to prep it here.</p>
-          </div>
         </div>
       </section>
     </main>

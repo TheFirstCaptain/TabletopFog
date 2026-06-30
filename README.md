@@ -33,17 +33,17 @@ icons, editable names and two-line descriptions, quiet map and
 invalid-campaign diagnostics. Search/filtering and uploaded campaign images
 remain deferred.
 
-Opening a campaign now shows browse-first encounter cards with larger map
-thumbnails, quiet management controls, `Selected for Prep` and
-`Shown to Players` status badges, and explicit card-level `Show to Players`
-actions. Clicking a currently shown encounter's `Shown to Players` action clears
-the Player Display back to its waiting state and returns the action to
-`Show to Players`. Normal browsing keeps upload, rename, reorder, and confirmed
-permanent delete administration behind `Manage Encounters`; delete is blocked
-only for encounters currently `Shown to Players`, with `Done Managing`
-returning to the calm browse-first gallery. Campaign Library cards also support
-confirmed permanent deletion for campaigns with no encounters; campaigns that
-still contain encounters show a disabled delete action with guidance to remove
+Opening a campaign now shows a full encounter gallery with a compact
+upper-right Add Encounter control, larger map thumbnails, quiet always-available
+management controls, `Selected for Prep` and `Shown to Players` status badges,
+and explicit card-level `Show to Players` actions. Clicking a currently shown
+encounter's `Shown to Players` action clears the Player Display back to its
+waiting state and returns the action to `Show to Players`. Rename, reorder,
+upload, and confirmed permanent delete stay directly available on the Campaign
+page without a separate Manage Mode; delete is blocked only for encounters
+currently `Shown to Players`. Campaign Library cards also support confirmed
+permanent deletion for campaigns with no encounters; campaigns that still
+contain encounters show a disabled delete action with guidance to remove
 encounters first. The GM app header now keeps `TABLETOPFOG`, breadcrumb context,
 and connection state in one compact row. Opening an encounter for prep enters a
 focused GM workspace shell with a compact label/status/action strip, the

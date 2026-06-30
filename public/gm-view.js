@@ -29,6 +29,7 @@ export function createGmView(document) {
     campaignMessage: document.querySelector("#campaign-message"),
     campaignName: document.querySelector("#campaign-name"),
     campaignPanel: document.querySelector("#campaign-panel"),
+    campaignSectionHeading: document.querySelector("#campaign-panel > .section-heading"),
     breadcrumb: document.querySelector("#breadcrumb"),
     encounterGallery: document.querySelector("#encounter-gallery"),
     encounterWorkspace: document.querySelector("#encounter-workspace"),
@@ -38,11 +39,9 @@ export function createGmView(document) {
     mapFile: document.querySelector("#map-file"),
     mapForm: document.querySelector("#map-form"),
     mapList: document.querySelector("#map-list"),
-    manageEncounters: document.querySelector("#manage-encounters"),
     selectedEncounterHeading: document.querySelector("#selected-encounter-heading"),
     selectedEncounterStatus: document.querySelector("#selected-encounter-status"),
     status: document.querySelector("#connection-status"),
-    workspaceEmpty: document.querySelector("#workspace-empty"),
     workspaceGrid: document.querySelector(".workspace-grid"),
     workspaceShowToPlayers: document.querySelector("#workspace-show-to-players")
   };
@@ -60,9 +59,9 @@ export function createGmView(document) {
     }
   });
 
-  function renderSelectedEncounter(campaign, selectedEncounterId, workspaceOpen) {
+  function renderSelectedEncounter(campaign, selectedEncounterId, screen) {
     const selectedEncounter = campaign.maps.find((map) => map.id === selectedEncounterId);
-    if (!workspaceOpen || !selectedEncounter) {
+    if (screen !== "workspace" || !selectedEncounter) {
       elements.selectedEncounterHeading.textContent = "Open an encounter";
       elements.selectedEncounterStatus.textContent = "Choose an encounter card to prep it here.";
       elements.workspaceShowToPlayers.disabled = true;
@@ -71,7 +70,6 @@ export function createGmView(document) {
     }
     const shownToPlayers = selectedEncounter.id === campaign.activeMapId;
     const shownEncounter = campaign.maps.find((map) => map.id === campaign.activeMapId);
-    navigation.showWorkspace(campaign, selectedEncounter);
     elements.selectedEncounterHeading.textContent = selectedEncounter.name;
     elements.selectedEncounterStatus.textContent = shownToPlayers
       ? `Selected for Prep: ${selectedEncounter.name}. Shown to Players.`
@@ -87,17 +85,14 @@ export function createGmView(document) {
     activeMapRenderer.setMap({ ...selectedEncounter, campaignId: campaign.id });
   }
 
-  function renderMaps(campaign, selectedEncounterId, manageMode) {
+  function renderMaps(campaign, selectedEncounterId) {
     elements.mapList.replaceChildren();
-    elements.encounterGallery.dataset.manageMode = String(manageMode);
-    elements.manageEncounters.textContent = manageMode ? "Done Managing" : "Manage Encounters";
+    elements.mapForm.hidden = false;
 
     if (campaign.maps.length === 0) {
       const empty = document.createElement("p");
       empty.className = "muted encounter-empty";
-      empty.textContent = manageMode
-        ? "Add an encounter map to start this campaign."
-        : "No encounters yet. Use Manage Encounters to add one.";
+      empty.textContent = "No encounters yet. Add an encounter map to start this campaign.";
       elements.mapList.append(empty);
     }
 
@@ -180,33 +175,35 @@ export function createGmView(document) {
       if (deleteBlockedReason) {
         deleteButton.setAttribute("aria-describedby", deleteReasonId);
       }
-      controls.append(
-        createButton(document, {
-          action: "rename-map",
-          className: "secondary",
-          mapId: map.id,
-          text: "Rename"
-        }),
-        createButton(document, {
-          action: "move-map-up",
-          className: "secondary icon-button",
-          disabled: index === 0,
-          index,
-          text: "Up"
-        }),
-        createButton(document, {
-          action: "move-map-down",
-          className: "secondary icon-button",
-          disabled: index === campaign.maps.length - 1,
-          index,
-          text: "Down"
-        }),
-        deleteButton
-      );
+      const renameButton = createButton(document, {
+        action: "rename-map",
+        className: "secondary",
+        mapId: map.id,
+        text: "Rename"
+      });
+      renameButton.setAttribute("aria-label", `Rename ${map.name}`);
 
+      const moveUpButton = createButton(document, {
+        action: "move-map-up",
+        className: "secondary icon-button",
+        disabled: index === 0,
+        index,
+        text: "Up"
+      });
+      moveUpButton.setAttribute("aria-label", `Move ${map.name} up`);
+
+      const moveDownButton = createButton(document, {
+        action: "move-map-down",
+        className: "secondary icon-button",
+        disabled: index === campaign.maps.length - 1,
+        index,
+        text: "Down"
+      });
+      moveDownButton.setAttribute("aria-label", `Move ${map.name} down`);
+
+      controls.append(renameButton, moveUpButton, moveDownButton, deleteButton);
       const admin = document.createElement("div");
       admin.className = "encounter-admin";
-      admin.hidden = !manageMode;
       admin.append(name, controls);
       if (deleteBlockedReason) {
         const reason = document.createElement("p");
@@ -245,18 +242,22 @@ export function createGmView(document) {
     hideCampaign() {
       navigation.showLibrary();
     },
-    renderCampaign(campaign, selectedEncounterId = null, workspaceOpen = false, manageMode = false) {
+    renderCampaign(campaign, selectedEncounterId = null, screen = "campaign") {
       if (!campaign) {
         navigation.showLibrary();
         return;
       }
 
-      navigation.showCampaign(campaign);
+      const selectedEncounter = campaign.maps.find((map) => map.id === selectedEncounterId);
+      if (screen === "workspace" && selectedEncounter) {
+        navigation.showWorkspace(campaign, selectedEncounter);
+      } else {
+        navigation.showCampaign(campaign);
+      }
       elements.campaignHeading.textContent = campaign.name;
-      elements.campaignMessage.textContent = campaign.maps.length === 0 ? "Add a map to begin." : "";
-      elements.mapForm.hidden = workspaceOpen || !manageMode;
-      renderMaps(campaign, selectedEncounterId, manageMode);
-      renderSelectedEncounter(campaign, selectedEncounterId, workspaceOpen);
+      elements.campaignMessage.textContent = campaign.maps.length === 0 ? "Add an encounter map to begin." : "";
+      renderMaps(campaign, selectedEncounterId);
+      renderSelectedEncounter(campaign, selectedEncounterId, screen);
     },
     renderLibrary({ campaigns, diagnostics }) {
       elements.campaignList.replaceChildren();

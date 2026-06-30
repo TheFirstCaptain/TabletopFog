@@ -143,7 +143,7 @@ Planned focused UI polish sequence before fog:
 - Complete: [F-005J](./features/F-005J.md), final UI polish.
 - Complete: [F-005N](./features/F-005N.md), encounter workspace map density.
 - Complete: [F-005O](./features/F-005O.md), one-line GM app header.
-- Proposed: [F-005P](./features/F-005P.md), campaign encounter gallery simplification.
+- Complete: [F-005P](./features/F-005P.md), campaign encounter gallery simplification.
 - Proposed: [F-006](./features/F-006.md), manual fog of war.
 
 Status:
@@ -163,7 +163,7 @@ Status:
 - Complete: [F-005J](./features/F-005J.md), final UI polish.
 - Complete: [F-005N](./features/F-005N.md), encounter workspace map density.
 - Complete: [F-005O](./features/F-005O.md), one-line GM app header.
-- Proposed: [F-005P](./features/F-005P.md), campaign encounter gallery simplification.
+- Complete: [F-005P](./features/F-005P.md), campaign encounter gallery simplification.
 
 Acceptance criteria:
 

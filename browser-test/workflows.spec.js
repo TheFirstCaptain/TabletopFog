@@ -80,16 +80,8 @@ async function expectGmHeader(page, breadcrumbText, statusText = "Live") {
   });
 }
 
-async function enterManageEncounters(page) {
-  const manage = page.getByRole("button", { name: "Manage Encounters" });
-  if ((await manage.count()) > 0) {
-    await manage.click();
-  }
-  await expect(page.getByRole("button", { name: "Done Managing" })).toBeVisible();
-}
-
 async function uploadMapFile(page, file, expectedName = file.name.replace(/\.png$/, "")) {
-  await enterManageEncounters(page);
+  await expect(page.locator("#map-form")).toBeVisible();
   await page.getByLabel("Add map").setInputFiles(file);
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByRole("textbox", { name: `Encounter name for ${expectedName}` })).toBeVisible();
@@ -115,7 +107,9 @@ test("GM creates, reopens, uploads, renames, and reorders campaign maps", async 
   await openGm(page, app.baseURL);
   await expect(page.getByText(app.dataRoot, { exact: true })).toHaveCount(0);
   await createCampaign(page);
-  await expect(page.getByText("Add a map to begin.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Add an encounter map to begin.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Manage Encounters" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Done Managing" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Back to Campaign Library" }).click();
   await expect(page.getByRole("heading", { level: 3, name: "The Long Walk" })).toBeVisible();
@@ -123,7 +117,6 @@ test("GM creates, reopens, uploads, renames, and reorders campaign maps", async 
   await expect(page.getByLabel("Breadcrumb")).toHaveText("Campaign Library / The Long Walk");
   await expect(page.getByRole("heading", { level: 2, name: "The Long Walk" })).toBeVisible();
 
-  await enterManageEncounters(page);
   await page.getByLabel("Add map").setInputFiles({
     buffer: Buffer.from("not-an-image"),
     mimeType: "image/png",
@@ -138,10 +131,10 @@ test("GM creates, reopens, uploads, renames, and reorders campaign maps", async 
 
   const forestName = page.getByRole("textbox", { name: "Encounter name for forest" });
   await forestName.fill("Forest Ambush");
-  await page.getByRole("button", { name: "Rename" }).first().click();
+  await page.getByRole("button", { name: "Rename forest" }).click();
   await expect(page.getByRole("textbox", { name: "Encounter name for Forest Ambush" })).toHaveValue("Forest Ambush");
 
-  await page.getByRole("button", { name: "Up" }).nth(1).click();
+  await page.getByRole("button", { name: "Move cave up" }).click();
   await expect
     .poll(() =>
       page
@@ -149,8 +142,8 @@ test("GM creates, reopens, uploads, renames, and reorders campaign maps", async 
         .evaluateAll((inputs) => inputs.map((input) => input.value))
     )
     .toEqual(["cave", "Forest Ambush"]);
-  await expect(page.getByRole("button", { name: "Up" }).first()).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Down" }).nth(1)).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Move cave up" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Move Forest Ambush down" })).toBeDisabled();
 });
 
 test("GM edits campaign card details without changing player display", async ({ app, page, context }) => {
@@ -560,7 +553,6 @@ test("encounter cards open a workspace without changing the player display", asy
   await createCampaign(page);
   await uploadMapFile(page, await sizedPngFile(page, "forest.png", 120, 80, "#254117", "#6b8e23"));
   await uploadMapFile(page, await sizedPngFile(page, "cave.png", 120, 80, "#2c2430", "#b08968"));
-  await page.getByRole("button", { name: "Done Managing" }).click();
 
   const forestCard = page.locator(".encounter-card").filter({ hasText: "forest" });
   const caveCard = page.locator(".encounter-card").filter({ hasText: "cave" });
@@ -594,7 +586,6 @@ test("selected prep encounter can be deleted when it is not shown to players", a
   await openGm(page, app.baseURL);
   await createCampaign(page, "Single Delete Campaign");
   await uploadMapFile(page, await sizedPngFile(page, "solo.png", 120, 80, "#254117", "#6b8e23"));
-  await page.getByRole("button", { name: "Done Managing" }).click();
 
   const soloCard = page.locator(".encounter-card").filter({ hasText: "solo" });
   await soloCard.getByRole("button", { name: "Open solo for prep" }).click();
@@ -602,7 +593,6 @@ test("selected prep encounter can be deleted when it is not shown to players", a
   await page.getByRole("button", { name: "Back to Campaign" }).click();
   await expect(soloCard.getByText("Selected for Prep", { exact: true })).toBeVisible();
 
-  await enterManageEncounters(page);
   await expect(soloCard.getByRole("button", { name: "Delete solo" })).toBeEnabled();
   page.once("dialog", async (dialog) => {
     expect(dialog.message()).toContain('This permanently deletes the "solo" encounter.');
@@ -612,7 +602,7 @@ test("selected prep encounter can be deleted when it is not shown to players", a
   await soloCard.getByRole("button", { name: "Delete solo" }).click();
 
   await expect(page.locator(".encounter-card")).toHaveCount(0);
-  await expect(page.getByText("Add a map to begin.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Add an encounter map to begin.", { exact: true })).toBeVisible();
   await page.reload();
   await expect(page.locator(".encounter-card")).toHaveCount(0);
 });
@@ -629,11 +619,13 @@ test("encounter gallery presentation remains browsable and responsive", async ({
   await openGm(page, app.baseURL);
   await createCampaign(page, "Gallery Campaign");
   await expect(page.locator(".encounter-card")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Manage Encounters" })).toBeVisible();
-  await expect(page.getByText("No encounters yet. Use Manage Encounters to add one.", { exact: true })).toBeVisible();
-  await expect(page.locator("#map-form")).toBeHidden();
-  await enterManageEncounters(page);
-  await expect(page.locator("#map-form")).toContainText("Add Encounter");
+  await expect(page.getByRole("button", { name: "Manage Encounters" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Done Managing" })).toHaveCount(0);
+  await expect(
+    page.getByText("No encounters yet. Add an encounter map to start this campaign.", { exact: true })
+  ).toBeVisible();
+  await expect(page.locator("#map-form")).toBeVisible();
+  await expect(page.locator("#map-list > #map-form")).toHaveCount(0);
 
   await uploadMapFile(page, await sizedPngFile(page, "wide-crossing.png", 240, 100, "#284b63", "#d9b978"));
   await uploadMapFile(page, await sizedPngFile(page, "tall-tower.png", 90, 180, "#2c2430", "#b08968"));
@@ -642,7 +634,7 @@ test("encounter gallery presentation remains browsable and responsive", async ({
   const longEncounterName = "Moonlit Causeway Beneath The Old Watchtower And Broken Gate";
   const longNameInput = page.getByRole("textbox", { name: "Encounter name for wide-crossing" });
   await longNameInput.fill(longEncounterName);
-  await page.getByRole("button", { name: "Rename" }).first().click();
+  await page.getByRole("button", { name: "Rename wide-crossing" }).click();
   await expect(page.getByRole("textbox", { name: `Encounter name for ${longEncounterName}` })).toHaveValue(
     longEncounterName
   );
@@ -659,7 +651,7 @@ test("encounter gallery presentation remains browsable and responsive", async ({
   const squareCard = page.locator(".encounter-card").filter({ hasText: "square-keep" });
   await expect(page.locator(".encounter-card")).toHaveCount(3);
   await squareCard.locator(".encounter-admin").click({ position: { x: 8, y: 8 } });
-  await expect(page.getByRole("button", { name: "Done Managing" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Done Managing" })).toHaveCount(0);
   await expectGmHeader(page, "Campaign Library / Gallery Campaign");
 
   await longCard.getByRole("button", { name: "Show to Players", exact: true }).click();
@@ -682,8 +674,16 @@ test("encounter gallery presentation remains browsable and responsive", async ({
 
   const galleryLayout = await page.evaluate(() => {
     const cards = [...document.querySelectorAll(".encounter-card")];
+    const addEncounter = document.querySelector("#map-form");
+    const heading = document.querySelector(".encounter-gallery-heading").getBoundingClientRect();
+    const firstCard = cards[0].getBoundingClientRect();
+    const addBox = addEncounter.getBoundingClientRect();
     return {
-      addEncounterArea: document.querySelector("#map-form").getBoundingClientRect().height,
+      addEncounterArea: addEncounter.getBoundingClientRect().height,
+      addEncounterCompact: addBox.height < 80,
+      addEncounterInHeading: addBox.top >= heading.top && addBox.bottom <= heading.bottom + 1,
+      addEncounterRightAligned: addBox.right > firstCard.right - 8,
+      addEncounterAboveCards: addBox.bottom < firstCard.top,
       cards: cards.map((card) => {
         const cardBox = card.getBoundingClientRect();
         const thumbnailBox = card.querySelector(".encounter-thumbnail").getBoundingClientRect();
@@ -703,6 +703,10 @@ test("encounter gallery presentation remains browsable and responsive", async ({
     };
   });
   expect(galleryLayout.addEncounterArea).toBeLessThan(galleryLayout.firstCardArea);
+  expect(galleryLayout.addEncounterCompact).toBe(true);
+  expect(galleryLayout.addEncounterInHeading).toBe(true);
+  expect(galleryLayout.addEncounterRightAligned).toBe(true);
+  expect(galleryLayout.addEncounterAboveCards).toBe(true);
   expect(galleryLayout.cards).toEqual([
     {
       adminBelowTitle: true,
@@ -731,14 +735,13 @@ test("encounter gallery presentation remains browsable and responsive", async ({
   ]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
-  await page.getByRole("button", { name: "Done Managing" }).click();
-  await expect(page.getByRole("button", { name: "Manage Encounters" })).toBeVisible();
-  await expect(page.locator("#map-form")).toBeHidden();
-  await expect(page.getByRole("textbox", { name: /^Encounter name for/ })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Rename" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Up" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Down" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /delete/i })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Manage Encounters" })).toHaveCount(0);
+  await expect(page.locator("#map-form")).toBeVisible();
+  await expect(page.getByRole("textbox", { name: /^Encounter name for/ })).toHaveCount(3);
+  await expect(page.getByRole("button", { name: /^Rename / })).toHaveCount(3);
+  await expect(page.getByRole("button", { name: /^Move .* up$/ })).toHaveCount(3);
+  await expect(page.getByRole("button", { name: /^Move .* down$/ })).toHaveCount(3);
+  await expect(page.getByRole("button", { name: /^Delete/ })).toHaveCount(3);
   await expect(
     longCard.locator(".encounter-running").getByRole("button", { name: /Shown to Players - clear/ })
   ).toBeEnabled();
@@ -751,10 +754,9 @@ test("encounter gallery presentation remains browsable and responsive", async ({
 
   await page.getByRole("button", { name: "Back to Campaign" }).click();
   await expect(tallCard.getByText("Selected for Prep", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Manage Encounters" })).toBeVisible();
-  await enterManageEncounters(page);
+  await expect(page.getByRole("button", { name: "Manage Encounters" })).toHaveCount(0);
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeManageActions);
-  await squareCard.getByRole("button", { name: "Up" }).click();
+  await squareCard.getByRole("button", { name: "Move square-keep up" }).click();
   await expect
     .poll(() =>
       page
@@ -816,7 +818,7 @@ test("encounter gallery presentation remains browsable and responsive", async ({
 
   await page.setViewportSize({ height: 844, width: 390 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await expect(longCard.getByRole("button", { name: "Rename" })).toBeVisible();
+  await expect(longCard.getByRole("button", { name: `Rename ${longEncounterName}` })).toBeVisible();
   await expect(
     longCard.locator(".encounter-running").getByRole("button", { name: /Shown to Players - clear/ })
   ).toBeEnabled();
@@ -841,11 +843,10 @@ test("GM workspace shell previews selected encounter without changing the player
   await uploadMapFile(page, await sizedPngFile(page, "cave.png", 160, 100, "#2c2430", "#b08968"));
   const longWorkspaceEncounterName = "CaveOfTheVeryLongUnbrokenEncounterNameAcrossTheWesternBorderlandsAndUnderways";
   await page.getByRole("textbox", { name: "Encounter name for cave" }).fill(longWorkspaceEncounterName);
-  await page.getByRole("button", { name: "Rename" }).nth(1).click();
+  await page.getByRole("button", { name: "Rename cave" }).click();
   await expect(page.getByRole("textbox", { name: `Encounter name for ${longWorkspaceEncounterName}` })).toHaveValue(
     longWorkspaceEncounterName
   );
-  await page.getByRole("button", { name: "Done Managing" }).click();
 
   const forestCard = page.locator(".encounter-card").filter({ hasText: "forest" });
   const caveCard = page.locator(".encounter-card").filter({ hasText: longWorkspaceEncounterName });

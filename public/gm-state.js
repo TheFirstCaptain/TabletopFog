@@ -5,26 +5,24 @@ export function createGmState() {
     diagnostics: []
   };
   let currentCampaign = null;
-  let manageMode = false;
   let selectedEncounterId = null;
-  let workspaceOpen = false;
+  let screen = "library";
 
   function ensureSelectedEncounterExists() {
     if (!currentCampaign || !currentCampaign.maps.some((map) => map.id === selectedEncounterId)) {
       selectedEncounterId = null;
-      workspaceOpen = false;
+      if (screen === "workspace") screen = "campaign";
     }
   }
 
   return {
     closeCampaign() {
       currentCampaign = null;
-      manageMode = false;
       selectedEncounterId = null;
-      workspaceOpen = false;
+      screen = "library";
     },
     closeWorkspace() {
-      workspaceOpen = false;
+      screen = "campaign";
     },
     getCurrentCampaign() {
       return currentCampaign;
@@ -41,22 +39,19 @@ export function createGmState() {
     getSelectedEncounterId() {
       return selectedEncounterId;
     },
-    isManageMode() {
-      return manageMode;
-    },
-    isWorkspaceOpen() {
-      return workspaceOpen;
+    getScreen() {
+      return screen;
     },
     openEncounter(mapId) {
-      manageMode = false;
       selectedEncounterId = mapId;
-      workspaceOpen = true;
+      screen = "workspace";
     },
     selectEncounter(mapId) {
       selectedEncounterId = mapId;
     },
     setCurrentCampaign(campaign) {
       currentCampaign = campaign;
+      if (screen === "library") screen = "campaign";
       ensureSelectedEncounterExists();
     },
     setLibrary(payload) {
@@ -65,10 +60,6 @@ export function createGmState() {
         dataRoot: payload.dataRoot,
         diagnostics: payload.diagnostics || []
       };
-    },
-    toggleManageMode() {
-      manageMode = !manageMode;
-      return manageMode;
     },
     synchronize(serverState) {
       if (currentCampaign && serverState.campaign && serverState.campaign.id === currentCampaign.id) {

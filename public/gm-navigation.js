@@ -1,11 +1,18 @@
 export function createGmNavigation(elements) {
-  function setWorkspaceOpen(open) {
-    elements.workspaceGrid.dataset.workspaceOpen = String(open);
-    elements.encounterWorkspace.hidden = !open;
-    elements.encounterGallery.hidden = open;
-    elements.workspaceEmpty.hidden = open;
-    elements.mapForm.hidden = open;
-    elements.campaignMessage.hidden = open;
+  function showCampaignScreen() {
+    elements.workspaceGrid.dataset.screen = "campaign";
+    elements.campaignSectionHeading.hidden = false;
+    elements.encounterWorkspace.hidden = true;
+    elements.encounterGallery.hidden = false;
+    elements.campaignMessage.hidden = false;
+  }
+
+  function showWorkspaceScreen() {
+    elements.workspaceGrid.dataset.screen = "workspace";
+    elements.campaignSectionHeading.hidden = true;
+    elements.encounterWorkspace.hidden = false;
+    elements.encounterGallery.hidden = true;
+    elements.campaignMessage.hidden = true;
   }
 
   return {
@@ -14,19 +21,19 @@ export function createGmNavigation(elements) {
       elements.libraryPanel.hidden = true;
       elements.campaignPanel.hidden = false;
       elements.backToLibrary.hidden = false;
-      setWorkspaceOpen(false);
+      showCampaignScreen();
     },
     showLibrary() {
       elements.breadcrumb.textContent = "Campaign Library";
       elements.libraryPanel.hidden = false;
       elements.campaignPanel.hidden = true;
       elements.backToLibrary.hidden = false;
-      setWorkspaceOpen(false);
+      showCampaignScreen();
     },
     showWorkspace(campaign, encounter) {
       elements.breadcrumb.textContent = `Campaign Library / ${campaign.name} / ${encounter.name}`;
       elements.backToLibrary.hidden = true;
-      setWorkspaceOpen(true);
+      showWorkspaceScreen();
     }
   };
 }
