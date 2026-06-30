@@ -203,6 +203,11 @@ Implementation notes:
 
 Goal: Add manual hide/reveal fog controls in the GM encounter workspace.
 
+Planned focused sequence:
+
+- Proposed: [F-006A](./features/F-006A.md), GM map zoom and grid calibration.
+- Proposed: [F-006](./features/F-006.md), manual fog of war.
+
 Acceptance criteria:
 
 - Maps start visible.

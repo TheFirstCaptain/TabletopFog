@@ -735,6 +735,46 @@ Expected result:
 
 ## Milestone 4: Manual Fog of War
 
+### Test: GM Calibrates Map Zoom and Grid
+
+Prerequisites:
+
+- A campaign exists with at least one encounter/map.
+- The Encounter Workspace feature is implemented.
+- GM map zoom and grid calibration are implemented.
+
+Steps:
+
+1. Open an Encounter Workspace.
+2. Confirm the selected encounter map remains the dominant workspace element.
+3. Use Zoom in and Zoom out in the GM workspace.
+4. Confirm the GM workspace map zoom changes.
+5. Confirm the Player Display does not change.
+6. Show the 5 ft grid overlay.
+7. Adjust the grid placement until it lines up with the map.
+8. Zoom the map again.
+9. Confirm the grid stays fixed in workspace space while the map zooms beneath
+   it.
+10. Lock the grid.
+11. Attempt to move the grid accidentally.
+12. Confirm the locked grid does not move.
+13. Unlock the grid.
+14. Adjust the grid again.
+15. Repeat at desktop, Chromebook-sized, and narrow viewport widths.
+
+Expected result:
+
+- GM map zoom is local to the GM workspace and does not mutate campaign state or
+  Player Display viewport state.
+- The grid represents 5 ft squares and can be aligned to the battlemap.
+- The grid remains fixed while the map zoom changes.
+- Lock prevents accidental grid movement; unlock allows adjustment again.
+- Opening, zooming, aligning, locking, or unlocking the grid does not change the
+  Player Display.
+- `Show to Players` remains the only action that changes what players see.
+- No fog drawing, tokens, snapping, measuring, initiative, dynamic lighting, or
+  VTT-style automation is introduced.
+
 ### Test: Player Sees Hidden Areas Obscured
 
 Prerequisites:
