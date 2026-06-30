@@ -142,7 +142,8 @@ Planned focused UI polish sequence before fog:
 - Complete: [F-005I](./features/F-005I.md), design language compliance review.
 - Complete: [F-005J](./features/F-005J.md), final UI polish.
 - Complete: [F-005N](./features/F-005N.md), encounter workspace map density.
-- Active: [F-005O](./features/F-005O.md), one-line GM app header.
+- Complete: [F-005O](./features/F-005O.md), one-line GM app header.
+- Proposed: [F-005P](./features/F-005P.md), campaign encounter gallery simplification.
 - Proposed: [F-006](./features/F-006.md), manual fog of war.
 
 Status:
@@ -161,19 +162,21 @@ Status:
 - Complete: [F-005I](./features/F-005I.md), design language compliance review.
 - Complete: [F-005J](./features/F-005J.md), final UI polish.
 - Complete: [F-005N](./features/F-005N.md), encounter workspace map density.
-- Active: [F-005O](./features/F-005O.md), one-line GM app header.
+- Complete: [F-005O](./features/F-005O.md), one-line GM app header.
+- Proposed: [F-005P](./features/F-005P.md), campaign encounter gallery simplification.
 
 Acceptance criteria:
 
 - GM `/gm` starts on a fantasy-themed campaign landing page with campaign cards.
 - GM View app header presents `TabletopFog`, breadcrumb context, and connection
   state in one compact row.
-- Opening a campaign shows encounter cards with map thumbnails.
-- Clicking an encounter card opens a selected/editing encounter workspace.
+- Opening a campaign shows encounter cards with map thumbnails and direct
+  encounter-add controls without an embedded workspace placeholder.
+- Clicking an encounter card opens a selected/editing Encounter Workspace page.
 - Clicking or opening an encounter does not automatically change the Player Display.
 - Showing an encounter to players is an explicit `Show to Players` action.
 - Clearing the shown encounter is an explicit `Shown to Players` action.
-- Deleting an encounter is a confirmed Manage Mode action and is blocked for
+- Deleting an encounter is confirmed from the Campaign page and is blocked for
   encounters shown to players.
 - Deleting a campaign is confirmed and allowed only after all encounters have
   been removed.
