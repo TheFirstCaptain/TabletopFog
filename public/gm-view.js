@@ -41,7 +41,6 @@ export function createGmView(document) {
     manageEncounters: document.querySelector("#manage-encounters"),
     selectedEncounterHeading: document.querySelector("#selected-encounter-heading"),
     selectedEncounterStatus: document.querySelector("#selected-encounter-status"),
-    pageTitle: document.querySelector("#page-title"),
     status: document.querySelector("#connection-status"),
     workspaceEmpty: document.querySelector("#workspace-empty"),
     workspaceGrid: document.querySelector(".workspace-grid"),

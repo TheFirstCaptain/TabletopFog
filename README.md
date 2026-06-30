@@ -44,15 +44,17 @@ only for encounters currently `Shown to Players`, with `Done Managing`
 returning to the calm browse-first gallery. Campaign Library cards also support
 confirmed permanent deletion for campaigns with no encounters; campaigns that
 still contain encounters show a disabled delete action with guidance to remove
-encounters first. Opening an encounter for prep enters a focused GM workspace
-shell with the selected map as the dominant surface,
-selected-versus-shown status, a lateral reserved future tools dock on
-desktop/Chromebook-sized screens that stacks below the map on narrow screens,
-separate `Back to Campaign` navigation, and a workspace-level `Show to Players`
-running action near the title/status that can also clear when it reads
-`Shown to Players`. Campaign screens use `Back to Campaign Library`, and normal
-GM UI avoids showing local filesystem paths. Opening or navigating the workspace
-does not change the Player Display. Existing storage still uses `maps` and
+encounters first. The GM app header now keeps `TABLETOPFOG`, breadcrumb context,
+and connection state in one compact row. Opening an encounter for prep enters a
+focused GM workspace shell with a compact label/status/action strip, the
+selected map as the dominant first-viewport surface, selected-versus-shown
+status, a small fixed reserved future tools dock on desktop/Chromebook-sized
+screens that stacks below the map on narrow screens, separate `Back to Campaign`
+navigation, and a workspace-level `Show to Players` running action near the
+title/status that can also clear when it reads `Shown to Players`. Campaign
+screens use `Back to Campaign Library`, and normal GM UI avoids showing local
+filesystem paths. Opening or navigating the workspace does not change the Player
+Display. Existing storage still uses `maps` and
 `activeMapId`, where `activeMapId` is an implementation detail meaning the
 encounter currently shown to players until a reviewed migration chooses clearer
 names. The UI should say `Shown to Players`.

@@ -210,7 +210,8 @@ test("serves GM and player pages over HTTPS", async (t) => {
     assert.match(fontSource.body, /79d17b52365a2d5bd8995c8c54939d384e9888ed2038c7201fd8d4118d6f0a35/);
     assert.ok(fontSource.body.includes(`- Unicode range: \`${EB_GARAMOND_LATIN_RANGE}\``));
     assert.equal(supersededFont.statusCode, 404);
-    assert.match(gmResponse.body, /<h1 id="page-title">Campaign Library<\/h1>/);
+    assert.match(gmResponse.body, /<h1 class="app-brand">TABLETOPFOG<\/h1>/);
+    assert.doesNotMatch(gmResponse.body, /id="page-title"/);
     assert.match(gmResponse.body, /id="breadcrumb"/);
     assert.match(gmResponse.body, /id="library-diagnostics"/);
     assert.match(gmResponse.body, /<script type="module" src="\/gm\.js"><\/script>/);

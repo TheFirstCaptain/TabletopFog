@@ -37,19 +37,47 @@ async function sizedPngFile(page, name, width, height, leftColor = "#d9b978", ri
 
 async function openGm(page, baseURL) {
   await page.goto(`${baseURL}/gm`);
-  await expect(page.getByRole("heading", { level: 1, name: "Campaign Library" })).toBeVisible();
-  await expect(page.getByLabel("Breadcrumb")).toHaveText("Campaign Library");
+  await expectGmHeader(page, "Campaign Library");
   await expect(page.getByRole("button", { name: /^Back to/ })).toHaveCount(0);
-  await expect(page.getByText("Live", { exact: true })).toBeVisible();
 }
 
 async function createCampaign(page, name = "The Long Walk") {
   await page.getByLabel("New campaign").fill(name);
   await page.getByRole("button", { name: "Create" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Campaign" })).toBeVisible();
-  await expect(page.getByLabel("Breadcrumb")).toHaveText(`Campaign Library / ${name}`);
+  await expectGmHeader(page, `Campaign Library / ${name}`);
   await expect(page.getByRole("button", { name: /^Back to/ })).toHaveCount(1);
   await expect(page.getByRole("heading", { level: 2, name })).toBeVisible();
+}
+
+async function expectGmHeader(page, breadcrumbText, statusText = "Live") {
+  await expect(page.getByRole("heading", { level: 1, name: "TABLETOPFOG" })).toBeVisible();
+  await expect(page.getByLabel("Breadcrumb")).toHaveText(breadcrumbText);
+  await expect(page.getByText(statusText, { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+  const headerLayout = await page.evaluate(() => {
+    const brand = document.querySelector(".app-brand").getBoundingClientRect();
+    const breadcrumb = document.querySelector("#breadcrumb").getBoundingClientRect();
+    const header = document.querySelector(".page-header").getBoundingClientRect();
+    const status = document.querySelector("#connection-status").getBoundingClientRect();
+    return {
+      brandBeforeBreadcrumb: brand.right <= breadcrumb.left,
+      headerCompact: header.height < 64,
+      sameRow:
+        Math.abs(brand.top - breadcrumb.top) < 8 &&
+        Math.abs(brand.top - status.top) < 8 &&
+        Math.abs(breadcrumb.top - status.top) < 8,
+      statusRight: status.left > breadcrumb.left,
+      statusWithinHeader: status.right <= header.right + 1
+    };
+  });
+  expect(headerLayout).toEqual({
+    brandBeforeBreadcrumb: true,
+    headerCompact: true,
+    sameRow: true,
+    statusRight: true,
+    statusWithinHeader: true
+  });
 }
 
 async function enterManageEncounters(page) {
@@ -147,7 +175,7 @@ test("GM edits campaign card details without changing player display", async ({ 
   await expect(card.getByText("🗺️")).toBeVisible();
   await card.getByRole("button", { name: "Edit campaign details" }).click();
   await card.getByRole("heading", { name: "The Long Walk" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Campaign Library" })).toBeVisible();
+  await expectGmHeader(page, "Campaign Library");
   await card.getByLabel("Campaign name").fill("The Longer Walk");
   await card.getByLabel("Campaign icon").fill("🛡️");
   await card.getByLabel("Campaign description").fill("Roads through a haunted borderland.");
@@ -166,7 +194,7 @@ test("GM edits campaign card details without changing player display", async ({ 
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeMetadataEdit);
 
   await page.reload();
-  await expect(page.getByRole("heading", { level: 1, name: "Campaign Library" })).toBeVisible();
+  await expectGmHeader(page, "Campaign Library");
   const reloadedCard = page.locator(".campaign-card").filter({ hasText: "The Longer Walk" });
   await expect(reloadedCard.getByText("Roads through a haunted borderland.")).toBeVisible();
   await expect(reloadedCard.getByText("🛡️")).toBeVisible();
@@ -547,8 +575,7 @@ test("encounter cards open a workspace without changing the player display", asy
 
   await caveCard.getByRole("button", { name: "Open cave for prep" }).focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("heading", { level: 1, name: "Encounter Workspace" })).toBeVisible();
-  await expect(page.getByLabel("Breadcrumb")).toHaveText("Campaign Library / The Long Walk / cave");
+  await expectGmHeader(page, "Campaign Library / The Long Walk / cave");
   await expect(page.getByRole("button", { name: /^Back to/ })).toHaveCount(1);
   await expect(page.getByRole("heading", { level: 3, name: "cave" })).toBeVisible();
   await expect(page.locator("#selected-encounter-status")).toContainText("Selected for Prep: cave");
@@ -571,7 +598,7 @@ test("selected prep encounter can be deleted when it is not shown to players", a
 
   const soloCard = page.locator(".encounter-card").filter({ hasText: "solo" });
   await soloCard.getByRole("button", { name: "Open solo for prep" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Encounter Workspace" })).toBeVisible();
+  await expectGmHeader(page, "Campaign Library / Single Delete Campaign / solo");
   await page.getByRole("button", { name: "Back to Campaign" }).click();
   await expect(soloCard.getByText("Selected for Prep", { exact: true })).toBeVisible();
 
@@ -633,7 +660,7 @@ test("encounter gallery presentation remains browsable and responsive", async ({
   await expect(page.locator(".encounter-card")).toHaveCount(3);
   await squareCard.locator(".encounter-admin").click({ position: { x: 8, y: 8 } });
   await expect(page.getByRole("button", { name: "Done Managing" })).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1, name: "Campaign" })).toBeVisible();
+  await expectGmHeader(page, "Campaign Library / Gallery Campaign");
 
   await longCard.getByRole("button", { name: "Show to Players", exact: true }).click();
   await player.goto(`${app.baseURL}/player`);
@@ -718,7 +745,7 @@ test("encounter gallery presentation remains browsable and responsive", async ({
 
   const playerAssetRequestsBeforeOpen = playerAssetRequests;
   await tallCard.getByRole("button", { name: "Open tall-tower for prep" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Encounter Workspace" })).toBeVisible();
+  await expectGmHeader(page, "Campaign Library / Gallery Campaign / tall-tower");
   await expect(player.getByRole("img", { name: `Map: ${longEncounterName}` })).toBeVisible();
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeOpen);
 
@@ -812,22 +839,33 @@ test("GM workspace shell previews selected encounter without changing the player
   await createCampaign(page);
   await uploadMapFile(page, await sizedPngFile(page, "forest.png", 160, 100, "#254117", "#6b8e23"));
   await uploadMapFile(page, await sizedPngFile(page, "cave.png", 160, 100, "#2c2430", "#b08968"));
+  const longWorkspaceEncounterName = "CaveOfTheVeryLongUnbrokenEncounterNameAcrossTheWesternBorderlandsAndUnderways";
+  await page.getByRole("textbox", { name: "Encounter name for cave" }).fill(longWorkspaceEncounterName);
+  await page.getByRole("button", { name: "Rename" }).nth(1).click();
+  await expect(page.getByRole("textbox", { name: `Encounter name for ${longWorkspaceEncounterName}` })).toHaveValue(
+    longWorkspaceEncounterName
+  );
   await page.getByRole("button", { name: "Done Managing" }).click();
 
   const forestCard = page.locator(".encounter-card").filter({ hasText: "forest" });
-  const caveCard = page.locator(".encounter-card").filter({ hasText: "cave" });
+  const caveCard = page.locator(".encounter-card").filter({ hasText: longWorkspaceEncounterName });
   await forestCard.getByRole("button", { name: "Show to Players", exact: true }).click();
   await expect(page.getByRole("button", { name: "Show to Players from workspace" })).toBeHidden();
   await player.goto(`${app.baseURL}/player`);
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   const playerAssetRequestsBeforeWorkspaceOpen = playerAssetRequests;
 
-  await caveCard.getByRole("button", { name: "Open cave for prep" }).click();
-  await expect(page.getByRole("heading", { level: 3, name: "cave" })).toBeVisible();
-  await expect(page.getByRole("img", { name: "Map: cave" })).toBeVisible();
-  await expect(page.locator("#selected-encounter-status")).toContainText("Selected for Prep: cave");
+  await caveCard.getByRole("button", { name: `Open ${longWorkspaceEncounterName} for prep` }).click();
+  await expect(page.getByRole("heading", { level: 3, name: longWorkspaceEncounterName })).toBeVisible();
+  await expect(page.getByRole("img", { name: `Map: ${longWorkspaceEncounterName}` })).toBeVisible();
+  await expect(page.locator("#selected-encounter-status")).toContainText(
+    `Selected for Prep: ${longWorkspaceEncounterName}`
+  );
   await expect(page.locator("#selected-encounter-status")).toContainText("Shown to Players: forest");
   await expect(page.getByRole("button", { name: "Show to Players from workspace" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Show to Players from workspace" })).toBeEnabled();
+  await expect(page.getByRole("group", { name: "Running actions" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Back to Campaign" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Future Tools" })).toBeVisible();
   await expect(page.getByRole("button", { name: /fog|brush|reveal|hide/i })).toHaveCount(0);
   await expect(page.locator(".future-tools-panel button, .future-tools-panel input")).toHaveCount(0);
@@ -835,19 +873,35 @@ test("GM workspace shell previews selected encounter without changing the player
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeWorkspaceOpen);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   const desktopWorkspaceLayout = await page.evaluate(() => {
+    const intersects = (first, second) =>
+      first.left < second.right && first.right > second.left && first.top < second.bottom && first.bottom > second.top;
     const grid = document.querySelector(".workspace-grid").getBoundingClientRect();
+    const pageHeader = document.querySelector(".page-header").getBoundingClientRect();
     const workspace = document.querySelector("#encounter-workspace").getBoundingClientRect();
+    const header = document.querySelector(".workspace-header").getBoundingClientRect();
     const map = document.querySelector(".gm-map-stage").getBoundingClientRect();
     const dockElement = document.querySelector(".future-tools-panel");
     const dock = dockElement.getBoundingClientRect();
     const dockStyles = getComputedStyle(dockElement);
     const action = document.querySelector("#workspace-show-to-players").getBoundingClientRect();
+    const navigation = document.querySelector("#back-to-encounters").getBoundingClientRect();
     const canvas = document.querySelector("#active-map-canvas");
     return {
       actionAreaSmallerThanMap: action.width * action.height < map.width * map.height * 0.2,
+      actionMinimumTarget: action.height >= 44,
       dockBackground: dockStyles.backgroundColor,
       dockRightOfMap: dock.left > map.right,
+      headerCompact: header.height < window.innerHeight * 0.18,
+      mapBelowHeader: map.top >= header.bottom,
+      mapDominatesHeader: map.width * map.height > header.width * header.height * 3,
+      mapExtendsIntoViewport: map.bottom > window.innerHeight * 0.78,
+      mapStartsHigherThanOldWorkspace: map.top < 260,
       mapAreaGreaterThanDock: map.width * map.height > dock.width * dock.height,
+      noActionMapOverlap: !intersects(action, map),
+      noDockMapOverlap: !intersects(dock, map),
+      noHeaderMapOverlap: !intersects(header, map),
+      pageHeaderUnchangedScope: pageHeader.height > 0,
+      navigationMinimumTarget: navigation.height >= 44,
       renderedHeight: Number(canvas.dataset.drawHeight),
       renderedWidth: Number(canvas.dataset.drawWidth),
       workspaceSpansGrid: workspace.width > grid.width * 0.95
@@ -855,9 +909,20 @@ test("GM workspace shell previews selected encounter without changing the player
   });
   expect(desktopWorkspaceLayout).toEqual({
     actionAreaSmallerThanMap: true,
+    actionMinimumTarget: true,
     dockBackground: "rgba(0, 0, 0, 0)",
     dockRightOfMap: true,
+    headerCompact: true,
+    mapBelowHeader: true,
+    mapDominatesHeader: true,
+    mapExtendsIntoViewport: true,
+    mapStartsHigherThanOldWorkspace: true,
     mapAreaGreaterThanDock: true,
+    navigationMinimumTarget: true,
+    noActionMapOverlap: true,
+    noDockMapOverlap: true,
+    noHeaderMapOverlap: true,
+    pageHeaderUnchangedScope: true,
     renderedHeight: expect.any(Number),
     renderedWidth: expect.any(Number),
     workspaceSpansGrid: true
@@ -866,20 +931,28 @@ test("GM workspace shell previews selected encounter without changing the player
   expect(desktopWorkspaceLayout.renderedWidth).toBeGreaterThan(0);
 
   await page.setViewportSize({ height: 768, width: 1024 });
+  await expectGmHeader(page, `Campaign Library / The Long Walk / ${longWorkspaceEncounterName}`);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   const chromebookWorkspaceLayout = await page.evaluate(() => {
     const grid = document.querySelector(".workspace-grid").getBoundingClientRect();
     const workspace = document.querySelector("#encounter-workspace").getBoundingClientRect();
+    const header = document.querySelector(".workspace-header").getBoundingClientRect();
     const map = document.querySelector(".gm-map-stage").getBoundingClientRect();
     const dock = document.querySelector(".future-tools-panel").getBoundingClientRect();
     return {
       dockRightOfMap: dock.left > map.right,
+      headerCompact: header.height < window.innerHeight * 0.18,
+      mapDominatesHeader: map.width * map.height > header.width * header.height * 3,
+      mapStartsHigherThanOldWorkspace: map.top < 280,
       mapAreaGreaterThanDock: map.width * map.height > dock.width * dock.height,
       workspaceSpansGrid: workspace.width > grid.width * 0.95
     };
   });
   expect(chromebookWorkspaceLayout).toEqual({
     dockRightOfMap: true,
+    headerCompact: true,
+    mapDominatesHeader: true,
+    mapStartsHigherThanOldWorkspace: true,
     mapAreaGreaterThanDock: true,
     workspaceSpansGrid: true
   });
@@ -889,34 +962,39 @@ test("GM workspace shell previews selected encounter without changing the player
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeWorkspaceOpen);
 
-  await caveCard.getByRole("button", { name: "Open cave for prep" }).click();
+  await caveCard.getByRole("button", { name: `Open ${longWorkspaceEncounterName} for prep` }).click();
   await page.getByRole("button", { name: "Show to Players from workspace" }).click();
-  await expect(player.getByRole("img", { name: "Map: cave" })).toBeVisible();
-  await expect(page.locator("#selected-encounter-status")).toContainText("Selected for Prep: cave");
+  await expect(player.getByRole("img", { name: `Map: ${longWorkspaceEncounterName}` })).toBeVisible();
+  await expect(page.locator("#selected-encounter-status")).toContainText(
+    `Selected for Prep: ${longWorkspaceEncounterName}`
+  );
   await expect(page.locator("#selected-encounter-status")).toContainText("Shown to Players");
   await page.getByRole("button", { name: "Shown to Players - clear from Player Display" }).click();
   await expect(player.getByText("Waiting for GM.", { exact: true })).toBeVisible();
-  await expect(player.getByRole("img", { name: "Map: cave" })).toBeHidden();
+  await expect(player.getByRole("img", { name: `Map: ${longWorkspaceEncounterName}` })).toBeHidden();
   await expect(page.locator("#selected-encounter-status")).toContainText("Shown to Players: None");
   await expect(page.getByRole("button", { name: "Show to Players from workspace" })).toBeVisible();
   await page.getByRole("button", { name: "Show to Players from workspace" }).click();
-  await expect(player.getByRole("img", { name: "Map: cave" })).toBeVisible();
+  await expect(player.getByRole("img", { name: `Map: ${longWorkspaceEncounterName}` })).toBeVisible();
   await page.getByRole("button", { name: "Back to Campaign" }).click();
   await expect(caveCard.locator(".status-pill").filter({ hasText: "Shown to Players" })).toBeVisible();
 
   await page.setViewportSize({ height: 844, width: 390 });
-  await caveCard.getByRole("button", { name: "Open cave for prep" }).click();
+  await caveCard.getByRole("button", { name: `Open ${longWorkspaceEncounterName} for prep` }).click();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   const narrowWorkspaceLayout = await page.evaluate(() => {
+    const header = document.querySelector(".workspace-header").getBoundingClientRect();
     const map = document.querySelector(".gm-map-stage").getBoundingClientRect();
     const dock = document.querySelector(".future-tools-panel").getBoundingClientRect();
     return {
       dockBelowMap: dock.top > map.bottom,
+      headerAboveMap: header.bottom <= map.top,
       mapAreaGreaterThanDock: map.width * map.height > dock.width * dock.height
     };
   });
   expect(narrowWorkspaceLayout).toEqual({
     dockBelowMap: true,
+    headerAboveMap: true,
     mapAreaGreaterThanDock: true
   });
 });
@@ -1021,9 +1099,11 @@ test("player reports connection loss and restores active state", async ({ app, p
 
   await page.context().setOffline(true);
   await expect(page.getByText("Reconnecting...", { exact: true })).toBeVisible();
+  await expectGmHeader(gm, "Campaign Library / The Long Walk", "Reconnecting...");
 
   await page.context().setOffline(false);
   await expect(page.getByText("Live", { exact: true })).toBeVisible({ timeout: 15_000 });
+  await expectGmHeader(gm, "Campaign Library / The Long Walk");
   await expect(page.getByRole("img", { name: "Map: forest" })).toBeVisible();
   await expect(page.getByText("125%", { exact: true })).toBeVisible();
 });

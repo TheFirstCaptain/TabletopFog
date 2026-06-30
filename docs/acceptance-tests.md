@@ -664,16 +664,19 @@ Steps:
    and the encounter currently `Shown to Players` when they differ.
 4. Navigate back to the encounter gallery.
 5. Return to the workspace.
-6. On desktop or Chromebook-sized screens, confirm the map is the dominant
-   workspace element and the reserved future tool dock sits laterally beside it.
-7. On a narrow screen, confirm the reserved future tool dock stacks below the
+6. On desktop or Chromebook-sized screens, confirm the Encounter Workspace
+   header is a compact label/status/action strip and the map starts high in the
+   first viewport.
+7. Confirm the map is the dominant workspace element and the fixed reserved
+   future tool dock sits laterally beside it without floating over the map.
+8. On a narrow screen, confirm the reserved future tool dock stacks below the
    map and the page has no horizontal overflow.
-8. Confirm the workspace includes reserved future fog-tool space without fog controls.
-9. Confirm `Show to Players` sits in a dedicated running-actions area near the
-   title/status, not over the map.
-10. Click the workspace `Show to Players` action.
-11. Click the workspace `Shown to Players` action.
-12. Confirm the workspace status changes to `Shown to Players: None` and the
+9. Confirm the workspace includes reserved future fog-tool space without fog controls.
+10. Confirm `Show to Players` sits in a fixed running-actions area near the
+    title/status, not over the map.
+11. Click the workspace `Show to Players` action.
+12. Click the workspace `Shown to Players` action.
+13. Confirm the workspace status changes to `Shown to Players: None` and the
     workspace action changes back to `Show to Players`.
 
 Expected result:
@@ -684,8 +687,9 @@ Expected result:
 - The workspace `Shown to Players` action clears the Player Display without
   changing the selected/editing encounter.
 - Workspace navigation back to the encounter gallery is clear.
-- The workspace makes the map prominent, keeps future tool space reserved
-  without adding fog controls yet, and remains usable at desktop,
+- The workspace makes the map dominant in the first viewport, keeps the
+  Encounter Workspace header compact, keeps future tool space fixed and
+  reserved without adding fog controls yet, and remains usable at desktop,
   Chromebook-sized, and narrow viewports.
 - Rename, reorder, and upload remain gallery workflows for this feature.
 
@@ -702,20 +706,25 @@ Prerequisites:
 Steps:
 
 1. Open the Campaign Library.
-2. Confirm the page title and breadcrumb identify `Campaign Library`.
+2. Confirm the GM app header shows `TABLETOPFOG`, the `Campaign Library`
+   breadcrumb, and `Live` on one compact row.
 3. Confirm normal GM UI does not show the local data root or full filesystem paths.
 4. Open a campaign.
-5. Confirm the page title identifies `Campaign`, the breadcrumb shows
-   `Campaign Library / <campaign>`, and there is one visible Back action.
+5. Confirm the GM app header shows `TABLETOPFOG`,
+   `Campaign Library / <campaign>`, and `Live` on one compact row, and there is
+   one visible Back action.
 6. Open an Encounter Workspace.
-7. Confirm the page title identifies `Encounter Workspace`, the breadcrumb shows
-   `Campaign Library / <campaign> / <encounter>`, and there is one visible Back
-   action.
+7. Confirm the GM app header shows `TABLETOPFOG`,
+   `Campaign Library / <campaign> / <encounter>`, and `Live` on one compact row,
+   and there is one visible Back action.
 8. Navigate back to the Campaign screen, then back to the Campaign Library.
 9. Repeat the navigation at a 390 px viewport.
 
 Expected result:
 
+- The GM app header uses one compact row for app identity, breadcrumb context,
+  and connection state on desktop and Chromebook-sized screens.
+- Long breadcrumb text does not cause horizontal overflow.
 - Breadcrumbs are informational and do not compete with the Back action.
 - The Campaign screen backs to Campaign Library.
 - The Encounter Workspace backs to Campaign.

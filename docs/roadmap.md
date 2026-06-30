@@ -141,7 +141,8 @@ Planned focused UI polish sequence before fog:
 - Complete: [F-005M](./features/F-005M.md), delete campaigns.
 - Complete: [F-005I](./features/F-005I.md), design language compliance review.
 - Complete: [F-005J](./features/F-005J.md), final UI polish.
-- Proposed: [F-005N](./features/F-005N.md), encounter workspace map density.
+- Complete: [F-005N](./features/F-005N.md), encounter workspace map density.
+- Active: [F-005O](./features/F-005O.md), one-line GM app header.
 - Proposed: [F-006](./features/F-006.md), manual fog of war.
 
 Status:
@@ -159,11 +160,14 @@ Status:
 - Complete: [F-005M](./features/F-005M.md), delete campaigns.
 - Complete: [F-005I](./features/F-005I.md), design language compliance review.
 - Complete: [F-005J](./features/F-005J.md), final UI polish.
-- Proposed: [F-005N](./features/F-005N.md), encounter workspace map density.
+- Complete: [F-005N](./features/F-005N.md), encounter workspace map density.
+- Active: [F-005O](./features/F-005O.md), one-line GM app header.
 
 Acceptance criteria:
 
 - GM `/gm` starts on a fantasy-themed campaign landing page with campaign cards.
+- GM View app header presents `TabletopFog`, breadcrumb context, and connection
+  state in one compact row.
 - Opening a campaign shows encounter cards with map thumbnails.
 - Clicking an encounter card opens a selected/editing encounter workspace.
 - Clicking or opening an encounter does not automatically change the Player Display.

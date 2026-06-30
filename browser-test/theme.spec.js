@@ -50,7 +50,8 @@ test("loads the local fantasy theme with accessible desktop and narrow layouts",
 
   await page.goto(`${app.baseURL}/gm`);
   await page.evaluate(() => document.fonts.ready);
-  await expect(page.getByRole("heading", { level: 1, name: "Campaign Library" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "TABLETOPFOG" })).toBeVisible();
+  await expect(page.getByLabel("Breadcrumb")).toHaveText("Campaign Library");
   await expect(page.getByText(/Skipped campaign "Broken Campaign"/)).toBeVisible();
 
   expect(fontResponses).toHaveLength(1);
@@ -60,7 +61,7 @@ test("loads the local fantasy theme with accessible desktop and narrow layouts",
 
   const styles = await page.evaluate(() => {
     const root = getComputedStyle(document.documentElement);
-    const heading = getComputedStyle(document.querySelector("h1"));
+    const heading = getComputedStyle(document.querySelector(".app-brand"));
     const body = getComputedStyle(document.body);
     const button = getComputedStyle(document.querySelector("button"));
     const diagnostic = getComputedStyle(document.querySelector(".library-diagnostic"));
@@ -69,7 +70,9 @@ test("loads the local fantasy theme with accessible desktop and narrow layouts",
       buttonFont: button.fontFamily,
       diagnosticBackground: diagnostic.backgroundColor,
       diagnosticColor: diagnostic.color,
+      headingColor: heading.color,
       headingFont: heading.fontFamily,
+      headingTextTransform: heading.textTransform,
       tokens: {
         accent: root.getPropertyValue("--accent").trim(),
         accentStrong: root.getPropertyValue("--accent-strong").trim(),
@@ -89,7 +92,9 @@ test("loads the local fantasy theme with accessible desktop and narrow layouts",
   });
 
   expect(styles.tokens).toEqual(palette);
-  expect(styles.headingFont).toMatch(/^"EB Garamond"/);
+  expect(styles.headingColor).toBe("rgb(104, 88, 67)");
+  expect(styles.headingFont).not.toMatch(/^"EB Garamond"/);
+  expect(styles.headingTextTransform).toBe("uppercase");
   expect(styles.bodyFont).not.toMatch(/^"EB Garamond"/);
   expect(styles.buttonFont).not.toMatch(/^"EB Garamond"/);
   expect(styles.diagnosticBackground).toBe("rgb(245, 216, 210)");
@@ -195,13 +200,16 @@ test("keeps the GM workflow usable when the local font fails", async ({ app, pag
   });
 
   await page.goto(`${app.baseURL}/gm`);
-  await expect(page.getByRole("heading", { level: 1, name: "Campaign Library" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "TABLETOPFOG" })).toBeVisible();
+  await expect(page.getByLabel("Breadcrumb")).toHaveText("Campaign Library");
   await expect(page.getByLabel("New campaign")).toBeVisible();
   await expect(page.getByRole("button", { name: "Create" })).toBeVisible();
   expect(fontRequestCount).toBe(1);
   expect(
-    await page.getByRole("heading", { level: 1 }).evaluate((element) => getComputedStyle(element).fontFamily)
-  ).toBe('"EB Garamond", Georgia, "Times New Roman", serif');
+    await page
+      .getByRole("heading", { level: 1, name: "TABLETOPFOG" })
+      .evaluate((element) => getComputedStyle(element).fontFamily)
+  ).not.toMatch(/^"EB Garamond"/);
 
   await page.getByLabel("New campaign").fill("Fallback Campaign");
   await page.getByRole("button", { name: "Create" }).click();

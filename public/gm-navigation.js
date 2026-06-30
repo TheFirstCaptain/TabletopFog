@@ -10,7 +10,6 @@ export function createGmNavigation(elements) {
 
   return {
     showCampaign(campaign) {
-      elements.pageTitle.textContent = "Campaign";
       elements.breadcrumb.textContent = `Campaign Library / ${campaign.name}`;
       elements.libraryPanel.hidden = true;
       elements.campaignPanel.hidden = false;
@@ -18,7 +17,6 @@ export function createGmNavigation(elements) {
       setWorkspaceOpen(false);
     },
     showLibrary() {
-      elements.pageTitle.textContent = "Campaign Library";
       elements.breadcrumb.textContent = "Campaign Library";
       elements.libraryPanel.hidden = false;
       elements.campaignPanel.hidden = true;
@@ -26,7 +24,6 @@ export function createGmNavigation(elements) {
       setWorkspaceOpen(false);
     },
     showWorkspace(campaign, encounter) {
-      elements.pageTitle.textContent = "Encounter Workspace";
       elements.breadcrumb.textContent = `Campaign Library / ${campaign.name} / ${encounter.name}`;
       elements.backToLibrary.hidden = true;
       setWorkspaceOpen(true);
