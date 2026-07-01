@@ -69,6 +69,7 @@ export function createGmView(document) {
   let activeMapRenderer;
   activeMapRenderer = createMapCanvasRenderer({
     canvas: elements.activeMapCanvas,
+    fogOpacity: 0.45,
     onStatus({ map, state }) {
       activeMapReady = state === "ready";
       elements.activeMapMessage.dataset.state = state;

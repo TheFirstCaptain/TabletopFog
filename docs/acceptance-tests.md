@@ -787,6 +787,46 @@ Expected result:
 - No fog drawing, tokens, snapping, measuring, initiative, dynamic lighting, or
   VTT-style automation is introduced.
 
+### Test: Fog Foundation Renders Seeded Operations by Role
+
+Prerequisites:
+
+- A campaign exists with at least two encounters/maps.
+- The encounter workspace feature is implemented.
+- F-006B fog state and rendering foundation is implemented.
+
+Steps:
+
+1. Show one encounter to players.
+2. Open that encounter in the GM workspace.
+3. Seed in-memory fog operations through the automated harness or internal test
+   fixture, not through visible UI or a debug route.
+4. Include a hide rectangle, a reveal rectangle inside it, and a later hide
+   rectangle over part of the reveal.
+5. Confirm the GM workspace renders semi-transparent fog over the selected
+   encounter map.
+6. Confirm the Player Display renders opaque or near-opaque fog over the shown
+   encounter map.
+7. Confirm reveal operations make the underlying map visible again and later
+   hide operations obscure that area again.
+8. Zoom or resize the GM workspace and confirm the fog still covers the same
+   map-relative area.
+9. Seed fog on a different selected/editing encounter without showing it to
+   players.
+
+Expected result:
+
+- Fog operations use normalized map-relative rectangle coordinates.
+- Maps start visible rather than covered by full black fog.
+- GM and Player Display render the same ordered hide/reveal semantics with
+  role-appropriate opacity.
+- The Player Display receives fog only for the shown-to-players encounter.
+- Seeding or preparing fog on an unshown encounter does not change the Player
+  Display.
+- No GM-facing fog drawing, reveal, clear, brush, debug, token, dynamic
+  lighting, or VTT-style controls are introduced by F-006B.
+- Fog remains in memory and is not persisted to `campaign.json`.
+
 ### Test: Player Sees Hidden Areas Obscured
 
 Prerequisites:

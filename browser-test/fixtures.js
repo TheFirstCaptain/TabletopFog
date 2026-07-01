@@ -52,7 +52,11 @@ async function runWithIsolatedApp(use, options = {}) {
     const port = await dependencies.listenServer(serverBundle.server);
     await use({
       baseURL: `https://127.0.0.1:${port}`,
-      dataRoot: campaignData.directory
+      dataRoot: campaignData.directory,
+      seedFogOperations(campaignId, mapId, operations) {
+        serverBundle.stateStore.setFogOperations(campaignId, mapId, operations);
+        serverBundle.syncState();
+      }
     });
   } catch (error) {
     failure = error;

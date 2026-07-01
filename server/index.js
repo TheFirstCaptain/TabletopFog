@@ -52,7 +52,7 @@ function createApp(options = {}) {
       const campaign = withAssetUrls(campaignStorage, campaignStorage.createCampaign(request.body.name));
       const state = stateStore.setCampaign(campaign);
       onStateChange(state);
-      response.status(201).json({ campaign });
+      response.status(201).json({ campaign: state.campaign });
     } catch (error) {
       next(error);
     }
@@ -63,7 +63,7 @@ function createApp(options = {}) {
       const campaign = withAssetUrls(campaignStorage, campaignStorage.getCampaign(request.params.campaignId));
       const state = stateStore.setCampaign(campaign);
       onStateChange(state);
-      response.json({ campaign });
+      response.json({ campaign: state.campaign });
     } catch (error) {
       next(error);
     }
@@ -122,8 +122,8 @@ function createApp(options = {}) {
         const state = stateStore.setCampaign(campaign);
         onStateChange(state);
         response.status(201).json({
-          campaign,
-          map: campaign.maps.find((candidate) => candidate.id === map.id)
+          campaign: state.campaign,
+          map: state.campaign.maps.find((candidate) => candidate.id === map.id)
         });
       } catch (error) {
         next(error);
@@ -138,8 +138,8 @@ function createApp(options = {}) {
       const state = stateStore.setCampaign(campaign);
       onStateChange(state);
       response.json({
-        campaign,
-        map: campaign.maps.find((candidate) => candidate.id === map.id)
+        campaign: state.campaign,
+        map: state.campaign.maps.find((candidate) => candidate.id === map.id)
       });
     } catch (error) {
       next(error);
@@ -154,7 +154,7 @@ function createApp(options = {}) {
       );
       const state = stateStore.setCampaign(campaign);
       onStateChange(state);
-      response.json({ campaign });
+      response.json({ campaign: state.campaign });
     } catch (error) {
       next(error);
     }
@@ -168,7 +168,7 @@ function createApp(options = {}) {
       );
       const state = stateStore.setCampaign(campaign);
       onStateChange(state);
-      response.json({ campaign });
+      response.json({ campaign: state.campaign });
     } catch (error) {
       next(error);
     }
@@ -192,7 +192,7 @@ function createApp(options = {}) {
       );
       const state = stateStore.setCampaign(campaign);
       onStateChange(state);
-      response.json({ campaign });
+      response.json({ campaign: state.campaign });
     } catch (error) {
       next(error);
     }
@@ -263,6 +263,9 @@ function createTabletopFogServer(options = {}) {
     app,
     io,
     server,
+    syncState() {
+      emitState(io, stateStore.getState());
+    },
     stateStore
   };
 }
@@ -288,6 +291,7 @@ function projectStateForRole(state, role) {
           id: activeMap.id,
           name: activeMap.name,
           assetUrl: "/api/player/active-map/asset",
+          fogOperations: activeMap.fogOperations || [],
           version: `${campaign.id}/${activeMap.id}`
         }
       : null,

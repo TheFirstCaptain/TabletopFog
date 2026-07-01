@@ -8,7 +8,7 @@ const path = require("node:path");
 const test = require("node:test");
 
 const { io: createClient } = require("socket.io-client");
-const { createTabletopFogServer, getRoleFromReferer } = require("../server");
+const { createTabletopFogServer, getRoleFromReferer, projectStateForRole } = require("../server");
 const { createTestCertificate } = require("../test-support/certificate");
 const { PNG_BYTES } = require("../test-support/fixtures");
 const { createTemporaryDirectory } = require("../test-support/temp-directory");
@@ -670,6 +670,74 @@ test("manages maps and broadcasts active map state", async (t) => {
     assert.equal(stateStore.getState().campaign.activeMapId, null);
   } finally {
     player.close();
+    await close(server, io);
+  }
+});
+
+test("projects in-memory fog only to the appropriate role and shown encounter", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const { server, io, stateStore } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+
+  try {
+    await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: "The Long Walk" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const forest = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "forest.png"
+      }),
+      method: "POST"
+    });
+    const cave = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "cave.png"
+      }),
+      method: "POST"
+    });
+    await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/active-map`, {
+      body: JSON.stringify({ mapId: forest.json.map.id }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+
+    const forestFog = [{ type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.4, height: 0.4 } }];
+    const caveFog = [{ type: "hide-rectangle", rect: { x: 0.2, y: 0.2, width: 0.2, height: 0.2 } }];
+    stateStore.setFogOperations("The Long Walk", forest.json.map.id, forestFog);
+    const state = stateStore.setFogOperations("The Long Walk", cave.json.map.id, caveFog);
+
+    const gmState = projectStateForRole(state, "gm");
+    const playerState = projectStateForRole(state, "player");
+    const campaignJson = JSON.parse(fs.readFileSync(path.join(dataRoot, "The Long Walk", "campaign.json"), "utf8"));
+
+    assert.deepEqual(
+      gmState.campaign.maps.map((map) => [map.id, map.fogOperations]),
+      [
+        [forest.json.map.id, forestFog],
+        [cave.json.map.id, caveFog]
+      ]
+    );
+    assert.equal(playerState.campaign, undefined);
+    assert.equal(playerState.activeMap.id, forest.json.map.id);
+    assert.deepEqual(playerState.activeMap.fogOperations, forestFog);
+    assert.notEqual(playerState.activeMap.fogOperations, forestFog);
+    assert.deepEqual(
+      campaignJson.maps.map((map) => map.fog),
+      [[], []]
+    );
+  } finally {
     await close(server, io);
   }
 });

@@ -103,6 +103,25 @@ function rgbFromHex(hex) {
   return `rgb(${channels.join(", ")})`;
 }
 
+async function sampleMapPixel(page, selector, point) {
+  return page.locator(selector).evaluate((canvas, normalizedPoint) => {
+    const drawX = Number(canvas.dataset.drawX);
+    const drawY = Number(canvas.dataset.drawY);
+    const drawWidth = Number(canvas.dataset.drawWidth);
+    const drawHeight = Number(canvas.dataset.drawHeight);
+    const scaleX = canvas.width / canvas.clientWidth;
+    const scaleY = canvas.height / canvas.clientHeight;
+    const x = Math.round((drawX + drawWidth * normalizedPoint.x) * scaleX);
+    const y = Math.round((drawY + drawHeight * normalizedPoint.y) * scaleY);
+    const [red, green, blue, alpha] = canvas.getContext("2d").getImageData(x, y, 1, 1).data;
+    return { alpha, blue, green, red, x, y };
+  }, point);
+}
+
+function colorDistance(left, right) {
+  return Math.abs(left.red - right.red) + Math.abs(left.green - right.green) + Math.abs(left.blue - right.blue);
+}
+
 test("GM creates, reopens, uploads, renames, and reorders campaign maps", async ({ app, page }) => {
   await openGm(page, app.baseURL);
   await expect(page.getByText(app.dataRoot, { exact: true })).toHaveCount(0);
@@ -1168,6 +1187,90 @@ test("GM workspace map alignment controls stay local to the GM browser tab", asy
   await expect(page.getByRole("img", { name: "Map: forest" })).toBeVisible();
   await expect(grid).toBeHidden();
   await expect(page.getByText("100%", { exact: true })).toBeVisible();
+});
+
+test("seeded fog renders by role without adding fog controls", async ({ app, page, context }) => {
+  const player = await context.newPage();
+  let playerAssetRequests = 0;
+  await player.route("**/api/player/active-map/asset*", (route) => {
+    playerAssetRequests += 1;
+    return route.continue();
+  });
+
+  await page.setViewportSize({ height: 768, width: 1366 });
+  await openGm(page, app.baseURL);
+  await createCampaign(page);
+  await uploadMapFile(page, await sizedPngFile(page, "forest.png", 200, 100, "#d9b978", "#704020"));
+  await uploadMapFile(page, await sizedPngFile(page, "cave.png", 200, 100, "#2c2430", "#b08968"));
+
+  const forestCard = page.locator(".encounter-card").filter({ hasText: "forest" });
+  const caveCard = page.locator(".encounter-card").filter({ hasText: "cave" });
+  await forestCard.getByRole("button", { name: "Show to Players", exact: true }).click();
+  await forestCard.getByRole("button", { name: "Open forest for prep" }).click();
+  await player.goto(`${app.baseURL}/player`);
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /fog|brush|reveal|clear fog|token/i })).toHaveCount(0);
+  await expect(player.locator("input, select, textarea, [contenteditable=true], [data-action]")).toHaveCount(0);
+
+  const forestMapId = await page.locator(".encounter-card").filter({ hasText: "forest" }).getAttribute("data-map-id");
+  const caveMapId = await page.locator(".encounter-card").filter({ hasText: "cave" }).getAttribute("data-map-id");
+  const operations = [
+    { type: "hide-rectangle", rect: { x: 0.08, y: 0.12, width: 0.42, height: 0.5 } },
+    { type: "reveal-rectangle", rect: { x: 0.2, y: 0.25, width: 0.12, height: 0.16 } },
+    { type: "hide-rectangle", rect: { x: 0.24, y: 0.3, width: 0.04, height: 0.05 } }
+  ];
+  app.seedFogOperations("The Long Walk", forestMapId, operations);
+
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("3");
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("3");
+
+  const gmVisible = await sampleMapPixel(page, "#active-map-canvas", { x: 0.05, y: 0.15 });
+  const gmHidden = await sampleMapPixel(page, "#active-map-canvas", { x: 0.14, y: 0.18 });
+  const gmRevealed = await sampleMapPixel(page, "#active-map-canvas", { x: 0.22, y: 0.28 });
+  const gmRehidden = await sampleMapPixel(page, "#active-map-canvas", { x: 0.25, y: 0.32 });
+  const playerVisible = await sampleMapPixel(player, "#player-map", { x: 0.05, y: 0.15 });
+  const playerHidden = await sampleMapPixel(player, "#player-map", { x: 0.14, y: 0.18 });
+  const playerRevealed = await sampleMapPixel(player, "#player-map", { x: 0.22, y: 0.28 });
+  const playerRehidden = await sampleMapPixel(player, "#player-map", { x: 0.25, y: 0.32 });
+
+  expect(colorDistance(gmVisible, gmRevealed)).toBeLessThan(16);
+  expect(colorDistance(playerVisible, playerRevealed)).toBeLessThan(16);
+  expect(colorDistance(gmVisible, gmHidden)).toBeGreaterThan(80);
+  expect(colorDistance(gmHidden, playerHidden)).toBeGreaterThan(80);
+  expect(playerHidden.red).toBeLessThan(gmHidden.red);
+  expect(playerHidden.green).toBeLessThan(gmHidden.green);
+  expect(colorDistance(playerHidden, playerRehidden)).toBeLessThan(8);
+  expect(colorDistance(gmHidden, gmRehidden)).toBeLessThan(8);
+
+  const hiddenBeforeZoom = gmHidden;
+  await page.getByRole("button", { name: "Zoom in" }).click();
+  await page.getByRole("button", { name: "Zoom in" }).click();
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-zoom")).toBe("1.5");
+  const hiddenAfterZoom = await sampleMapPixel(page, "#active-map-canvas", { x: 0.14, y: 0.18 });
+  expect(colorDistance(hiddenBeforeZoom, hiddenAfterZoom)).toBeLessThan(8);
+
+  const playerHiddenBeforeResize = playerHidden;
+  await player.getByRole("button", { name: "Zoom in" }).click();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-zoom")).toBe("1.25");
+  const playerHiddenAfterZoom = await sampleMapPixel(player, "#player-map", { x: 0.14, y: 0.18 });
+  expect(colorDistance(playerHiddenBeforeResize, playerHiddenAfterZoom)).toBeLessThan(8);
+  await player.setViewportSize({ height: 844, width: 390 });
+  const playerHiddenAfterResize = await sampleMapPixel(player, "#player-map", { x: 0.14, y: 0.18 });
+  const playerRevealedAfterResize = await sampleMapPixel(player, "#player-map", { x: 0.22, y: 0.28 });
+  const playerRehiddenAfterResize = await sampleMapPixel(player, "#player-map", { x: 0.25, y: 0.32 });
+  expect(colorDistance(playerHiddenAfterResize, playerRevealedAfterResize)).toBeGreaterThan(200);
+
+  const playerAssetRequestsBeforeUnshownFog = playerAssetRequests;
+  await page.getByRole("button", { name: "Back to Campaign" }).click();
+  await caveCard.getByRole("button", { name: "Open cave for prep" }).click();
+  app.seedFogOperations("The Long Walk", caveMapId, [
+    { type: "hide-rectangle", rect: { x: 0, y: 0, width: 1, height: 1 } }
+  ]);
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("1");
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("3");
+  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeUnshownFog);
+  const playerStillRehidden = await sampleMapPixel(player, "#player-map", { x: 0.25, y: 0.32 });
+  expect(colorDistance(playerRehiddenAfterResize, playerStillRehidden)).toBeLessThan(64);
 });
 
 test("active map uses centered contain geometry across table viewports", async ({ app, page, context }) => {

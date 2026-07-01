@@ -206,7 +206,13 @@ Goal: Add manual hide/reveal fog controls in the GM encounter workspace.
 Planned focused sequence:
 
 - Complete: [F-006A](./features/F-006A.md), GM map zoom and grid calibration.
-- Proposed: [F-006](./features/F-006.md), manual fog of war.
+- Complete: [F-006B](./features/F-006B.md), fog state and rendering foundation.
+- Proposed: [F-006C](./features/F-006C.md), rectangle hide tool.
+- Proposed: [F-006D](./features/F-006D.md), rectangle reveal tool.
+- Proposed: [F-006E](./features/F-006E.md), clear fog.
+- Proposed: [F-006F](./features/F-006F.md), fog tool polish and validation.
+- Proposed: [F-006](./features/F-006.md), manual fog of war umbrella
+  completion.
 
 Acceptance criteria:
 
@@ -236,6 +242,12 @@ Implementation notes:
 - Do not implement the old full-black-fog-starts-over-the-map behavior.
 - In V1, fog is used to hide areas on an otherwise visible map.
 - Fog belongs to the encounter. The map is the visual asset fog is drawn over.
+- V1 fog uses an ordered in-memory operation list: hide and reveal operations
+  replay in order, reveal operations cut through earlier fog, and later hide
+  operations can cover revealed areas again.
+- F-006B implements the fog state/rendering foundation without user-facing fog
+  drawing controls; rectangle Hide and Reveal tools follow in F-006C and
+  F-006D.
 - Fog tools build on the F-005C encounter workspace and must preserve the
   selected/editing versus shown-to-players distinction.
 - Canvas remains the preferred rendering layer.
@@ -244,6 +256,13 @@ Implementation notes:
 ## Milestone 5: Save and Load Campaign State
 
 Goal: Complete campaign persistence for fog state and later restore workflows after F-004's basic campaign/map metadata persistence exists.
+
+Engineering prerequisites:
+
+- Proposed P1: [E-002](./engineering/E-002.md), separate campaign storage
+  responsibilities before fog persistence expands storage complexity.
+- Proposed P1: [E-004](./engineering/E-004.md), separate server transport
+  responsibilities before save/load routes and projections expand.
 
 Acceptance criteria:
 

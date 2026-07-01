@@ -45,21 +45,32 @@ When the user asks to start or continue a feature, including prompts such as "le
    - Rule of Three.
 9. Ask clarification questions before implementation.
 10. Record the answers in the feature document.
-11. Run the mandatory SDLC subagent workflow from `docs/decisions/decision-004-mandatory-subagent-sdlc.md`.
-12. Integrate the work, run validation, update docs and trackers, and summarize the outcome.
+11. Classify the feature's SDLC tier using
+    `docs/decisions/decision-004-mandatory-subagent-sdlc.md`.
+12. Run the mandatory workflow for that tier.
+13. Integrate the work, run validation, update docs and trackers, and summarize the outcome.
 
-All of these stages are mandatory for feature work:
+The SDLC tier determines which stages are mandatory:
 
-- Clarification.
-- Architecture review.
-- Implementation design.
-- Test and validation design.
-- UX and workflow review.
-- Coding with Red/Green TDD where practical.
-- Code review.
-- Docs and tracker review.
-- Final-diff review after implementation and test changes are complete.
-- Main-agent integration and final validation.
+- Tier 0 uses clarification/rationale, documentation/tracker update, and
+  main-agent diff review.
+- Tier 1 uses clarification, combined implementation and validation design,
+  coding, independent code review, docs/tracker review when relevant, and final
+  validation.
+- Tier 2 uses clarification, one combined independent planning review covering
+  architecture, implementation, test, and UX, coding, independent code review,
+  docs/tracker review, final-diff review, and final validation.
+- Tier 3 uses the full independent workflow: clarification, architecture
+  review, implementation design, test and validation design, UX and workflow
+  review, coding, code review, docs/tracker review, final-diff review, and
+  final validation.
+
+When the tier is ambiguous, choose the higher-risk tier. Changes touching
+storage/persistence, migrations, filesystem writes, server state, Socket.IO
+synchronization, player projection, player read-only or data-exposure
+boundaries, map/fog rendering semantics, local-network behavior, security
+assumptions, dependencies, setup commands, or validation commands are Tier 3 by
+default.
 
 The main agent owns the final result. Subagent findings must be reconciled
 against the vision, design language, architecture, UI terminology, roadmap,
@@ -80,10 +91,21 @@ cumulative by tracker phase:
 - `Blocked` or `Deferred`: clarification plus explicit blocker or deferral
   evidence.
 
-Required independent reviews cannot use `/root` as the reviewer. Use a
-subagent identity such as `/root/code_review` or a human identity such as
-`human:user`. If independent review is unavailable, move the feature to
-`Blocked`; the main agent cannot self-waive the requirement.
+These phase checks currently reflect the original full-workflow contract. Until
+the harness is updated for tier-aware evidence, a feature must either satisfy
+the stricter active harness or complete a separate engineering update to the
+harness before relying on reduced tier evidence.
+
+Required independent reviews for the selected tier cannot use `/root` as the
+reviewer. Use a subagent identity such as `/root/code_review` or a human
+identity such as `human:user`. If required independent review is unavailable,
+move the feature to `Blocked`; the main agent cannot self-waive the
+requirement.
+
+The active harness may enforce stricter common evidence than the tier policy
+requires until a separate engineering change updates the automation. In that
+case, satisfy the active harness or update it explicitly before relying on the
+lighter tier evidence.
 
 Material findings use the exact table in the feature template. Critical and
 high findings must be fixed. Medium findings must be fixed or user-approved as

@@ -30,6 +30,7 @@ function createDefaultResizeObserver(callback) {
 
 export function createMapCanvasRenderer({
   canvas,
+  fogOpacity = 0,
   interactive = false,
   onStatus = () => {},
   onViewportChange = () => {},
@@ -45,6 +46,9 @@ export function createMapCanvasRenderer({
     drawFrame: null,
     generation: 0,
     image: null,
+    fogOperations: [],
+    maskCanvas: canvas.ownerDocument.createElement("canvas"),
+    maskContext: null,
     map: null,
     panX: 0,
     panY: 0,
@@ -56,6 +60,7 @@ export function createMapCanvasRenderer({
     status: "empty",
     zoom: 1
   };
+  state.maskContext = state.maskCanvas.getContext("2d");
 
   const originalTouchAction = canvas.style.touchAction;
 
@@ -83,6 +88,24 @@ export function createMapCanvasRenderer({
   function getPixelRatio() {
     const value = typeof devicePixelRatio === "function" ? devicePixelRatio() : devicePixelRatio;
     return clamp(Number.isFinite(value) ? value : 1, 1, MAX_DEVICE_PIXEL_RATIO);
+  }
+
+  function normalizeFogOperations(operations) {
+    return Array.isArray(operations)
+      ? operations.filter((operation) => {
+          const rect = operation?.rect || {};
+          return (
+            (operation.type === "hide-rectangle" || operation.type === "reveal-rectangle") &&
+            [rect.x, rect.y, rect.width, rect.height].every(Number.isFinite) &&
+            rect.x >= 0 &&
+            rect.y >= 0 &&
+            rect.width > 0 &&
+            rect.height > 0 &&
+            rect.x + rect.width <= 1 &&
+            rect.y + rect.height <= 1
+          );
+        })
+      : [];
   }
 
   function getDrawMetrics() {
@@ -120,18 +143,46 @@ export function createMapCanvasRenderer({
       delete canvas.dataset.drawHeight;
       delete canvas.dataset.drawX;
       delete canvas.dataset.drawY;
+      delete canvas.dataset.fogOperations;
       delete canvas.dataset.panX;
       delete canvas.dataset.panY;
       return;
     }
 
     context.drawImage(state.image, metrics.x, metrics.y, metrics.width, metrics.height);
+    drawFog(metrics);
     canvas.dataset.drawWidth = String(Math.round(metrics.width));
     canvas.dataset.drawHeight = String(Math.round(metrics.height));
     canvas.dataset.drawX = String(Math.round(metrics.x));
     canvas.dataset.drawY = String(Math.round(metrics.y));
+    canvas.dataset.fogOperations = String(state.fogOperations.length);
     canvas.dataset.panX = String(Math.round(state.panX));
     canvas.dataset.panY = String(Math.round(state.panY));
+  }
+
+  function drawFog(metrics) {
+    if (!state.fogOperations.length || fogOpacity <= 0 || !state.maskContext) return;
+
+    state.maskCanvas.width = state.stageWidth;
+    state.maskCanvas.height = state.stageHeight;
+    const maskContext = state.maskContext;
+    maskContext.clearRect(0, 0, state.stageWidth, state.stageHeight);
+
+    maskContext.fillStyle = "black";
+    state.fogOperations.forEach((operation) => {
+      const rect = operation.rect;
+      const x = metrics.x + metrics.width * rect.x;
+      const y = metrics.y + metrics.height * rect.y;
+      const width = metrics.width * rect.width;
+      const height = metrics.height * rect.height;
+      maskContext.globalCompositeOperation = operation.type === "reveal-rectangle" ? "destination-out" : "source-over";
+      maskContext.fillRect(x, y, width, height);
+    });
+
+    context.save();
+    context.globalAlpha = fogOpacity;
+    context.drawImage(state.maskCanvas, 0, 0);
+    context.restore();
   }
 
   function scheduleDraw() {
@@ -192,6 +243,7 @@ export function createMapCanvasRenderer({
   function setMap(map) {
     if (state.destroyed) return;
     const nextMap = map && map.id && map.assetUrl ? { ...map } : null;
+    state.fogOperations = normalizeFogOperations(nextMap?.fogOperations);
     const sameMap = Boolean(
       nextMap &&
       state.map &&
@@ -365,6 +417,10 @@ export function createMapCanvasRenderer({
     resetViewport,
     resize,
     setMap,
+    setFogOperations(operations) {
+      state.fogOperations = normalizeFogOperations(operations);
+      scheduleDraw();
+    },
     setZoom(zoom) {
       return updateZoom(zoom);
     },

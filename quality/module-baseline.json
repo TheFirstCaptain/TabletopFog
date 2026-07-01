@@ -23,20 +23,20 @@
       "responsibility": "Maintain GM campaign library, current campaign, GM-local selected encounter, explicit client screen state, and per-encounter GM-tab map alignment state."
     },
     "public/gm-view.js": {
-      "baselineLines": 532,
-      "responsibility": "Render the GM campaign card library, campaign deletion controls, campaign-card metadata editing, direct encounter gallery administration, encounter workspace shell, GM-local map alignment controls, messages, status, and shared-canvas map preview."
+      "baselineLines": 533,
+      "responsibility": "Render the GM campaign card library, campaign deletion controls, campaign-card metadata editing, direct encounter gallery administration, encounter workspace shell, GM-local map alignment controls, messages, status, and shared-canvas map plus semi-transparent fog preview."
     },
     "public/gm.js": {
       "baselineLines": 19,
       "responsibility": "Compose and start the browser-native GM client modules."
     },
     "public/map-canvas.js": {
-      "baselineLines": 378,
-      "responsibility": "Render active maps on a DPR-aware canvas with contain geometry, local zoom and pan, guarded image loading, pointer input, and deterministic cleanup."
+      "baselineLines": 434,
+      "responsibility": "Render active maps and ordered fog operations on a DPR-aware canvas with contain geometry, reusable fog mask composition, local zoom and pan, guarded image loading, pointer input, and deterministic cleanup."
     },
     "public/player.js": {
-      "baselineLines": 82,
-      "responsibility": "Coordinate read-only player active-map rendering, connection state, and local viewport controls."
+      "baselineLines": 83,
+      "responsibility": "Coordinate read-only player active-map and opaque fog rendering, connection state, and local viewport controls."
     },
     "scripts/check-harness-compliance.js": {
       "baselineLines": 45,
@@ -83,8 +83,8 @@
       "responsibility": "Resolve and load HTTPS certificate credentials."
     },
     "server/index.js": {
-      "baselineLines": 347,
-      "responsibility": "Compose HTTP routes, campaign deletion, campaign-card metadata updates, role projection, Socket.IO synchronization, and HTTPS startup.",
+      "baselineLines": 351,
+      "responsibility": "Compose HTTP routes, campaign deletion, campaign-card metadata updates, role-specific map and fog projection, Socket.IO synchronization, and HTTPS startup.",
       "temporaryException": {
         "engineeringId": "E-004",
         "reason": "HTTP, role, socket, and startup responsibilities are awaiting planned separation."
@@ -95,8 +95,8 @@
       "responsibility": "Validate supported map image signatures, metadata, and size limits."
     },
     "server/state.js": {
-      "baselineLines": 39,
-      "responsibility": "Maintain snapshot-safe in-memory active campaign state."
+      "baselineLines": 131,
+      "responsibility": "Maintain snapshot-safe in-memory active campaign state and encounter-scoped fog operation state, including target validation and pruning for removed encounters."
     }
   }
 }

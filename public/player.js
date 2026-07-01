@@ -26,6 +26,7 @@ function setControls(viewport = { panX: 0, panY: 0, zoom: 1 }) {
 let renderer;
 renderer = createMapCanvasRenderer({
   canvas,
+  fogOpacity: 0.92,
   interactive: true,
   onStatus({ map, state }) {
     rendererReady = state === "ready";

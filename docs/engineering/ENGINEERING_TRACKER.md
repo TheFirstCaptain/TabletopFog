@@ -37,9 +37,10 @@ broken promised behavior belongs in `docs/bugs/`.
 | ID | Title | Status | Priority | Engineering Doc | Last Updated | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | E-001 | Clean Up Test Temporary Directories | Done | P3 | [E-001.md](./E-001.md) | 2026-06-20 | Shared per-test recursive teardown covers every temporary-directory test and passed full quality validation. |
-| E-002 | Separate Campaign Storage Responsibilities | Proposed | P2 | [E-002.md](./E-002.md) | 2026-06-20 | Incrementally separate schema, validation, serialization, and filesystem operations before persistence grows. |
+| E-002 | Separate Campaign Storage Responsibilities | Proposed | P1 | [E-002.md](./E-002.md) | 2026-07-01 | Queued before F-007 to separate schema, validation, serialization, and filesystem operations before fog persistence grows storage complexity. |
 | E-003 | Separate GM Client Responsibilities | Done | P1 | [E-003.md](./E-003.md) | 2026-06-21 | Six focused GM modules preserve all characterized behavior and passed the 20-module ratchet, 75 Node tests, 4 Chromium workflows, and full quality. |
-| E-004 | Separate Server Transport Responsibilities | Proposed | P2 | [E-004.md](./E-004.md) | 2026-06-20 | Separate HTTP routing, role projection, Socket.IO coordination, and startup concerns. |
+| E-004 | Separate Server Transport Responsibilities | Proposed | P1 | [E-004.md](./E-004.md) | 2026-07-01 | Queued before F-007 to separate HTTP routing, role projection, Socket.IO coordination, and startup concerns before persistence routes expand. |
 | E-005 | Establish Module Responsibility and Growth Baselines | Done | P1 | [E-005.md](./E-005.md) | 2026-06-20 | Fifteen-module responsibility inventory and strict bidirectional ratchet are implemented, reviewed, and validated. |
 | E-006 | Harden Test Fixtures and Failure-Path Coverage | Done | P1 | [E-006.md](./E-006.md) | 2026-06-20 | Representative fixtures, boundary matrices, partial-state assertions, and test guidance passed full quality validation. |
 | E-007 | Stabilize Browser Reconnect Timing | Done | P2 | [E-007.md](./E-007.md) | 2026-06-21 | Scoped reconnect timing preserves all outcomes and passes isolation, the six-test Chromium suite, and full quality. |
+| E-008 | Evaluate Local Datastore Adapter After Fog Persistence | Proposed | P2 | [E-008.md](./E-008.md) | 2026-07-01 | After F-007, evaluate JSON persistence pressure against a local datastore adapter such as SQLite without changing current MVP storage prematurely. |
