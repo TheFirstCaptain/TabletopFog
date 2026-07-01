@@ -7,6 +7,33 @@ export function createGmState() {
   let currentCampaign = null;
   let selectedEncounterId = null;
   let screen = "library";
+  const workspaceGridStates = new Map();
+
+  function createDefaultGridState() {
+    return {
+      locked: false,
+      lockDrawX: 0,
+      lockDrawY: 0,
+      lockOffsetX: 0,
+      lockOffsetY: 0,
+      lockZoom: 1,
+      offsetX: 0,
+      offsetY: 0,
+      visible: false
+    };
+  }
+
+  function getGridStateKey(mapId = selectedEncounterId) {
+    if (!currentCampaign || !mapId) return null;
+    return `${currentCampaign.id}:${mapId}`;
+  }
+
+  function getGridState(mapId = selectedEncounterId) {
+    const key = getGridStateKey(mapId);
+    if (!key) return createDefaultGridState();
+    if (!workspaceGridStates.has(key)) workspaceGridStates.set(key, createDefaultGridState());
+    return workspaceGridStates.get(key);
+  }
 
   function ensureSelectedEncounterExists() {
     if (!currentCampaign || !currentCampaign.maps.some((map) => map.id === selectedEncounterId)) {
@@ -39,6 +66,9 @@ export function createGmState() {
     getSelectedEncounterId() {
       return selectedEncounterId;
     },
+    getSelectedEncounterGridState() {
+      return { ...getGridState() };
+    },
     getScreen() {
       return screen;
     },
@@ -69,6 +99,17 @@ export function createGmState() {
       }
 
       return false;
+    },
+    updateSelectedEncounterGridState(patch) {
+      const key = getGridStateKey();
+      if (!key) return createDefaultGridState();
+      const current = getGridState();
+      const next = {
+        ...current,
+        ...patch
+      };
+      workspaceGridStates.set(key, next);
+      return { ...next };
     }
   };
 }

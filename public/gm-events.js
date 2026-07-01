@@ -1,4 +1,6 @@
 export function wireGmEvents(elements, actions) {
+  let gridDragPoint = null;
+
   elements.campaignForm.addEventListener("submit", (event) => {
     event.preventDefault();
     actions.createCampaign(elements.campaignName.value);
@@ -12,6 +14,48 @@ export function wireGmEvents(elements, actions) {
   elements.backToLibrary.addEventListener("click", actions.backToLibrary);
   elements.backToEncounters.addEventListener("click", actions.backToEncounters);
   elements.workspaceShowToPlayers.addEventListener("click", actions.showWorkspaceEncounter);
+  elements.gmZoomOut.addEventListener("click", actions.zoomWorkspaceMapOut);
+  elements.gmFitMap.addEventListener("click", actions.fitWorkspaceMap);
+  elements.gmZoomIn.addEventListener("click", actions.zoomWorkspaceMapIn);
+  elements.workspaceGridToggle.addEventListener("click", actions.toggleWorkspaceGrid);
+  elements.workspaceGridLock.addEventListener("click", actions.toggleWorkspaceGridLock);
+
+  elements.workspaceGridOverlay.addEventListener("pointerdown", (event) => {
+    if (elements.workspaceGridOverlay.dataset.locked === "true") return;
+    elements.workspaceGridOverlay.setPointerCapture?.(event.pointerId);
+    gridDragPoint = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+    elements.workspaceGridOverlay.dataset.dragging = "true";
+  });
+
+  elements.workspaceGridOverlay.addEventListener("pointermove", (event) => {
+    if (!gridDragPoint || gridDragPoint.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    actions.moveWorkspaceGrid(event.clientX - gridDragPoint.x, event.clientY - gridDragPoint.y);
+    gridDragPoint = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+  });
+
+  function stopGridDrag(event) {
+    if (gridDragPoint?.pointerId === event.pointerId) {
+      gridDragPoint = null;
+      delete elements.workspaceGridOverlay.dataset.dragging;
+    }
+  }
+
+  elements.workspaceGridOverlay.addEventListener("pointerup", stopGridDrag);
+  elements.workspaceGridOverlay.addEventListener("pointercancel", stopGridDrag);
+
+  elements.workspaceGridOverlay.addEventListener("keydown", (event) => {
+    const delta = {
+      ArrowDown: [0, 1],
+      ArrowLeft: [-1, 0],
+      ArrowRight: [1, 0],
+      ArrowUp: [0, -1]
+    }[event.key];
+    if (!delta) return;
+    event.preventDefault();
+    const step = event.shiftKey ? 10 : 1;
+    actions.moveWorkspaceGrid(delta[0] * step, delta[1] * step);
+  });
 
   elements.campaignList.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-action]");

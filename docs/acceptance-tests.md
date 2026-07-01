@@ -667,11 +667,11 @@ Steps:
 6. On desktop or Chromebook-sized screens, confirm the Encounter Workspace
    header is a compact label/status/action strip and the map starts high in the
    first viewport.
-7. Confirm the map is the dominant workspace element and the fixed reserved
-   future tool dock sits laterally beside it without floating over the map.
-8. On a narrow screen, confirm the reserved future tool dock stacks below the
+7. Confirm the map is the dominant workspace element and the compact prep tools
+   panel sits laterally beside it without floating over the map.
+8. On a narrow screen, confirm the compact prep tools panel stacks below the
    map and the page has no horizontal overflow.
-9. Confirm the workspace includes reserved future fog-tool space without fog controls.
+9. Confirm the workspace includes map alignment controls without fog controls.
 10. Confirm `Show to Players` sits in a fixed running-actions area near the
     title/status, not over the map.
 11. Click the workspace `Show to Players` action.
@@ -688,8 +688,8 @@ Expected result:
   changing the selected/editing encounter.
 - Workspace navigation back to the encounter gallery is clear.
 - The workspace makes the map dominant in the first viewport, keeps the
-  Encounter Workspace header compact, keeps future tool space fixed and
-  reserved without adding fog controls yet, and remains usable at desktop,
+  Encounter Workspace header compact, keeps map alignment tools compact and
+  fixed without adding fog controls yet, and remains usable at desktop,
   Chromebook-sized, and narrow viewports.
 - Rename, reorder, and upload remain gallery workflows for this feature.
 
@@ -753,22 +753,34 @@ Steps:
 6. Show the 5 ft grid overlay.
 7. Adjust the grid placement until it lines up with the map.
 8. Zoom the map again.
-9. Confirm the grid stays fixed in workspace space while the map zooms beneath
-   it.
+9. Confirm the unlocked grid stays fixed in workspace space while the map zooms
+   beneath it.
 10. Lock the grid.
-11. Attempt to move the grid accidentally.
-12. Confirm the locked grid does not move.
-13. Unlock the grid.
-14. Adjust the grid again.
-15. Repeat at desktop, Chromebook-sized, and narrow viewport widths.
+11. Zoom the map again and confirm the locked grid scales with the map.
+12. Attempt to move the grid accidentally.
+13. Confirm the locked grid does not move independently.
+14. Unlock the grid.
+15. Adjust the grid again.
+16. Open another encounter and confirm its grid is unset.
+17. Return to the first encounter and confirm its grid state remains available
+    in the current GM browser tab.
+18. Reload the GM View and confirm grid state is not persisted.
+19. Repeat at desktop, Chromebook-sized, and narrow viewport widths.
 
 Expected result:
 
 - GM map zoom is local to the GM workspace and does not mutate campaign state or
   Player Display viewport state.
 - The grid represents 5 ft squares and can be aligned to the battlemap.
-- The grid remains fixed while the map zoom changes.
-- Lock prevents accidental grid movement; unlock allows adjustment again.
+- The first grid uses a fixed screen-space cell size; map zoom supplies scale
+  alignment and grid movement supplies offset alignment.
+- Before lock, the grid remains fixed in workspace space while the map zoom
+  changes.
+- After lock, the grid is anchored to the map and scales with GM map zoom.
+- Lock prevents accidental independent grid movement; unlock allows adjustment
+  again.
+- Grid state is GM-local, per encounter, and available only in the current GM
+  browser tab until reload.
 - Opening, zooming, aligning, locking, or unlocking the grid does not change the
   Player Display.
 - `Show to Players` remains the only action that changes what players see.

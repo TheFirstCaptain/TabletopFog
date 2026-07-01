@@ -46,3 +46,4 @@ Use this tracker for known defects, regressions, build failures, browser/device 
 | B-007 | Data Root Path Overflows Narrow GM Layout | Resolved | P3 | [B-007.md](./B-007.md) | 2026-06-21 | Scoped path wrapping passes the 390 px Chromium regression and full quality. |
 | B-008 | Campaign Details Edit Cannot Change Campaign Name | Resolved | P3 | [B-008.md](./B-008.md) | 2026-06-28 | Campaign display-name editing now uses the existing GM-only campaign details flow without renaming local folders. |
 | B-009 | Encounter Workspace Narrows After Opening Encounter | Resolved | P3 | [B-009.md](./B-009.md) | 2026-06-28 | Focused workspace now spans the campaign content area after opening an encounter, with Chromium regression coverage. |
+| B-010 | Locked Grid Does Not Scale With GM Map Zoom | Resolved | P3 | [B-010.md](./B-010.md) | 2026-07-01 | Locked grid scales with GM map zoom after lock, zoom readout stacks below zoom buttons, and full quality passes. |

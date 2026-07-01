@@ -48,13 +48,19 @@ encounters first. The GM app header now keeps `TABLETOPFOG`, breadcrumb context,
 and connection state in one compact row. Opening an encounter for prep enters a
 focused GM workspace shell with a compact label/status/action strip, the
 selected map as the dominant first-viewport surface, selected-versus-shown
-status, a small fixed reserved future tools dock on desktop/Chromebook-sized
-screens that stacks below the map on narrow screens, separate `Back to Campaign`
+status, a compact Map Alignment prep panel on desktop/Chromebook-sized screens
+that stacks below the map on narrow screens, separate `Back to Campaign`
 navigation, and a workspace-level `Show to Players` running action near the
-title/status that can also clear when it reads `Shown to Players`. Campaign
-screens use `Back to Campaign Library`, and normal GM UI avoids showing local
-filesystem paths. Opening or navigating the workspace does not change the Player
-Display. Existing storage still uses `maps` and
+title/status that can also clear when it reads `Shown to Players`. The Map
+Alignment tools let the GM zoom the selected workspace map and show, move,
+lock, and unlock a 5 ft grid overlay. Before lock, the grid is a fixed
+screen-space alignment aid; after lock, it scales with the GM map zoom. These
+controls are GM-only, non-persistent, and local to the current browser tab; the
+Player Display changes only when the GM explicitly uses `Show to Players`.
+Campaign screens use
+`Back to Campaign Library`, and normal GM UI avoids showing local filesystem
+paths. Opening or navigating the workspace does not change the Player Display.
+Existing storage still uses `maps` and
 `activeMapId`, where `activeMapId` is an implementation detail meaning the
 encounter currently shown to players until a reviewed migration chooses clearer
 names. The UI should say `Shown to Players`.

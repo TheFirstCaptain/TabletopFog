@@ -205,11 +205,21 @@ Goal: Add manual hide/reveal fog controls in the GM encounter workspace.
 
 Planned focused sequence:
 
-- Proposed: [F-006A](./features/F-006A.md), GM map zoom and grid calibration.
+- Complete: [F-006A](./features/F-006A.md), GM map zoom and grid calibration.
 - Proposed: [F-006](./features/F-006.md), manual fog of war.
 
 Acceptance criteria:
 
+- GM map zoom controls live in the Encounter Workspace and affect only the GM
+  browser tab.
+- A GM-only 5 ft grid overlay can be shown, moved, locked, and unlocked.
+- Before lock, the first grid uses a fixed screen-space cell size; map zoom
+  supplies scale alignment and grid movement supplies offset alignment.
+- After lock, the grid is anchored to the map and scales with GM map zoom.
+- Grid state is non-persistent, per encounter, and local to the current GM
+  browser tab.
+- Opening, zooming, aligning, locking, or unlocking the grid does not change the
+  Player Display.
 - Maps start visible.
 - GM can add fog or hide areas on the selected/editing encounter using simple shapes such as rectangles or circles.
 - GM can remove or reveal fog from hidden areas during play.

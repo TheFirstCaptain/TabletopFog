@@ -86,13 +86,33 @@
                 <div id="active-map-stage" class="gm-map-stage">
                   <p id="active-map-message" class="map-state-message muted">No encounter selected.</p>
                   <canvas id="active-map-canvas" class="map-canvas" role="img" aria-label="" hidden></canvas>
+                  <div
+                    id="workspace-grid-overlay"
+                    class="workspace-grid-overlay"
+                    aria-label="5 foot grid overlay"
+                    tabindex="0"
+                    hidden
+                  ></div>
                 </div>
               </div>
 
-              <aside class="future-tools-panel" aria-labelledby="future-tools-heading">
-                <p class="eyebrow">Reserved</p>
-                <h4 id="future-tools-heading">Future Tools</h4>
-                <p class="muted">Fixed home for later encounter tools.</p>
+              <aside class="workspace-tools-panel" aria-labelledby="workspace-tools-heading">
+                <p class="eyebrow">Prep Tools</p>
+                <h4 id="workspace-tools-heading">Map Alignment</h4>
+                <div class="workspace-tool-group map-zoom-tool-group" aria-label="GM map zoom">
+                  <button id="gm-zoom-out" class="secondary compact-tool-button" type="button">Zoom out</button>
+                  <button id="gm-zoom-in" class="secondary compact-tool-button" type="button">Zoom in</button>
+                  <output id="gm-zoom-level" aria-label="GM map zoom level">100%</output>
+                  <button id="gm-fit-map" class="secondary compact-tool-button" type="button">Fit map</button>
+                </div>
+                <div class="workspace-tool-group" aria-label="Grid alignment">
+                  <button id="workspace-grid-toggle" class="secondary compact-tool-button" type="button">
+                    Show grid
+                  </button>
+                  <button id="workspace-grid-lock" class="secondary compact-tool-button" type="button" disabled>
+                    Lock grid
+                  </button>
+                </div>
               </aside>
             </div>
           </section>

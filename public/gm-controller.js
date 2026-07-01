@@ -1,6 +1,11 @@
 export function createGmController({ api, socket, state, view }) {
   function renderCurrentCampaign() {
-    view.renderCampaign(state.getCurrentCampaign(), state.getSelectedEncounterId(), state.getScreen());
+    view.renderCampaign(
+      state.getCurrentCampaign(),
+      state.getSelectedEncounterId(),
+      state.getScreen(),
+      state.getSelectedEncounterGridState()
+    );
   }
 
   async function loadCampaigns() {
@@ -154,6 +159,59 @@ export function createGmController({ api, socket, state, view }) {
     setShownEncounter(mapId === activeMapId ? null : mapId);
   }
 
+  function fitWorkspaceMap() {
+    view.workspaceFitMap();
+  }
+
+  function moveWorkspaceGrid(deltaX, deltaY) {
+    const current = state.getSelectedEncounterGridState();
+    if (!current.visible) {
+      view.setWorkspaceGridState(current);
+      return;
+    }
+    if (current.locked) return;
+
+    view.setWorkspaceGridState(
+      state.updateSelectedEncounterGridState({
+        offsetX: current.offsetX + deltaX,
+        offsetY: current.offsetY + deltaY
+      })
+    );
+  }
+
+  function toggleWorkspaceGrid() {
+    const current = state.getSelectedEncounterGridState();
+    view.setWorkspaceGridState(
+      state.updateSelectedEncounterGridState({
+        visible: !current.visible
+      })
+    );
+  }
+
+  function toggleWorkspaceGridLock() {
+    const current = state.getSelectedEncounterGridState();
+    if (!current.visible) return;
+    const lockPatch = current.locked
+      ? {
+          locked: false,
+          offsetX: view.getWorkspaceGridLockSnapshot().lockOffsetX,
+          offsetY: view.getWorkspaceGridLockSnapshot().lockOffsetY
+        }
+      : {
+          ...view.getWorkspaceGridLockSnapshot(),
+          locked: true
+        };
+    view.setWorkspaceGridState(state.updateSelectedEncounterGridState(lockPatch));
+  }
+
+  function zoomWorkspaceMapIn() {
+    view.workspaceZoomIn();
+  }
+
+  function zoomWorkspaceMapOut() {
+    view.workspaceZoomOut();
+  }
+
   function backToLibrary() {
     state.closeCampaign();
     view.hideCampaign();
@@ -167,14 +225,20 @@ export function createGmController({ api, socket, state, view }) {
       createCampaign,
       deleteCampaign,
       deleteMap,
+      fitWorkspaceMap,
+      moveWorkspaceGrid,
       moveMap,
       openCampaign,
       renameMap,
       selectEncounter,
       toggleShownEncounter,
+      toggleWorkspaceGrid,
+      toggleWorkspaceGridLock,
       showWorkspaceEncounter,
       updateCampaignMetadata,
-      uploadMap
+      uploadMap,
+      zoomWorkspaceMapIn,
+      zoomWorkspaceMapOut
     },
     start() {
       socket.on("connect", () => view.setStatus("Live", "live"));

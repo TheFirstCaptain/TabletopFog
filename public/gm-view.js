@@ -2,6 +2,16 @@ import { createMapCanvasRenderer } from "./map-canvas.js";
 import { createGmNavigation } from "./gm-navigation.js";
 
 const DEFAULT_CAMPAIGN_ICON = "🗺️";
+const GRID_CELL_SIZE = 64;
+
+function createDefaultGridState() {
+  return {
+    locked: false,
+    offsetX: 0,
+    offsetY: 0,
+    visible: false
+  };
+}
 
 function createButton(document, { action, className, disabled, index, mapId, text }) {
   const button = document.createElement("button");
@@ -33,6 +43,10 @@ export function createGmView(document) {
     breadcrumb: document.querySelector("#breadcrumb"),
     encounterGallery: document.querySelector("#encounter-gallery"),
     encounterWorkspace: document.querySelector("#encounter-workspace"),
+    gmFitMap: document.querySelector("#gm-fit-map"),
+    gmZoomIn: document.querySelector("#gm-zoom-in"),
+    gmZoomLevel: document.querySelector("#gm-zoom-level"),
+    gmZoomOut: document.querySelector("#gm-zoom-out"),
     libraryPanel: document.querySelector("#library-panel"),
     libraryDiagnostics: document.querySelector("#library-diagnostics"),
     libraryMessage: document.querySelector("#library-message"),
@@ -42,30 +56,87 @@ export function createGmView(document) {
     selectedEncounterHeading: document.querySelector("#selected-encounter-heading"),
     selectedEncounterStatus: document.querySelector("#selected-encounter-status"),
     status: document.querySelector("#connection-status"),
+    workspaceGridLock: document.querySelector("#workspace-grid-lock"),
+    workspaceGridOverlay: document.querySelector("#workspace-grid-overlay"),
+    workspaceGridToggle: document.querySelector("#workspace-grid-toggle"),
     workspaceGrid: document.querySelector(".workspace-grid"),
     workspaceShowToPlayers: document.querySelector("#workspace-show-to-players")
   };
   const navigation = createGmNavigation(elements);
+  let activeMapReady = false;
+  let workspaceGridState = createDefaultGridState();
 
-  const activeMapRenderer = createMapCanvasRenderer({
+  let activeMapRenderer;
+  activeMapRenderer = createMapCanvasRenderer({
     canvas: elements.activeMapCanvas,
     onStatus({ map, state }) {
+      activeMapReady = state === "ready";
       elements.activeMapMessage.dataset.state = state;
       elements.activeMapMessage.setAttribute("role", state === "error" ? "alert" : "status");
       if (state === "empty") elements.activeMapMessage.textContent = "No encounter selected.";
       if (state === "loading") elements.activeMapMessage.textContent = "Loading map...";
       if (state === "ready") elements.activeMapMessage.textContent = map.name;
       if (state === "error") elements.activeMapMessage.textContent = "Map image could not be loaded.";
+      renderWorkspaceZoomControls(activeMapRenderer.getViewport());
+      renderWorkspaceGridState();
+    },
+    onViewportChange(viewport) {
+      renderWorkspaceZoomControls(viewport);
+      requestAnimationFrame(() => renderWorkspaceGridState());
     }
   });
 
-  function renderSelectedEncounter(campaign, selectedEncounterId, screen) {
+  function renderWorkspaceZoomControls(viewport = activeMapRenderer.getViewport()) {
+    const disabled = !activeMapReady;
+    elements.gmZoomLevel.value = `${Math.round(viewport.zoom * 100)}%`;
+    elements.gmZoomLevel.textContent = elements.gmZoomLevel.value;
+    elements.gmZoomOut.disabled = disabled || viewport.zoom <= viewport.minZoom;
+    elements.gmZoomIn.disabled = disabled || viewport.zoom >= viewport.maxZoom;
+    elements.gmFitMap.disabled = disabled || (viewport.zoom === 1 && viewport.panX === 0 && viewport.panY === 0);
+  }
+
+  function renderWorkspaceGridState(gridState = workspaceGridState, viewport = activeMapRenderer.getViewport()) {
+    workspaceGridState = { ...createDefaultGridState(), ...gridState };
+    const shouldShowGrid = activeMapReady && workspaceGridState.visible;
+    const lockedZoomRatio =
+      workspaceGridState.locked && workspaceGridState.lockZoom > 0 ? viewport.zoom / workspaceGridState.lockZoom : 1;
+    const lockedOffsetX =
+      Number(elements.activeMapCanvas.dataset.drawX) +
+      (workspaceGridState.lockOffsetX - workspaceGridState.lockDrawX) * lockedZoomRatio;
+    const lockedOffsetY =
+      Number(elements.activeMapCanvas.dataset.drawY) +
+      (workspaceGridState.lockOffsetY - workspaceGridState.lockDrawY) * lockedZoomRatio;
+    const offsetX = workspaceGridState.locked ? lockedOffsetX : workspaceGridState.offsetX;
+    const offsetY = workspaceGridState.locked ? lockedOffsetY : workspaceGridState.offsetY;
+    const cellSize = GRID_CELL_SIZE * lockedZoomRatio;
+
+    elements.workspaceGridOverlay.hidden = !shouldShowGrid;
+    elements.workspaceGridOverlay.dataset.locked = String(workspaceGridState.locked);
+    elements.workspaceGridOverlay.dataset.offsetX = String(Math.round(offsetX));
+    elements.workspaceGridOverlay.dataset.offsetY = String(Math.round(offsetY));
+    elements.workspaceGridOverlay.dataset.cellSize = String(Math.round(cellSize));
+    elements.workspaceGridOverlay.style.backgroundPosition = `${offsetX}px ${offsetY}px`;
+    elements.workspaceGridOverlay.style.backgroundSize = `${cellSize}px ${cellSize}px`;
+
+    elements.workspaceGridToggle.disabled = !activeMapReady;
+    elements.workspaceGridToggle.textContent = workspaceGridState.visible ? "Hide grid" : "Show grid";
+    elements.workspaceGridToggle.setAttribute("aria-pressed", String(workspaceGridState.visible));
+
+    elements.workspaceGridLock.disabled = !activeMapReady || !workspaceGridState.visible;
+    elements.workspaceGridLock.textContent = workspaceGridState.locked ? "Unlock grid" : "Lock grid";
+    elements.workspaceGridLock.setAttribute("aria-pressed", String(workspaceGridState.locked));
+  }
+
+  function renderSelectedEncounter(campaign, selectedEncounterId, screen, gridState) {
     const selectedEncounter = campaign.maps.find((map) => map.id === selectedEncounterId);
     if (screen !== "workspace" || !selectedEncounter) {
       elements.selectedEncounterHeading.textContent = "Open an encounter";
       elements.selectedEncounterStatus.textContent = "Choose an encounter card to prep it here.";
       elements.workspaceShowToPlayers.disabled = true;
+      activeMapReady = false;
       activeMapRenderer.setMap(null);
+      renderWorkspaceZoomControls();
+      renderWorkspaceGridState(createDefaultGridState());
       return;
     }
     const shownToPlayers = selectedEncounter.id === campaign.activeMapId;
@@ -82,6 +153,7 @@ export function createGmView(document) {
       "aria-label",
       shownToPlayers ? "Shown to Players - clear from Player Display" : "Show to Players from workspace"
     );
+    renderWorkspaceGridState(gridState);
     activeMapRenderer.setMap({ ...selectedEncounter, campaignId: campaign.id });
   }
 
@@ -242,7 +314,7 @@ export function createGmView(document) {
     hideCampaign() {
       navigation.showLibrary();
     },
-    renderCampaign(campaign, selectedEncounterId = null, screen = "campaign") {
+    renderCampaign(campaign, selectedEncounterId = null, screen = "campaign", gridState = createDefaultGridState()) {
       if (!campaign) {
         navigation.showLibrary();
         return;
@@ -257,7 +329,7 @@ export function createGmView(document) {
       elements.campaignHeading.textContent = campaign.name;
       elements.campaignMessage.textContent = campaign.maps.length === 0 ? "Add an encounter map to begin." : "";
       renderMaps(campaign, selectedEncounterId);
-      renderSelectedEncounter(campaign, selectedEncounterId, screen);
+      renderSelectedEncounter(campaign, selectedEncounterId, screen, gridState);
     },
     renderLibrary({ campaigns, diagnostics }) {
       elements.campaignList.replaceChildren();
@@ -434,6 +506,27 @@ export function createGmView(document) {
     setStatus(message, state) {
       elements.status.textContent = message;
       elements.status.dataset.state = state;
+    },
+    setWorkspaceGridState(gridState) {
+      renderWorkspaceGridState(gridState);
+    },
+    getWorkspaceGridLockSnapshot() {
+      return {
+        lockDrawX: Number(elements.activeMapCanvas.dataset.drawX) || 0,
+        lockDrawY: Number(elements.activeMapCanvas.dataset.drawY) || 0,
+        lockOffsetX: Number(elements.workspaceGridOverlay.dataset.offsetX) || 0,
+        lockOffsetY: Number(elements.workspaceGridOverlay.dataset.offsetY) || 0,
+        lockZoom: activeMapRenderer.getViewport().zoom
+      };
+    },
+    workspaceFitMap() {
+      return activeMapRenderer.resetViewport();
+    },
+    workspaceZoomIn() {
+      return activeMapRenderer.zoomIn();
+    },
+    workspaceZoomOut() {
+      return activeMapRenderer.zoomOut();
     }
   };
 }

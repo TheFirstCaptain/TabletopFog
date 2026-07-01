@@ -83,7 +83,8 @@ button:disabled {
 button:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
-.map-canvas:focus-visible {
+.map-canvas:focus-visible,
+.workspace-grid-overlay:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
@@ -680,6 +681,7 @@ h4 {
   gap: 0.75rem;
 }
 
+.workspace-tools-panel,
 .future-tools-panel {
   align-self: start;
   min-height: 0;
@@ -690,20 +692,60 @@ h4 {
   padding: 0.5rem;
 }
 
+.workspace-tools-panel p,
 .future-tools-panel p {
   margin-bottom: 0;
   font-size: 0.8125rem;
   line-height: 1.25;
 }
 
+.workspace-tools-panel .eyebrow,
 .future-tools-panel .eyebrow {
   margin-bottom: 0.15rem;
 }
 
+.workspace-tools-panel h4,
 .future-tools-panel h4 {
   margin-bottom: 0.25rem;
   font-size: 0.875rem;
   line-height: 1.1;
+}
+
+.workspace-tool-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+}
+
+.workspace-tool-group + .workspace-tool-group {
+  border-top: 1px solid rgb(155 123 79 / 28%);
+  padding-top: 0.55rem;
+}
+
+.map-zoom-tool-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.compact-tool-button {
+  min-width: 0;
+  min-height: 2.3rem;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.875rem;
+}
+
+#gm-zoom-level {
+  grid-column: 1 / -1;
+  min-width: 3.25rem;
+  color: var(--accent-strong);
+  font-weight: 700;
+  text-align: center;
+}
+
+#gm-fit-map {
+  grid-column: 1 / -1;
 }
 
 .gm-map-stage {
@@ -722,6 +764,26 @@ h4 {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.workspace-grid-overlay {
+  --grid-cell-size: 64px;
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  background-image:
+    linear-gradient(rgb(247 235 207 / 55%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(247 235 207 / 55%) 1px, transparent 1px);
+  background-size: var(--grid-cell-size) var(--grid-cell-size);
+  cursor: grab;
+}
+
+.workspace-grid-overlay[data-dragging="true"] {
+  cursor: grabbing;
+}
+
+.workspace-grid-overlay[data-locked="true"] {
+  cursor: default;
 }
 
 .map-state-message {
@@ -746,7 +808,8 @@ h4 {
   transform: none;
 }
 
-.map-canvas:focus-visible {
+.map-canvas:focus-visible,
+.workspace-grid-overlay:focus-visible {
   outline-offset: -4px;
 }
 

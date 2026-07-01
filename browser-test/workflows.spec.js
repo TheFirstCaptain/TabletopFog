@@ -867,9 +867,26 @@ test("GM workspace shell previews selected encounter without changing the player
   await expect(page.getByRole("button", { name: "Show to Players from workspace" })).toBeEnabled();
   await expect(page.getByRole("group", { name: "Running actions" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Back to Campaign" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Future Tools" })).toBeVisible();
-  await expect(page.getByRole("button", { name: /fog|brush|reveal|hide/i })).toHaveCount(0);
-  await expect(page.locator(".future-tools-panel button, .future-tools-panel input")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Map Alignment" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Zoom out" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Show grid" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /fog|brush|reveal|token/i })).toHaveCount(0);
+  const zoomControlLayout = await page.evaluate(() => {
+    const zoomOut = document.querySelector("#gm-zoom-out").getBoundingClientRect();
+    const zoomIn = document.querySelector("#gm-zoom-in").getBoundingClientRect();
+    const zoomLevel = document.querySelector("#gm-zoom-level").getBoundingClientRect();
+    const fitMap = document.querySelector("#gm-fit-map").getBoundingClientRect();
+    return {
+      fitBelowLevel: fitMap.top >= zoomLevel.bottom,
+      levelBelowButtons: zoomLevel.top >= Math.max(zoomOut.bottom, zoomIn.bottom),
+      zoomButtonsSameRow: Math.abs(zoomOut.top - zoomIn.top) < 4
+    };
+  });
+  expect(zoomControlLayout).toEqual({
+    fitBelowLevel: true,
+    levelBelowButtons: true,
+    zoomButtonsSameRow: true
+  });
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeWorkspaceOpen);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -881,7 +898,7 @@ test("GM workspace shell previews selected encounter without changing the player
     const workspace = document.querySelector("#encounter-workspace").getBoundingClientRect();
     const header = document.querySelector(".workspace-header").getBoundingClientRect();
     const map = document.querySelector(".gm-map-stage").getBoundingClientRect();
-    const dockElement = document.querySelector(".future-tools-panel");
+    const dockElement = document.querySelector(".workspace-tools-panel");
     const dock = dockElement.getBoundingClientRect();
     const dockStyles = getComputedStyle(dockElement);
     const action = document.querySelector("#workspace-show-to-players").getBoundingClientRect();
@@ -939,7 +956,7 @@ test("GM workspace shell previews selected encounter without changing the player
     const workspace = document.querySelector("#encounter-workspace").getBoundingClientRect();
     const header = document.querySelector(".workspace-header").getBoundingClientRect();
     const map = document.querySelector(".gm-map-stage").getBoundingClientRect();
-    const dock = document.querySelector(".future-tools-panel").getBoundingClientRect();
+    const dock = document.querySelector(".workspace-tools-panel").getBoundingClientRect();
     return {
       dockRightOfMap: dock.left > map.right,
       headerCompact: header.height < window.innerHeight * 0.18,
@@ -986,7 +1003,7 @@ test("GM workspace shell previews selected encounter without changing the player
   const narrowWorkspaceLayout = await page.evaluate(() => {
     const header = document.querySelector(".workspace-header").getBoundingClientRect();
     const map = document.querySelector(".gm-map-stage").getBoundingClientRect();
-    const dock = document.querySelector(".future-tools-panel").getBoundingClientRect();
+    const dock = document.querySelector(".workspace-tools-panel").getBoundingClientRect();
     return {
       dockBelowMap: dock.top > map.bottom,
       headerAboveMap: header.bottom <= map.top,
@@ -998,6 +1015,159 @@ test("GM workspace shell previews selected encounter without changing the player
     headerAboveMap: true,
     mapAreaGreaterThanDock: true
   });
+});
+
+test("GM workspace map alignment controls stay local to the GM browser tab", async ({ app, page, context }) => {
+  const player = await context.newPage();
+  let playerAssetRequests = 0;
+  await player.route("**/api/player/active-map/asset*", (route) => {
+    playerAssetRequests += 1;
+    return route.continue();
+  });
+
+  await page.setViewportSize({ height: 768, width: 1366 });
+  await openGm(page, app.baseURL);
+  await createCampaign(page);
+  await uploadMapFile(page, await sizedPngFile(page, "forest.png", 200, 100, "#254117", "#6b8e23"));
+  await uploadMapFile(page, await sizedPngFile(page, "cave.png", 200, 100, "#2c2430", "#b08968"));
+  await page.getByRole("button", { name: "Show to Players", exact: true }).first().click();
+  await player.goto(`${app.baseURL}/player`);
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  await player.getByRole("button", { name: "Zoom in" }).click();
+  await expect(player.getByText("125%", { exact: true })).toBeVisible();
+  const playerAssetRequestsBeforeAlignment = playerAssetRequests;
+
+  await page.getByRole("button", { name: "Open forest for prep" }).click();
+  const gmCanvas = page.getByRole("img", { name: "Map: forest" });
+  await expect(gmCanvas).toBeVisible();
+  await expect(page.getByText("100%", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Zoom in" }).click();
+  await page.getByRole("button", { name: "Zoom in" }).click();
+  await expect(page.getByText("150%", { exact: true })).toBeVisible();
+  await expect.poll(() => gmCanvas.getAttribute("data-zoom")).toBe("1.5");
+  await expect(player.getByText("125%", { exact: true })).toBeVisible();
+  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeAlignment);
+
+  await page.getByRole("button", { name: "Show grid" }).click();
+  const grid = page.locator("#workspace-grid-overlay");
+  await expect(grid).toBeVisible();
+  await expect(player.locator("#workspace-grid-overlay")).toHaveCount(0);
+  const beforeGridZoom = await page.evaluate(() => {
+    const overlay = document.querySelector("#workspace-grid-overlay");
+    const bounds = overlay.getBoundingClientRect();
+    const canvas = document.querySelector("#active-map-canvas");
+    return {
+      cellSize: overlay.dataset.cellSize,
+      height: bounds.height,
+      offsetX: overlay.dataset.offsetX,
+      offsetY: overlay.dataset.offsetY,
+      renderedWidth: Number(canvas.dataset.drawWidth),
+      width: bounds.width
+    };
+  });
+  await page.getByRole("button", { name: "Zoom in" }).click();
+  await expect.poll(() => gmCanvas.getAttribute("data-zoom")).toBe("1.75");
+  await expect.poll(() => gmCanvas.getAttribute("data-draw-width")).not.toBe(String(beforeGridZoom.renderedWidth));
+  const afterGridZoom = await page.evaluate(() => {
+    const overlay = document.querySelector("#workspace-grid-overlay");
+    const bounds = overlay.getBoundingClientRect();
+    const canvas = document.querySelector("#active-map-canvas");
+    return {
+      cellSize: overlay.dataset.cellSize,
+      height: bounds.height,
+      offsetX: overlay.dataset.offsetX,
+      offsetY: overlay.dataset.offsetY,
+      renderedWidth: Number(canvas.dataset.drawWidth),
+      width: bounds.width
+    };
+  });
+  expect(afterGridZoom).toMatchObject({
+    cellSize: beforeGridZoom.cellSize,
+    height: beforeGridZoom.height,
+    offsetX: beforeGridZoom.offsetX,
+    offsetY: beforeGridZoom.offsetY,
+    width: beforeGridZoom.width
+  });
+  expect(afterGridZoom.renderedWidth).toBeGreaterThan(beforeGridZoom.renderedWidth);
+
+  await grid.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect.poll(() => grid.getAttribute("data-offset-x")).toBe("1");
+  await page.getByRole("button", { name: "Lock grid" }).click();
+  const lockedGridBeforeZoom = await page.evaluate(() => {
+    const overlay = document.querySelector("#workspace-grid-overlay");
+    const bounds = overlay.getBoundingClientRect();
+    const canvas = document.querySelector("#active-map-canvas");
+    return {
+      cellSize: Number(overlay.dataset.cellSize),
+      height: bounds.height,
+      offsetX: overlay.dataset.offsetX,
+      offsetY: overlay.dataset.offsetY,
+      renderedWidth: Number(canvas.dataset.drawWidth),
+      width: bounds.width
+    };
+  });
+  await page.getByRole("button", { name: "Zoom out" }).click();
+  await expect.poll(() => gmCanvas.getAttribute("data-zoom")).toBe("1.5");
+  await expect
+    .poll(() => gmCanvas.getAttribute("data-draw-width"))
+    .not.toBe(String(lockedGridBeforeZoom.renderedWidth));
+  await expect.poll(() => grid.getAttribute("data-cell-size")).not.toBe(String(lockedGridBeforeZoom.cellSize));
+  await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(resolve));
+      })
+  );
+  const lockedGridAfterZoom = await page.evaluate(() => {
+    const overlay = document.querySelector("#workspace-grid-overlay");
+    const bounds = overlay.getBoundingClientRect();
+    const canvas = document.querySelector("#active-map-canvas");
+    return {
+      cellSize: Number(overlay.dataset.cellSize),
+      height: bounds.height,
+      offsetX: overlay.dataset.offsetX,
+      offsetY: overlay.dataset.offsetY,
+      renderedWidth: Number(canvas.dataset.drawWidth),
+      width: bounds.width
+    };
+  });
+  expect(lockedGridAfterZoom).toMatchObject({
+    height: lockedGridBeforeZoom.height,
+    width: lockedGridBeforeZoom.width
+  });
+  expect(lockedGridAfterZoom.renderedWidth).toBeLessThan(lockedGridBeforeZoom.renderedWidth);
+  expect(lockedGridAfterZoom.cellSize).toBeLessThan(lockedGridBeforeZoom.cellSize);
+  const lockedOffsetXAfterZoom = await grid.getAttribute("data-offset-x");
+  await grid.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect.poll(() => grid.getAttribute("data-offset-x")).toBe(lockedOffsetXAfterZoom);
+  await page.getByRole("button", { name: "Unlock grid" }).click();
+  await grid.focus();
+  const unlockedOffsetY = Number(await grid.getAttribute("data-offset-y"));
+  await page.keyboard.press("Shift+ArrowDown");
+  await expect.poll(async () => Number(await grid.getAttribute("data-offset-y"))).toBe(unlockedOffsetY + 10);
+  const unlockedOffsetXAfterMove = await grid.getAttribute("data-offset-x");
+  const unlockedOffsetYAfterMove = await grid.getAttribute("data-offset-y");
+
+  await page.getByRole("button", { name: "Back to Campaign" }).click();
+  await page.getByRole("button", { name: "Open cave for prep" }).click();
+  await expect(page.getByRole("img", { name: "Map: cave" })).toBeVisible();
+  await expect(grid).toBeHidden();
+  await page.getByRole("button", { name: "Back to Campaign" }).click();
+  await page.getByRole("button", { name: "Open forest for prep" }).click();
+  await expect(grid).toBeVisible();
+  await expect.poll(() => grid.getAttribute("data-offset-x")).toBe(unlockedOffsetXAfterMove);
+  await expect.poll(() => grid.getAttribute("data-offset-y")).toBe(unlockedOffsetYAfterMove);
+  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeAlignment);
+
+  await page.reload();
+  await expectGmHeader(page, "Campaign Library");
+  await page.getByRole("button", { name: "Open" }).click();
+  await page.getByRole("button", { name: "Open forest for prep" }).click();
+  await expect(page.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  await expect(grid).toBeHidden();
+  await expect(page.getByText("100%", { exact: true })).toBeVisible();
 });
 
 test("active map uses centered contain geometry across table viewports", async ({ app, page, context }) => {
