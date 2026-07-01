@@ -671,7 +671,7 @@ Steps:
    panel sits laterally beside it without floating over the map.
 8. On a narrow screen, confirm the compact prep tools panel stacks below the
    map and the page has no horizontal overflow.
-9. Confirm the workspace includes map alignment controls without fog controls.
+9. Confirm the workspace includes compact Prep Tools without crowding the map.
 10. Confirm `Show to Players` sits in a fixed running-actions area near the
     title/status, not over the map.
 11. Click the workspace `Show to Players` action.
@@ -688,9 +688,8 @@ Expected result:
   changing the selected/editing encounter.
 - Workspace navigation back to the encounter gallery is clear.
 - The workspace makes the map dominant in the first viewport, keeps the
-  Encounter Workspace header compact, keeps map alignment tools compact and
-  fixed without adding fog controls yet, and remains usable at desktop,
-  Chromebook-sized, and narrow viewports.
+  Encounter Workspace header compact, keeps prep tools compact and fixed, and
+  remains usable at desktop, Chromebook-sized, and narrow viewports.
 - Rename, reorder, and upload remain gallery workflows for this feature.
 
 ## Milestone 3 Follow-Up: Navigation Simplification
@@ -827,6 +826,54 @@ Expected result:
   lighting, or VTT-style controls are introduced by F-006B.
 - Fog remains in memory and is not persisted to `campaign.json`.
 
+### Test: GM Draws Rectangle Hide Fog
+
+Prerequisites:
+
+- A campaign exists with at least two encounters/maps.
+- The encounter workspace feature is implemented.
+- F-006C rectangle Hide tool is implemented.
+
+Steps:
+
+1. Show one encounter to players.
+2. Open that shown encounter in the GM workspace.
+3. Turn on `Hide rectangle`.
+4. Drag a rectangle over the selected encounter map.
+5. Confirm the GM workspace shows semi-transparent fog over that rectangle.
+6. Confirm the Player Display updates live with opaque or near-opaque fog over
+   the same map-relative area.
+7. Try a tiny accidental drag smaller than 6 px by 6 px.
+8. Confirm no fog operation is added.
+9. Start another hide drag and press Escape before releasing the pointer.
+10. Confirm the draft rectangle is canceled and no fog operation is added.
+11. Show the 5 ft grid, keep `Hide rectangle` active, and drag another hide
+    rectangle.
+12. Confirm the grid remains visible but does not move while Hide mode is
+    active.
+13. Turn off `Hide rectangle` and confirm grid movement works again.
+14. Open a different selected/editing encounter without showing it to players.
+15. Zoom the GM workspace map and draw a hide rectangle.
+16. Confirm the Player Display does not change because the edited encounter is
+    not shown to players.
+
+Expected result:
+
+- Rectangle Hide controls live in the Encounter Workspace as a distinct Fog
+  tools group.
+- A completed valid drag appends one in-memory `hide-rectangle` operation using
+  normalized map-relative coordinates.
+- Hide drawing respects GM map zoom and map positioning.
+- Tiny drags and Escape-canceled drags do not create fog operations.
+- Hide mode owns the map drag surface while active; the grid may remain visible
+  as a non-interactive guide.
+- Player Display receives live fog updates only for the encounter currently
+  shown to players.
+- Opening or editing an encounter still does not show it to players.
+- No reveal, clear fog, brush, circle, undo, token, dynamic lighting, or
+  VTT-style controls are introduced by F-006C.
+- Fog remains in memory and is not persisted to `campaign.json`.
+
 ### Test: Player Sees Hidden Areas Obscured
 
 Prerequisites:
@@ -839,13 +886,16 @@ Steps:
 
 1. Show one encounter to players.
 2. Open a different selected/editing encounter in the GM workspace.
-3. Add fog over a rectangle or circle in the selected/editing encounter.
+3. Add fog over a rectangle in the selected/editing encounter.
 4. Confirm the Player Display does not change.
 5. Use `Show to Players` for the selected/editing encounter.
 6. Confirm the Player Display shows that encounter with the hidden area obscured.
-7. Remove or reveal part of the fog from the GM workspace.
-8. Confirm the Player Display updates live because this encounter is now shown to players.
-9. Open another encounter in the GM workspace and edit its fog without showing it.
+7. After reveal or clear fog tools are implemented, remove or reveal part of the
+   fog from the GM workspace.
+8. Confirm the Player Display updates live because this encounter is now shown
+   to players.
+9. Open another encounter in the GM workspace and edit its fog without showing
+   it.
 
 Expected result:
 

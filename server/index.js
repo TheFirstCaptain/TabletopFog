@@ -198,6 +198,30 @@ function createApp(options = {}) {
     }
   });
 
+  app.post("/api/campaigns/:campaignId/maps/:mapId/fog-operations", requireGm, (request, response, next) => {
+    try {
+      if (!request.body || typeof request.body !== "object" || Array.isArray(request.body)) {
+        response.status(400).json({ error: "Fog operation must be a JSON object." });
+        return;
+      }
+
+      if (request.body.type !== "hide-rectangle") {
+        response.status(400).json({ error: "Only hide rectangles can be added by this tool." });
+        return;
+      }
+
+      const state = stateStore.appendFogOperation(request.params.campaignId, request.params.mapId, request.body);
+      onStateChange(state);
+      response.status(201).json({ campaign: state.campaign });
+    } catch (error) {
+      if (/Invalid fog operation/.test(error.message)) {
+        response.status(400).json({ error: error.message });
+        return;
+      }
+      next(error);
+    }
+  });
+
   app.get("/api/player/active-map/asset", (_request, response, next) => {
     try {
       const state = stateStore.getState();

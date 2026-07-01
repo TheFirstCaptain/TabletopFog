@@ -3,6 +3,7 @@ import { createGmNavigation } from "./gm-navigation.js";
 
 const DEFAULT_CAMPAIGN_ICON = "🗺️";
 const GRID_CELL_SIZE = 64;
+const MIN_HIDE_RECTANGLE_SIZE = 6;
 
 function createDefaultGridState() {
   return {
@@ -56,14 +57,18 @@ export function createGmView(document) {
     selectedEncounterHeading: document.querySelector("#selected-encounter-heading"),
     selectedEncounterStatus: document.querySelector("#selected-encounter-status"),
     status: document.querySelector("#connection-status"),
+    workspaceFogOverlay: document.querySelector("#workspace-fog-overlay"),
     workspaceGridLock: document.querySelector("#workspace-grid-lock"),
     workspaceGridOverlay: document.querySelector("#workspace-grid-overlay"),
     workspaceGridToggle: document.querySelector("#workspace-grid-toggle"),
     workspaceGrid: document.querySelector(".workspace-grid"),
+    workspaceHideRectangle: document.querySelector("#workspace-hide-rectangle"),
+    workspaceHideTool: document.querySelector("#workspace-hide-tool"),
     workspaceShowToPlayers: document.querySelector("#workspace-show-to-players")
   };
   const navigation = createGmNavigation(elements);
   let activeMapReady = false;
+  let workspaceHideMode = false;
   let workspaceGridState = createDefaultGridState();
 
   let activeMapRenderer;
@@ -79,6 +84,7 @@ export function createGmView(document) {
       if (state === "ready") elements.activeMapMessage.textContent = map.name;
       if (state === "error") elements.activeMapMessage.textContent = "Map image could not be loaded.";
       renderWorkspaceZoomControls(activeMapRenderer.getViewport());
+      renderWorkspaceHideTool();
       renderWorkspaceGridState();
     },
     onViewportChange(viewport) {
@@ -94,6 +100,43 @@ export function createGmView(document) {
     elements.gmZoomOut.disabled = disabled || viewport.zoom <= viewport.minZoom;
     elements.gmZoomIn.disabled = disabled || viewport.zoom >= viewport.maxZoom;
     elements.gmFitMap.disabled = disabled || (viewport.zoom === 1 && viewport.panX === 0 && viewport.panY === 0);
+  }
+
+  function renderWorkspaceHideTool() {
+    if (!activeMapReady) workspaceHideMode = false;
+
+    elements.workspaceHideTool.disabled = !activeMapReady;
+    elements.workspaceHideTool.dataset.active = String(workspaceHideMode);
+    elements.workspaceHideTool.setAttribute("aria-pressed", String(workspaceHideMode));
+    elements.workspaceHideTool.textContent = workspaceHideMode ? "Hide rectangle active" : "Hide rectangle";
+    elements.workspaceFogOverlay.hidden = !workspaceHideMode;
+    elements.workspaceFogOverlay.dataset.active = String(workspaceHideMode);
+    elements.activeMapCanvas.closest(".gm-map-stage").dataset.hideMode = String(workspaceHideMode);
+    if (!workspaceHideMode) clearWorkspaceHideDraft();
+  }
+
+  function clearWorkspaceHideDraft() {
+    elements.workspaceHideRectangle.hidden = true;
+    delete elements.workspaceHideRectangle.dataset.tooSmall;
+    Object.assign(elements.workspaceHideRectangle.style, {
+      height: "",
+      left: "",
+      top: "",
+      width: ""
+    });
+  }
+
+  function renderWorkspaceHideDraft(screenRect) {
+    elements.workspaceHideRectangle.hidden = false;
+    elements.workspaceHideRectangle.dataset.tooSmall = String(
+      screenRect.width < MIN_HIDE_RECTANGLE_SIZE || screenRect.height < MIN_HIDE_RECTANGLE_SIZE
+    );
+    Object.assign(elements.workspaceHideRectangle.style, {
+      height: `${screenRect.height}px`,
+      left: `${screenRect.x}px`,
+      top: `${screenRect.y}px`,
+      width: `${screenRect.width}px`
+    });
   }
 
   function renderWorkspaceGridState(gridState = workspaceGridState, viewport = activeMapRenderer.getViewport()) {
@@ -135,8 +178,10 @@ export function createGmView(document) {
       elements.selectedEncounterStatus.textContent = "Choose an encounter card to prep it here.";
       elements.workspaceShowToPlayers.disabled = true;
       activeMapReady = false;
+      workspaceHideMode = false;
       activeMapRenderer.setMap(null);
       renderWorkspaceZoomControls();
+      renderWorkspaceHideTool();
       renderWorkspaceGridState(createDefaultGridState());
       return;
     }
@@ -511,6 +556,12 @@ export function createGmView(document) {
     setWorkspaceGridState(gridState) {
       renderWorkspaceGridState(gridState);
     },
+    cancelWorkspaceHideRectangle() {
+      clearWorkspaceHideDraft();
+    },
+    getWorkspaceHideRectangle(startClient, endClient) {
+      return activeMapRenderer.getNormalizedRectFromClientPoints(startClient, endClient);
+    },
     getWorkspaceGridLockSnapshot() {
       return {
         lockDrawX: Number(elements.activeMapCanvas.dataset.drawX) || 0,
@@ -522,6 +573,24 @@ export function createGmView(document) {
     },
     workspaceFitMap() {
       return activeMapRenderer.resetViewport();
+    },
+    isWorkspaceHideMode() {
+      return workspaceHideMode;
+    },
+    previewWorkspaceHideRectangle(startClient, endClient) {
+      const draft = activeMapRenderer.getNormalizedRectFromClientPoints(startClient, endClient);
+      if (!draft || !draft.startInsideMap) {
+        clearWorkspaceHideDraft();
+        return null;
+      }
+      renderWorkspaceHideDraft(draft.screenRect);
+      return draft;
+    },
+    setWorkspaceHideMode(enabled) {
+      workspaceHideMode = Boolean(enabled) && activeMapReady;
+      renderWorkspaceHideTool();
+      renderWorkspaceGridState();
+      return workspaceHideMode;
     },
     workspaceZoomIn() {
       return activeMapRenderer.zoomIn();

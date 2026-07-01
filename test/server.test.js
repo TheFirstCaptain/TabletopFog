@@ -742,6 +742,171 @@ test("projects in-memory fog only to the appropriate role and shown encounter", 
   }
 });
 
+test("GM API appends fog operations without persisting or exposing unshown fog", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const { server, io, stateStore } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+  const clientOptions = {
+    forceNew: true,
+    rejectUnauthorized: false,
+    reconnection: false,
+    transports: ["websocket"]
+  };
+  const player = createClient(url, {
+    ...clientOptions,
+    extraHeaders: {
+      referer: `${url}/player`
+    }
+  });
+
+  try {
+    await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: "The Long Walk" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const forest = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "forest.png"
+      }),
+      method: "POST"
+    });
+    const cave = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "cave.png"
+      }),
+      method: "POST"
+    });
+    const active = waitForActiveMap(player, forest.json.map.id);
+    await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/active-map`, {
+      body: JSON.stringify({ mapId: forest.json.map.id }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+    await active;
+
+    const forestFogSync = waitForActiveMap(player, forest.json.map.id);
+    const forestFog = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(forest.json.map.id)}/fog-operations`,
+      {
+        body: JSON.stringify({ type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }),
+        headers: gmHeaders(port, { "content-type": "application/json" }),
+        method: "POST"
+      }
+    );
+    const caveFog = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(cave.json.map.id)}/fog-operations`,
+      {
+        body: JSON.stringify({ type: "hide-rectangle", rect: { x: 0.4, y: 0.4, width: 0.1, height: 0.1 } }),
+        headers: gmHeaders(port, { "content-type": "application/json" }),
+        method: "POST"
+      }
+    );
+    const playerState = await forestFogSync;
+    const campaignJson = JSON.parse(fs.readFileSync(path.join(dataRoot, "The Long Walk", "campaign.json"), "utf8"));
+
+    assert.equal(forestFog.statusCode, 201);
+    assert.equal(caveFog.statusCode, 201);
+    assert.deepEqual(forestFog.json.campaign.maps.find((map) => map.id === forest.json.map.id).fogOperations, [
+      { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+    ]);
+    assert.deepEqual(playerState.activeMap.fogOperations, [
+      { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+    ]);
+    assert.deepEqual(
+      stateStore.getState().campaign.maps.map((map) => [map.id, map.fogOperations.length]),
+      [
+        [forest.json.map.id, 1],
+        [cave.json.map.id, 1]
+      ]
+    );
+    assert.deepEqual(
+      campaignJson.maps.map((map) => map.fog),
+      [[], []]
+    );
+  } finally {
+    player.close();
+    await close(server, io);
+  }
+});
+
+test("GM fog operation API rejects invalid requests without mutation", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const { server, io, stateStore } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+
+  try {
+    await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: "The Long Walk" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const forest = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "forest.png"
+      }),
+      method: "POST"
+    });
+    const endpoint = `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(forest.json.map.id)}/fog-operations`;
+    const valid = await requestHttps(endpoint, {
+      body: JSON.stringify({ type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const invalidType = await requestHttps(endpoint, {
+      body: JSON.stringify({ type: "reveal-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const invalidRect = await requestHttps(endpoint, {
+      body: JSON.stringify({ type: "hide-rectangle", rect: { x: 0.9, y: 0.1, width: 0.2, height: 0.2 } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const missingTarget = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent("missing")}/fog-operations`,
+      {
+        body: JSON.stringify({ type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }),
+        headers: gmHeaders(port, { "content-type": "application/json" }),
+        method: "POST"
+      }
+    );
+    const playerRequest = await requestHttps(endpoint, {
+      body: JSON.stringify({ type: "hide-rectangle", rect: { x: 0.3, y: 0.3, width: 0.2, height: 0.2 } }),
+      headers: playerHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+
+    assert.equal(valid.statusCode, 201);
+    assert.equal(invalidType.statusCode, 400);
+    assert.equal(invalidRect.statusCode, 400);
+    assert.equal(missingTarget.statusCode, 400);
+    assert.equal(playerRequest.statusCode, 403);
+    assert.deepEqual(stateStore.getState().campaign.maps[0].fogOperations, [
+      { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+    ]);
+  } finally {
+    await close(server, io);
+  }
+});
+
 test("rejects invalid map uploads without persisting files or metadata", async (t) => {
   const dataRoot = createTempRoot(t);
   const { server, io, stateStore } = createTabletopFogServer({

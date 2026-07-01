@@ -58,6 +58,61 @@ test("state store keeps normalized fog operations in memory per encounter", () =
   assert.equal(store.getState().campaign.maps[0].fogOperations[1].rect.width, 0.1);
 });
 
+test("state store appends one fog operation atomically", () => {
+  const store = createStateStore();
+  store.setCampaign({
+    id: "The Long Walk",
+    activeMapId: "forest",
+    maps: [
+      { id: "forest", name: "Forest" },
+      { id: "cave", name: "Cave" }
+    ]
+  });
+  store.setFogOperations("The Long Walk", "forest", [
+    { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+  ]);
+
+  const state = store.appendFogOperation("The Long Walk", "forest", {
+    type: "hide-rectangle",
+    rect: { x: 0.4, y: 0.4, width: 0.1, height: 0.1 }
+  });
+
+  assert.deepEqual(state.campaign.maps[0].fogOperations, [
+    { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } },
+    { type: "hide-rectangle", rect: { x: 0.4, y: 0.4, width: 0.1, height: 0.1 } }
+  ]);
+  assert.deepEqual(state.campaign.maps[1].fogOperations, []);
+});
+
+test("state store rejects invalid appended fog operations without changing state", () => {
+  const store = createStateStore();
+  store.setCampaign({ id: "The Long Walk", maps: [{ id: "forest" }] });
+  store.setFogOperations("The Long Walk", "forest", [
+    { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+  ]);
+
+  assert.throws(
+    () =>
+      store.appendFogOperation("The Long Walk", "forest", {
+        type: "hide-rectangle",
+        rect: { x: 0.95, y: 0, width: 0.1, height: 0.1 }
+      }),
+    /Invalid fog operation/
+  );
+  assert.throws(
+    () =>
+      store.appendFogOperation("The Long Walk", "missing", {
+        type: "hide-rectangle",
+        rect: { x: 0, y: 0, width: 0.1, height: 0.1 }
+      }),
+    /Invalid fog operation target/
+  );
+
+  assert.deepEqual(store.getState().campaign.maps[0].fogOperations, [
+    { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+  ]);
+});
+
 test("state store rejects invalid fog operations without changing state", () => {
   const store = createStateStore();
   store.setCampaign({ id: "The Long Walk", maps: [{ id: "forest" }] });

@@ -1,5 +1,6 @@
 export function wireGmEvents(elements, actions) {
   let gridDragPoint = null;
+  let hideDragPoint = null;
 
   elements.campaignForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -19,8 +20,10 @@ export function wireGmEvents(elements, actions) {
   elements.gmZoomIn.addEventListener("click", actions.zoomWorkspaceMapIn);
   elements.workspaceGridToggle.addEventListener("click", actions.toggleWorkspaceGrid);
   elements.workspaceGridLock.addEventListener("click", actions.toggleWorkspaceGridLock);
+  elements.workspaceHideTool.addEventListener("click", actions.toggleWorkspaceHideMode);
 
   elements.workspaceGridOverlay.addEventListener("pointerdown", (event) => {
+    if (elements.workspaceFogOverlay.dataset.active === "true") return;
     if (elements.workspaceGridOverlay.dataset.locked === "true") return;
     elements.workspaceGridOverlay.setPointerCapture?.(event.pointerId);
     gridDragPoint = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
@@ -45,6 +48,7 @@ export function wireGmEvents(elements, actions) {
   elements.workspaceGridOverlay.addEventListener("pointercancel", stopGridDrag);
 
   elements.workspaceGridOverlay.addEventListener("keydown", (event) => {
+    if (elements.workspaceFogOverlay.dataset.active === "true") return;
     const delta = {
       ArrowDown: [0, 1],
       ArrowLeft: [-1, 0],
@@ -55,6 +59,44 @@ export function wireGmEvents(elements, actions) {
     event.preventDefault();
     const step = event.shiftKey ? 10 : 1;
     actions.moveWorkspaceGrid(delta[0] * step, delta[1] * step);
+  });
+
+  elements.workspaceFogOverlay.addEventListener("pointerdown", (event) => {
+    if (elements.workspaceFogOverlay.dataset.active !== "true") return;
+    event.preventDefault();
+    elements.workspaceFogOverlay.setPointerCapture?.(event.pointerId);
+    hideDragPoint = {
+      pointerId: event.pointerId,
+      start: { clientX: event.clientX, clientY: event.clientY }
+    };
+    actions.previewWorkspaceHideRectangle(hideDragPoint.start, hideDragPoint.start);
+  });
+
+  elements.workspaceFogOverlay.addEventListener("pointermove", (event) => {
+    if (!hideDragPoint || hideDragPoint.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    actions.previewWorkspaceHideRectangle(hideDragPoint.start, { clientX: event.clientX, clientY: event.clientY });
+  });
+
+  elements.workspaceFogOverlay.addEventListener("pointerup", (event) => {
+    if (!hideDragPoint || hideDragPoint.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    const start = hideDragPoint.start;
+    hideDragPoint = null;
+    actions.commitWorkspaceHideRectangle(start, { clientX: event.clientX, clientY: event.clientY });
+  });
+
+  elements.workspaceFogOverlay.addEventListener("pointercancel", (event) => {
+    if (hideDragPoint?.pointerId !== event.pointerId) return;
+    hideDragPoint = null;
+    actions.cancelWorkspaceHideRectangle();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || !hideDragPoint) return;
+    event.preventDefault();
+    hideDragPoint = null;
+    actions.cancelWorkspaceHideRectangle();
   });
 
   elements.campaignList.addEventListener("click", (event) => {

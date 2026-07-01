@@ -64,6 +64,16 @@ export function createGmApi(fetchRequest) {
         method: "PUT"
       });
     },
+    appendFogOperation(campaignId, mapId, operation) {
+      return request(
+        `/api/campaigns/${encodeURIComponent(campaignId)}/maps/${encodeURIComponent(mapId)}/fog-operations`,
+        {
+          body: JSON.stringify(operation),
+          headers: { "content-type": "application/json" },
+          method: "POST"
+        }
+      );
+    },
     async uploadMap(campaignId, file) {
       return request(`/api/campaigns/${encodeURIComponent(campaignId)}/maps`, {
         body: await file.arrayBuffer(),

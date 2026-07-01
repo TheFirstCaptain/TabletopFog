@@ -58,10 +58,13 @@ screen-space alignment aid; after lock, it scales with the GM map zoom. These
 controls are GM-only, non-persistent, and local to the current browser tab; the
 Player Display changes only when the GM explicitly uses `Show to Players`.
 The manual-fog foundation now keeps in-memory, per-encounter ordered
-hide/reveal rectangle operations and renders seeded fog through the shared
-canvas: semi-transparent in the GM workspace and opaque or near-opaque on the
-Player Display for only the encounter currently `Shown to Players`. User-facing
-fog drawing, reveal, and clear controls are still planned follow-up work.
+hide/reveal rectangle operations and renders fog through the shared canvas:
+semi-transparent in the GM workspace and opaque or near-opaque on the Player
+Display for only the encounter currently `Shown to Players`. The GM Encounter
+Workspace includes a first `Hide rectangle` fog tool with Escape cancel,
+tiny-drag filtering, zoom-aware map-relative geometry, and explicit input
+arbitration with the 5 ft grid. User-facing reveal and clear controls are still
+planned follow-up work.
 Campaign screens use
 `Back to Campaign Library`, and normal GM UI avoids showing local filesystem
 paths. Opening or navigating the workspace does not change the Player Display.

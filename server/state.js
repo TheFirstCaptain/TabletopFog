@@ -43,6 +43,10 @@ function normalizeFogOperations(operations) {
   });
 }
 
+function normalizeFogOperation(operation) {
+  return normalizeFogOperations([operation])[0];
+}
+
 function isValidRect(rect) {
   const values = [rect.x, rect.y, rect.width, rect.height];
   return (
@@ -120,6 +124,17 @@ function createStateStore() {
       fogOperationsByEncounter.set(fogKey(campaignId, mapId), normalized);
 
       return updateCampaign(state.campaign);
+    },
+    appendFogOperation(campaignId, mapId, operation) {
+      if (!state.campaign || state.campaign.id !== campaignId || !state.campaign.maps.some((map) => map.id === mapId)) {
+        throw new Error("Invalid fog operation target.");
+      }
+
+      const normalized = normalizeFogOperation(operation);
+      const key = fogKey(campaignId, mapId);
+      fogOperationsByEncounter.set(key, [...getFogOperations(campaignId, mapId), normalized]);
+
+      return updateCampaign(state.campaign);
     }
   };
 }
@@ -127,5 +142,6 @@ function createStateStore() {
 module.exports = {
   createInitialState,
   createStateStore,
+  normalizeFogOperation,
   normalizeFogOperations
 };

@@ -204,6 +204,47 @@ export function createGmController({ api, socket, state, view }) {
     view.setWorkspaceGridState(state.updateSelectedEncounterGridState(lockPatch));
   }
 
+  async function commitWorkspaceHideRectangle(startClient, endClient) {
+    const campaign = state.getCurrentCampaign();
+    const selectedEncounterId = state.getSelectedEncounterId();
+    const draft = view.getWorkspaceHideRectangle(startClient, endClient);
+    view.cancelWorkspaceHideRectangle();
+
+    if (
+      !campaign ||
+      !selectedEncounterId ||
+      !draft ||
+      !draft.startInsideMap ||
+      draft.screenRect.width < 6 ||
+      draft.screenRect.height < 6
+    ) {
+      return;
+    }
+
+    try {
+      const payload = await api.appendFogOperation(campaign.id, selectedEncounterId, {
+        type: "hide-rectangle",
+        rect: draft.rect
+      });
+      state.setCurrentCampaign(payload.campaign);
+      renderCurrentCampaign();
+    } catch (error) {
+      view.setCampaignMessage(error.message);
+    }
+  }
+
+  function cancelWorkspaceHideRectangle() {
+    view.cancelWorkspaceHideRectangle();
+  }
+
+  function previewWorkspaceHideRectangle(startClient, endClient) {
+    view.previewWorkspaceHideRectangle(startClient, endClient);
+  }
+
+  function toggleWorkspaceHideMode() {
+    view.setWorkspaceHideMode(!view.isWorkspaceHideMode());
+  }
+
   function zoomWorkspaceMapIn() {
     view.workspaceZoomIn();
   }
@@ -223,17 +264,21 @@ export function createGmController({ api, socket, state, view }) {
       backToLibrary,
       backToEncounters,
       createCampaign,
+      cancelWorkspaceHideRectangle,
+      commitWorkspaceHideRectangle,
       deleteCampaign,
       deleteMap,
       fitWorkspaceMap,
       moveWorkspaceGrid,
       moveMap,
       openCampaign,
+      previewWorkspaceHideRectangle,
       renameMap,
       selectEncounter,
       toggleShownEncounter,
       toggleWorkspaceGrid,
       toggleWorkspaceGridLock,
+      toggleWorkspaceHideMode,
       showWorkspaceEncounter,
       updateCampaignMetadata,
       uploadMap,

@@ -372,6 +372,47 @@ export function createMapCanvasRenderer({
     return getViewport();
   }
 
+  function getNormalizedRectFromClientPoints(startClient, endClient) {
+    const metrics = getDrawMetrics();
+    if (!metrics || state.status !== "ready") return null;
+
+    const bounds = canvas.getBoundingClientRect();
+    const toStagePoint = (point) => {
+      const x = point.clientX - bounds.left;
+      const y = point.clientY - bounds.top;
+      return {
+        insideMap:
+          x >= metrics.x && x <= metrics.x + metrics.width && y >= metrics.y && y <= metrics.y + metrics.height,
+        x: clamp(x, metrics.x, metrics.x + metrics.width),
+        y: clamp(y, metrics.y, metrics.y + metrics.height)
+      };
+    };
+    const start = toStagePoint(startClient);
+    const end = toStagePoint(endClient);
+    const left = Math.min(start.x, end.x);
+    const top = Math.min(start.y, end.y);
+    const width = Math.abs(end.x - start.x);
+    const height = Math.abs(end.y - start.y);
+
+    if (width <= 0 || height <= 0) return null;
+
+    return {
+      rect: {
+        height: height / metrics.height,
+        width: width / metrics.width,
+        x: (left - metrics.x) / metrics.width,
+        y: (top - metrics.y) / metrics.height
+      },
+      screenRect: {
+        height,
+        width,
+        x: left,
+        y: top
+      },
+      startInsideMap: start.insideMap
+    };
+  }
+
   if (interactive) {
     canvas.style.touchAction = "none";
     canvas.addEventListener("pointerdown", onPointerDown);
@@ -413,6 +454,7 @@ export function createMapCanvasRenderer({
       state.image = null;
     },
     getViewport,
+    getNormalizedRectFromClientPoints,
     panBy,
     resetViewport,
     resize,

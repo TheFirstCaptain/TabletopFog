@@ -207,7 +207,7 @@ Planned focused sequence:
 
 - Complete: [F-006A](./features/F-006A.md), GM map zoom and grid calibration.
 - Complete: [F-006B](./features/F-006B.md), fog state and rendering foundation.
-- Proposed: [F-006C](./features/F-006C.md), rectangle hide tool.
+- Complete: [F-006C](./features/F-006C.md), rectangle hide tool.
 - Proposed: [F-006D](./features/F-006D.md), rectangle reveal tool.
 - Proposed: [F-006E](./features/F-006E.md), clear fog.
 - Proposed: [F-006F](./features/F-006F.md), fog tool polish and validation.
