@@ -64,7 +64,10 @@ Display for only the encounter currently `Shown to Players`. The GM Encounter
 Workspace includes explicit `Hide rectangle` and `Reveal rectangle` fog tools
 with Escape cancel, tiny-drag filtering, zoom-aware map-relative geometry,
 ordered hide/reveal replay, and explicit input arbitration with the 5 ft grid.
-Clear Fog is still planned follow-up work.
+The Fog tools also include an always-visible `Clear Fog` action that is enabled
+only when the selected encounter has fog, asks for confirmation, clears only
+that selected encounter's in-memory fog, and updates the Player Display live
+only when that encounter is currently shown to players.
 Campaign screens use
 `Back to Campaign Library`, and normal GM UI avoids showing local filesystem
 paths. Opening or navigating the workspace does not change the Player Display.
@@ -130,7 +133,7 @@ TABLETOPFOG_DATA_DIR=/private/tmp/tabletopfog-data npm run local
 - HTTPS for local serving.
 - Plain HTML, CSS, and JavaScript at first.
 - Local, inspectable files for campaign and map state.
-- HTML Canvas for current map rendering and future fog rendering.
+- HTML Canvas for current map and fog rendering.
 
 React, cloud hosting, databases, and native wrappers are deferred unless a later decision record changes direction.
 

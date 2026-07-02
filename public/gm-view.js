@@ -67,6 +67,7 @@ export function createGmView(document) {
     workspaceGridToggle: document.querySelector("#workspace-grid-toggle"),
     workspaceGrid: document.querySelector(".workspace-grid"),
     workspaceFogRectangle: document.querySelector("#workspace-fog-rectangle"),
+    workspaceClearFog: document.querySelector("#workspace-clear-fog"),
     workspaceHideTool: document.querySelector("#workspace-hide-tool"),
     workspaceRevealTool: document.querySelector("#workspace-reveal-tool"),
     workspaceShowToPlayers: document.querySelector("#workspace-show-to-players")
@@ -74,6 +75,7 @@ export function createGmView(document) {
   const navigation = createGmNavigation(elements);
   let activeMapReady = false;
   let workspaceFogMode = null;
+  let workspaceFogOperationCount = 0;
   let workspaceGridState = createDefaultGridState();
 
   let activeMapRenderer;
@@ -120,6 +122,7 @@ export function createGmView(document) {
       button.setAttribute("aria-pressed", String(active));
       button.textContent = FOG_TOOL_LABELS[mode];
     });
+    elements.workspaceClearFog.disabled = workspaceFogOperationCount === 0;
     elements.workspaceFogOverlay.hidden = !workspaceFogMode;
     elements.workspaceFogOverlay.dataset.active = String(Boolean(workspaceFogMode));
     elements.workspaceFogOverlay.dataset.mode = workspaceFogMode || "";
@@ -193,6 +196,7 @@ export function createGmView(document) {
       elements.workspaceShowToPlayers.disabled = true;
       activeMapReady = false;
       workspaceFogMode = null;
+      workspaceFogOperationCount = 0;
       activeMapRenderer.setMap(null);
       renderWorkspaceZoomControls();
       renderWorkspaceFogTools();
@@ -213,6 +217,7 @@ export function createGmView(document) {
       "aria-label",
       shownToPlayers ? "Shown to Players - clear from Player Display" : "Show to Players from workspace"
     );
+    workspaceFogOperationCount = selectedEncounter.fogOperations?.length || 0;
     renderWorkspaceGridState(gridState);
     activeMapRenderer.setMap({ ...selectedEncounter, campaignId: campaign.id });
   }
@@ -366,6 +371,12 @@ export function createGmView(document) {
     confirmDeleteCampaign(name) {
       return document.defaultView.confirm(
         `Delete campaign?\n\nThis permanently deletes "${name}". This can't be undone.`
+      );
+    },
+    confirmClearFog(name, shownToPlayers) {
+      const playerImpact = shownToPlayers ? "\nThe Player Display will update immediately." : "";
+      return document.defaultView.confirm(
+        `Clear fog?\n\nThis removes all fog from "${name}".${playerImpact}\nThis can't be undone.`
       );
     },
     clearMapFile() {

@@ -3,16 +3,16 @@
   "roots": ["server", "public", "scripts"],
   "modules": {
     "public/gm-api.js": {
-      "baselineLines": 88,
-      "responsibility": "Send GM campaign, campaign deletion, campaign-card metadata, map, and fog-operation API requests and convert failed responses into client errors."
+      "baselineLines": 96,
+      "responsibility": "Send GM campaign, campaign deletion, campaign-card metadata, map, and fog-operation append and clear API requests and convert failed responses into client errors."
     },
     "public/gm-controller.js": {
-      "baselineLines": 301,
-      "responsibility": "Coordinate GM campaign library, campaign deletion, campaign-card metadata, encounter gallery, encounter workspace, GM-local map alignment, rectangle Hide and Reveal fog editing, map, view, and Socket.IO workflows."
+      "baselineLines": 328,
+      "responsibility": "Coordinate GM campaign library, campaign deletion, campaign-card metadata, encounter gallery, encounter workspace, GM-local map alignment, rectangle Hide and Reveal fog editing, Clear Fog, map, view, and Socket.IO workflows."
     },
     "public/gm-events.js": {
-      "baselineLines": 176,
-      "responsibility": "Translate static and delegated GM campaign, campaign deletion, campaign-card metadata, direct encounter gallery administration, encounter workspace, GM-local map alignment, rectangle Hide and Reveal pointer input, and map DOM events into controller actions."
+      "baselineLines": 177,
+      "responsibility": "Translate static and delegated GM campaign, campaign deletion, campaign-card metadata, direct encounter gallery administration, encounter workspace, GM-local map alignment, rectangle Hide and Reveal pointer input, Clear Fog, and map DOM events into controller actions."
     },
     "public/gm-navigation.js": {
       "baselineLines": 39,
@@ -23,8 +23,8 @@
       "responsibility": "Maintain GM campaign library, current campaign, GM-local selected encounter, explicit client screen state, and per-encounter GM-tab map alignment state."
     },
     "public/gm-view.js": {
-      "baselineLines": 616,
-      "responsibility": "Render the GM campaign card library, campaign deletion controls, campaign-card metadata editing, direct encounter gallery administration, encounter workspace shell, GM-local map alignment controls, rectangle Hide and Reveal fog controls and draft state, messages, status, and shared-canvas map plus semi-transparent fog preview."
+      "baselineLines": 627,
+      "responsibility": "Render the GM campaign card library, campaign deletion controls, campaign-card metadata editing, direct encounter gallery administration, encounter workspace shell, GM-local map alignment controls, rectangle Hide and Reveal fog controls, Clear Fog state and confirmation, draft state, messages, status, and shared-canvas map plus semi-transparent fog preview."
     },
     "public/gm.js": {
       "baselineLines": 19,
@@ -83,8 +83,8 @@
       "responsibility": "Resolve and load HTTPS certificate credentials."
     },
     "server/index.js": {
-      "baselineLines": 375,
-      "responsibility": "Compose HTTP routes, campaign deletion, campaign-card metadata updates, GM-only fog operation appends, role-specific map and fog projection, Socket.IO synchronization, and HTTPS startup.",
+      "baselineLines": 389,
+      "responsibility": "Compose HTTP routes, campaign deletion, campaign-card metadata updates, GM-only fog operation appends and clears, role-specific map and fog projection, Socket.IO synchronization, and HTTPS startup.",
       "temporaryException": {
         "engineeringId": "E-004",
         "reason": "HTTP, role, socket, and startup responsibilities are awaiting planned separation."
@@ -95,8 +95,8 @@
       "responsibility": "Validate supported map image signatures, metadata, and size limits."
     },
     "server/state.js": {
-      "baselineLines": 147,
-      "responsibility": "Maintain snapshot-safe in-memory active campaign state and encounter-scoped fog operation state, including target validation, atomic fog append, and pruning for removed encounters."
+      "baselineLines": 156,
+      "responsibility": "Maintain snapshot-safe in-memory active campaign state and encounter-scoped fog operation state, including target validation, atomic fog append, clear, and pruning for removed encounters."
     }
   }
 }

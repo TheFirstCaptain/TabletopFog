@@ -135,6 +135,15 @@ function createStateStore() {
       fogOperationsByEncounter.set(key, [...getFogOperations(campaignId, mapId), normalized]);
 
       return updateCampaign(state.campaign);
+    },
+    clearFogOperations(campaignId, mapId) {
+      if (!state.campaign || state.campaign.id !== campaignId || !state.campaign.maps.some((map) => map.id === mapId)) {
+        throw new Error("Invalid fog operation target.");
+      }
+
+      fogOperationsByEncounter.delete(fogKey(campaignId, mapId));
+
+      return updateCampaign(state.campaign);
     }
   };
 }

@@ -222,6 +222,20 @@ function createApp(options = {}) {
     }
   });
 
+  app.delete("/api/campaigns/:campaignId/maps/:mapId/fog-operations", requireGm, (request, response, next) => {
+    try {
+      const state = stateStore.clearFogOperations(request.params.campaignId, request.params.mapId);
+      onStateChange(state);
+      response.json({ campaign: state.campaign });
+    } catch (error) {
+      if (/Invalid fog operation target/.test(error.message)) {
+        response.status(400).json({ error: error.message });
+        return;
+      }
+      next(error);
+    }
+  });
+
   app.get("/api/player/active-map/asset", (_request, response, next) => {
     try {
       const state = stateStore.getState();

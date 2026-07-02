@@ -235,6 +235,32 @@ export function createGmController({ api, socket, state, view }) {
     }
   }
 
+  async function clearWorkspaceFog() {
+    const campaign = state.getCurrentCampaign();
+    const selectedEncounterId = state.getSelectedEncounterId();
+    const selectedEncounter = campaign?.maps.find((map) => map.id === selectedEncounterId);
+
+    if (
+      !campaign ||
+      !selectedEncounter ||
+      !selectedEncounter.fogOperations?.length ||
+      !view.confirmClearFog(selectedEncounter.name, selectedEncounter.id === campaign.activeMapId)
+    ) {
+      return;
+    }
+
+    view.setWorkspaceFogMode(null);
+    view.cancelWorkspaceFogRectangle();
+
+    try {
+      const payload = await api.clearFogOperations(campaign.id, selectedEncounter.id);
+      state.setCurrentCampaign(payload.campaign);
+      renderCurrentCampaign();
+    } catch (error) {
+      view.setCampaignMessage(error.message);
+    }
+  }
+
   function cancelWorkspaceFogRectangle() {
     view.cancelWorkspaceFogRectangle();
   }
@@ -267,6 +293,7 @@ export function createGmController({ api, socket, state, view }) {
       backToEncounters,
       createCampaign,
       cancelWorkspaceFogRectangle,
+      clearWorkspaceFog,
       commitWorkspaceFogRectangle,
       deleteCampaign,
       deleteMap,

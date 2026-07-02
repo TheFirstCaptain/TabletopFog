@@ -979,6 +979,17 @@ h4 {
     grid-template-columns: 1fr;
   }
 
+  .fog-tool-group {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .fog-tool-group .compact-tool-button {
+    width: auto;
+    padding-inline: 0.35rem;
+    font-size: 0.8125rem;
+  }
+
   .gm-map-stage {
     min-height: 22rem;
   }

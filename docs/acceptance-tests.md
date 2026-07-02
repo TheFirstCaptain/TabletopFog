@@ -929,6 +929,61 @@ Expected result:
   controls are introduced by F-006D.
 - Fog remains in memory and is not persisted to `campaign.json`.
 
+### Test: GM Clears All Fog From a Selected Encounter
+
+Prerequisites:
+
+- A campaign exists with at least two encounters/maps.
+- The encounter workspace feature is implemented.
+- F-006E Clear Fog is implemented.
+
+Steps:
+
+1. Show one encounter to players.
+2. Open that shown encounter in the GM workspace.
+3. Confirm `Clear Fog` is visible in the Fog tools group and disabled before
+   fog exists.
+4. Add one or more fog operations to the shown encounter.
+5. Confirm `Clear Fog` becomes enabled.
+6. Click `Clear Fog` and cancel the confirmation.
+7. Confirm GM and Player Display fog remain unchanged.
+8. Click `Clear Fog` again and accept the confirmation.
+9. Confirm all fog is removed from the selected encounter in the GM workspace.
+10. Confirm the Player Display updates live because the selected encounter is
+    shown to players.
+11. Confirm the encounter remains `Shown to Players`.
+12. Add fog to the shown encounter again and simulate or observe a selected map
+    image load failure.
+13. Confirm `Clear Fog` remains enabled and can clear fog even though Hide and
+    Reveal drawing are unavailable while the image is failed.
+14. Add fog to the shown encounter again.
+15. Open a different selected/editing encounter without showing it to players.
+16. Add fog to that unshown selected encounter.
+17. Use `Clear Fog` for the unshown selected encounter.
+18. Confirm the GM workspace clears fog for the selected encounter while the
+    Player Display remains on the original shown encounter with its fog
+    unchanged.
+
+Expected result:
+
+- `Clear Fog` is always visible in the Encounter Workspace Fog tools group.
+- `Clear Fog` is disabled when no selected encounter is ready or the selected
+  encounter has no fog operations.
+- Confirming Clear Fog removes all in-memory fog operations for only the
+  selected encounter.
+- Clear Fog can clear existing fog even when the selected map image fails to
+  load.
+- Canceling the confirmation leaves fog unchanged.
+- Clearing fog on the encounter currently shown to players updates the Player
+  Display live.
+- Clearing fog on an unshown selected encounter does not change the Player
+  Display.
+- Clearing fog does not change which encounter is shown to players.
+- Player Display remains read-only.
+- Fog remains in memory and is not persisted to `campaign.json`.
+- No undo, operation history, brush, token, dynamic lighting, or VTT-style
+  controls are introduced by F-006E.
+
 ### Test: Player Sees Hidden Areas Obscured
 
 Prerequisites:

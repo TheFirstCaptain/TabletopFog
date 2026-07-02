@@ -866,6 +866,127 @@ test("GM API appends fog operations without persisting or exposing unshown fog",
   }
 });
 
+test("GM API clears fog without persisting or changing the shown encounter", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const { server, io, stateStore } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+  const clientOptions = {
+    forceNew: true,
+    rejectUnauthorized: false,
+    reconnection: false,
+    transports: ["websocket"]
+  };
+  const player = createClient(url, {
+    ...clientOptions,
+    extraHeaders: {
+      referer: `${url}/player`
+    }
+  });
+
+  try {
+    await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: "The Long Walk" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const forest = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "forest.png"
+      }),
+      method: "POST"
+    });
+    const cave = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "cave.png"
+      }),
+      method: "POST"
+    });
+    const active = waitForActiveMap(player, forest.json.map.id);
+    await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/active-map`, {
+      body: JSON.stringify({ mapId: forest.json.map.id }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+    await active;
+
+    const forestEndpoint = `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(forest.json.map.id)}/fog-operations`;
+    const caveEndpoint = `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(cave.json.map.id)}/fog-operations`;
+    await requestHttps(forestEndpoint, {
+      body: JSON.stringify({ type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const forestFogSync = waitForActiveMapFogCount(player, forest.json.map.id, 2);
+    await requestHttps(forestEndpoint, {
+      body: JSON.stringify({ type: "reveal-rectangle", rect: { x: 0.14, y: 0.14, width: 0.08, height: 0.08 } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    await forestFogSync;
+    await requestHttps(caveEndpoint, {
+      body: JSON.stringify({ type: "hide-rectangle", rect: { x: 0.4, y: 0.4, width: 0.1, height: 0.1 } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+
+    const clearCave = await requestHttps(caveEndpoint, {
+      headers: gmHeaders(port),
+      method: "DELETE"
+    });
+    const forestClearSync = waitForActiveMapFogCount(player, forest.json.map.id, 0);
+    const clearForest = await requestHttps(forestEndpoint, {
+      headers: gmHeaders(port),
+      method: "DELETE"
+    });
+    const playerClearState = await forestClearSync;
+    const missingTarget = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent("missing")}/fog-operations`,
+      {
+        headers: gmHeaders(port),
+        method: "DELETE"
+      }
+    );
+    const playerRequest = await requestHttps(forestEndpoint, {
+      headers: playerHeaders(port),
+      method: "DELETE"
+    });
+    const campaignJson = JSON.parse(fs.readFileSync(path.join(dataRoot, "The Long Walk", "campaign.json"), "utf8"));
+
+    assert.equal(clearCave.statusCode, 200);
+    assert.equal(clearForest.statusCode, 200);
+    assert.equal(missingTarget.statusCode, 400);
+    assert.equal(playerRequest.statusCode, 403);
+    assert.equal(clearCave.json.campaign.activeMapId, forest.json.map.id);
+    assert.equal(clearForest.json.campaign.activeMapId, forest.json.map.id);
+    assert.deepEqual(
+      stateStore.getState().campaign.maps.map((map) => [map.id, map.fogOperations]),
+      [
+        [forest.json.map.id, []],
+        [cave.json.map.id, []]
+      ]
+    );
+    assert.equal(playerClearState.activeMap.id, forest.json.map.id);
+    assert.deepEqual(playerClearState.activeMap.fogOperations, []);
+    assert.deepEqual(
+      campaignJson.maps.map((map) => map.fog),
+      [[], []]
+    );
+  } finally {
+    player.close();
+    await close(server, io);
+  }
+});
+
 test("GM fog operation API rejects invalid requests without mutation", async (t) => {
   const dataRoot = createTempRoot(t);
   const { server, io, stateStore } = createTabletopFogServer({

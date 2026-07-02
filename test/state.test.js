@@ -166,6 +166,49 @@ test("state store preserves in-memory fog when campaign metadata is reloaded", (
   ]);
 });
 
+test("state store clears in-memory fog for one encounter", () => {
+  const store = createStateStore();
+  store.setCampaign({
+    id: "The Long Walk",
+    maps: [
+      { id: "forest", name: "Forest" },
+      { id: "cave", name: "Cave" }
+    ]
+  });
+  store.setFogOperations("The Long Walk", "forest", [
+    { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } },
+    { type: "reveal-rectangle", rect: { x: 0.14, y: 0.14, width: 0.08, height: 0.08 } }
+  ]);
+  store.setFogOperations("The Long Walk", "cave", [
+    { type: "hide-rectangle", rect: { x: 0.4, y: 0.4, width: 0.1, height: 0.1 } }
+  ]);
+
+  const state = store.clearFogOperations("The Long Walk", "forest");
+
+  assert.deepEqual(
+    state.campaign.maps.map((map) => [map.id, map.fogOperations]),
+    [
+      ["forest", []],
+      ["cave", [{ type: "hide-rectangle", rect: { x: 0.4, y: 0.4, width: 0.1, height: 0.1 } }]]
+    ]
+  );
+});
+
+test("state store rejects invalid fog clear targets without changing state", () => {
+  const store = createStateStore();
+  store.setCampaign({ id: "The Long Walk", maps: [{ id: "forest" }] });
+  store.setFogOperations("The Long Walk", "forest", [
+    { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+  ]);
+
+  assert.throws(() => store.clearFogOperations("Wrong Campaign", "forest"), /Invalid fog operation target/);
+  assert.throws(() => store.clearFogOperations("The Long Walk", "missing"), /Invalid fog operation target/);
+
+  assert.deepEqual(store.getState().campaign.maps[0].fogOperations, [
+    { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+  ]);
+});
+
 test("state store prunes fog for deleted encounter ids before they can be reused", () => {
   const store = createStateStore();
   store.setCampaign({

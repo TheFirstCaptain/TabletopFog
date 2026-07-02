@@ -938,7 +938,9 @@ test("GM workspace shell previews selected encounter without changing the player
   await expect(page.getByRole("button", { name: "Show grid" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Hide rectangle" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Reveal rectangle" })).toBeVisible();
-  await expect(page.getByRole("button", { name: /brush|clear fog|token/i })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Clear Fog" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Clear Fog" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: /brush|token/i })).toHaveCount(0);
   const zoomControlLayout = await page.evaluate(() => {
     const zoomOut = document.querySelector("#gm-zoom-out").getBoundingClientRect();
     const zoomIn = document.querySelector("#gm-zoom-in").getBoundingClientRect();
@@ -1260,7 +1262,9 @@ test("seeded fog renders by role before drawing controls are used", async ({ app
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Hide rectangle" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Reveal rectangle" })).toBeVisible();
-  await expect(page.getByRole("button", { name: /brush|clear fog|token/i })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Clear Fog" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Clear Fog" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: /brush|token/i })).toHaveCount(0);
   await expect(player.locator("input, select, textarea, [contenteditable=true], [data-action]")).toHaveCount(0);
 
   const forestMapId = await page.locator(".encounter-card").filter({ hasText: "forest" }).getAttribute("data-map-id");
@@ -1325,6 +1329,92 @@ test("seeded fog renders by role before drawing controls are used", async ({ app
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeUnshownFog);
   const playerStillRehidden = await sampleMapPixel(player, "#player-map", { x: 0.25, y: 0.32 });
   expect(colorDistance(playerRehiddenAfterResize, playerStillRehidden)).toBeLessThan(64);
+});
+
+test("GM Clear Fog is confirmed and scoped to the selected encounter", async ({ app, page, context }) => {
+  const player = await context.newPage();
+  let playerAssetRequests = 0;
+  await player.route("**/api/player/active-map/asset*", (route) => {
+    playerAssetRequests += 1;
+    return route.continue();
+  });
+
+  await page.setViewportSize({ height: 768, width: 1366 });
+  await openGm(page, app.baseURL);
+  await createCampaign(page);
+  await uploadMapFile(page, await sizedPngFile(page, "forest.png", 200, 100, "#d9b978", "#704020"));
+  await uploadMapFile(page, await sizedPngFile(page, "cave.png", 200, 100, "#2c2430", "#b08968"));
+
+  const forestCard = page.locator(".encounter-card").filter({ hasText: "forest" });
+  const caveCard = page.locator(".encounter-card").filter({ hasText: "cave" });
+  await forestCard.getByRole("button", { name: "Show to Players", exact: true }).click();
+  await forestCard.getByRole("button", { name: "Open forest for prep" }).click();
+  await player.goto(`${app.baseURL}/player`);
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+
+  const clearFog = page.getByRole("button", { name: "Clear Fog" });
+  await expect(clearFog).toBeVisible();
+  await expect(clearFog).toBeDisabled();
+
+  const forestMapId = await forestCard.getAttribute("data-map-id");
+  const caveMapId = await caveCard.getAttribute("data-map-id");
+  app.seedFogOperations("The Long Walk", forestMapId, [
+    { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.35, height: 0.4 } },
+    { type: "reveal-rectangle", rect: { x: 0.18, y: 0.18, width: 0.1, height: 0.12 } }
+  ]);
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("2");
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("2");
+  await expect(clearFog).toBeEnabled();
+
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toContain('This removes all fog from "forest".');
+    expect(dialog.message()).toContain("The Player Display will update immediately.");
+    await dialog.dismiss();
+  });
+  await clearFog.click();
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("2");
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("2");
+  await expect(clearFog).toBeEnabled();
+
+  page.once("dialog", async (dialog) => {
+    await dialog.accept();
+  });
+  await clearFog.click();
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("0");
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("0");
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  await expect(clearFog).toBeDisabled();
+
+  app.seedFogOperations("The Long Walk", forestMapId, [
+    { type: "hide-rectangle", rect: { x: 0.55, y: 0.2, width: 0.2, height: 0.3 } }
+  ]);
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("1");
+  const playerAssetRequestsBeforeUnshownClear = playerAssetRequests;
+
+  await page.getByRole("button", { name: "Back to Campaign" }).click();
+  await caveCard.getByRole("button", { name: "Open cave for prep" }).click();
+  app.seedFogOperations("The Long Walk", caveMapId, [
+    { type: "hide-rectangle", rect: { x: 0.2, y: 0.2, width: 0.3, height: 0.3 } }
+  ]);
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("1");
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("1");
+  await expect(clearFog).toBeEnabled();
+
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toContain('This removes all fog from "cave".');
+    expect(dialog.message()).not.toContain("The Player Display will update immediately.");
+    await dialog.accept();
+  });
+  await clearFog.click();
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("0");
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("1");
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeUnshownClear);
+  await expect(player.locator("input, select, textarea, [contenteditable=true], [data-action]")).toHaveCount(0);
+
+  const campaignJson = JSON.parse(fs.readFileSync(path.join(app.dataRoot, "The Long Walk", "campaign.json"), "utf8"));
+  expect(campaignJson.activeMapId).toBe(forestMapId);
+  expect(campaignJson.maps.map((map) => map.fog)).toEqual([[], []]);
 });
 
 test("GM rectangle Hide tool draws shown fog and isolates unshown prep fog", async ({ app, page, context }) => {
@@ -1570,6 +1660,10 @@ test("player reports an active-map image load failure", async ({ app, page, cont
   await openGm(page, app.baseURL);
   await createCampaign(page);
   await addMap(page, "forest.png");
+  const forestMapId = await page.locator(".encounter-card").filter({ hasText: "forest" }).getAttribute("data-map-id");
+  app.seedFogOperations("The Long Walk", forestMapId, [
+    { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+  ]);
 
   await page.route("**/api/campaigns/*/maps/*/asset*", (route) => route.fulfill({ status: 500 }));
   await player.route("**/api/player/active-map/asset*", (route) => route.fulfill({ status: 500 }));
@@ -1582,6 +1676,13 @@ test("player reports an active-map image load failure", async ({ app, page, cont
   await expect(player.getByText("Map image could not be loaded.", { exact: true })).toBeVisible();
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeHidden();
   await expect(player.getByRole("button", { name: "Zoom in" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Clear Fog" })).toBeEnabled();
+
+  page.once("dialog", async (dialog) => {
+    await dialog.accept();
+  });
+  await page.getByRole("button", { name: "Clear Fog" }).click();
+  await expect(page.getByRole("button", { name: "Clear Fog" })).toBeDisabled();
 });
 
 test("stale image completion cannot replace a newer active map", async ({ app, page, context }) => {

@@ -22,6 +22,7 @@ export function wireGmEvents(elements, actions) {
   elements.workspaceGridLock.addEventListener("click", actions.toggleWorkspaceGridLock);
   elements.workspaceHideTool.addEventListener("click", () => actions.toggleWorkspaceFogMode("hide-rectangle"));
   elements.workspaceRevealTool.addEventListener("click", () => actions.toggleWorkspaceFogMode("reveal-rectangle"));
+  elements.workspaceClearFog.addEventListener("click", actions.clearWorkspaceFog);
 
   elements.workspaceGridOverlay.addEventListener("pointerdown", (event) => {
     if (elements.workspaceFogOverlay.dataset.active === "true") return;
