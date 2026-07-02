@@ -72,6 +72,10 @@ test("state store appends one fog operation atomically", () => {
     { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
   ]);
 
+  store.appendFogOperation("The Long Walk", "forest", {
+    type: "reveal-rectangle",
+    rect: { x: 0.2, y: 0.2, width: 0.08, height: 0.08 }
+  });
   const state = store.appendFogOperation("The Long Walk", "forest", {
     type: "hide-rectangle",
     rect: { x: 0.4, y: 0.4, width: 0.1, height: 0.1 }
@@ -79,6 +83,7 @@ test("state store appends one fog operation atomically", () => {
 
   assert.deepEqual(state.campaign.maps[0].fogOperations, [
     { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } },
+    { type: "reveal-rectangle", rect: { x: 0.2, y: 0.2, width: 0.08, height: 0.08 } },
     { type: "hide-rectangle", rect: { x: 0.4, y: 0.4, width: 0.1, height: 0.1 } }
   ]);
   assert.deepEqual(state.campaign.maps[1].fogOperations, []);

@@ -204,15 +204,17 @@ export function createGmController({ api, socket, state, view }) {
     view.setWorkspaceGridState(state.updateSelectedEncounterGridState(lockPatch));
   }
 
-  async function commitWorkspaceHideRectangle(startClient, endClient) {
+  async function commitWorkspaceFogRectangle(startClient, endClient) {
     const campaign = state.getCurrentCampaign();
     const selectedEncounterId = state.getSelectedEncounterId();
-    const draft = view.getWorkspaceHideRectangle(startClient, endClient);
-    view.cancelWorkspaceHideRectangle();
+    const fogMode = view.getWorkspaceFogMode();
+    const draft = view.getWorkspaceFogRectangle(startClient, endClient);
+    view.cancelWorkspaceFogRectangle();
 
     if (
       !campaign ||
       !selectedEncounterId ||
+      !fogMode ||
       !draft ||
       !draft.startInsideMap ||
       draft.screenRect.width < 6 ||
@@ -223,7 +225,7 @@ export function createGmController({ api, socket, state, view }) {
 
     try {
       const payload = await api.appendFogOperation(campaign.id, selectedEncounterId, {
-        type: "hide-rectangle",
+        type: fogMode,
         rect: draft.rect
       });
       state.setCurrentCampaign(payload.campaign);
@@ -233,16 +235,16 @@ export function createGmController({ api, socket, state, view }) {
     }
   }
 
-  function cancelWorkspaceHideRectangle() {
-    view.cancelWorkspaceHideRectangle();
+  function cancelWorkspaceFogRectangle() {
+    view.cancelWorkspaceFogRectangle();
   }
 
-  function previewWorkspaceHideRectangle(startClient, endClient) {
-    view.previewWorkspaceHideRectangle(startClient, endClient);
+  function previewWorkspaceFogRectangle(startClient, endClient) {
+    view.previewWorkspaceFogRectangle(startClient, endClient);
   }
 
-  function toggleWorkspaceHideMode() {
-    view.setWorkspaceHideMode(!view.isWorkspaceHideMode());
+  function toggleWorkspaceFogMode(mode) {
+    view.setWorkspaceFogMode(view.getWorkspaceFogMode() === mode ? null : mode);
   }
 
   function zoomWorkspaceMapIn() {
@@ -264,21 +266,21 @@ export function createGmController({ api, socket, state, view }) {
       backToLibrary,
       backToEncounters,
       createCampaign,
-      cancelWorkspaceHideRectangle,
-      commitWorkspaceHideRectangle,
+      cancelWorkspaceFogRectangle,
+      commitWorkspaceFogRectangle,
       deleteCampaign,
       deleteMap,
       fitWorkspaceMap,
       moveWorkspaceGrid,
       moveMap,
       openCampaign,
-      previewWorkspaceHideRectangle,
+      previewWorkspaceFogRectangle,
       renameMap,
       selectEncounter,
       toggleShownEncounter,
       toggleWorkspaceGrid,
       toggleWorkspaceGridLock,
-      toggleWorkspaceHideMode,
+      toggleWorkspaceFogMode,
       showWorkspaceEncounter,
       updateCampaignMetadata,
       uploadMap,

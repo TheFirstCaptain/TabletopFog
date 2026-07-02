@@ -874,6 +874,61 @@ Expected result:
   VTT-style controls are introduced by F-006C.
 - Fog remains in memory and is not persisted to `campaign.json`.
 
+### Test: GM Draws Rectangle Reveal Fog
+
+Prerequisites:
+
+- A campaign exists with at least two encounters/maps.
+- The encounter workspace feature is implemented.
+- F-006D rectangle Reveal tool is implemented.
+
+Steps:
+
+1. Show one encounter to players.
+2. Open that shown encounter in the GM workspace.
+3. Turn on `Hide rectangle` and draw a large hide rectangle.
+4. Turn on `Reveal rectangle` and confirm `Hide rectangle` is no longer active.
+5. Drag a smaller reveal rectangle through the hidden area.
+6. Confirm the GM workspace shows the underlying map again in the revealed
+   rectangle.
+7. Confirm the Player Display updates live with the same revealed map-relative
+   area.
+8. Turn `Hide rectangle` back on and draw another hide rectangle over part of
+   the revealed area.
+9. Confirm the later hide operation obscures that area again.
+10. Try a tiny accidental reveal drag smaller than 6 px by 6 px.
+11. Confirm no fog operation is added.
+12. Start another reveal drag and press Escape before releasing the pointer.
+13. Confirm the draft rectangle is canceled and no fog operation is added.
+14. Show the 5 ft grid, keep `Reveal rectangle` active, and drag another reveal
+    rectangle.
+15. Confirm the grid remains visible but does not move while Reveal mode is
+    active.
+16. Open a different selected/editing encounter without showing it to players.
+17. Zoom the GM workspace map, hide part of it, then draw a reveal rectangle.
+18. Confirm the Player Display does not change because the edited encounter is
+    not shown to players.
+
+Expected result:
+
+- Rectangle Reveal controls live in the Encounter Workspace beside Hide.
+- Hide and Reveal are separate explicit buttons with mutually exclusive active
+  states.
+- A completed valid Reveal drag appends one in-memory `reveal-rectangle`
+  operation using normalized map-relative coordinates.
+- Reveal drawing respects GM map zoom and map positioning.
+- Reveal operations cut through earlier hide operations, and later hide
+  operations can cover a revealed area again.
+- Tiny drags and Escape-canceled drags do not create fog operations.
+- Any active fog drawing mode owns the map drag surface while active; the grid
+  may remain visible as a non-interactive guide.
+- Player Display receives live reveal updates only for the encounter currently
+  shown to players.
+- Opening or editing an encounter still does not show it to players.
+- No clear fog, brush, circle, undo, token, dynamic lighting, or VTT-style
+  controls are introduced by F-006D.
+- Fog remains in memory and is not persisted to `campaign.json`.
+
 ### Test: Player Sees Hidden Areas Obscured
 
 Prerequisites:
@@ -890,8 +945,7 @@ Steps:
 4. Confirm the Player Display does not change.
 5. Use `Show to Players` for the selected/editing encounter.
 6. Confirm the Player Display shows that encounter with the hidden area obscured.
-7. After reveal or clear fog tools are implemented, remove or reveal part of the
-   fog from the GM workspace.
+7. Use `Reveal rectangle` to reveal part of the fog from the GM workspace.
 8. Confirm the Player Display updates live because this encounter is now shown
    to players.
 9. Open another encounter in the GM workspace and edit its fog without showing

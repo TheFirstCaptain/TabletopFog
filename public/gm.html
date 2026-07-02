@@ -87,7 +87,7 @@
                   <p id="active-map-message" class="map-state-message muted">No encounter selected.</p>
                   <canvas id="active-map-canvas" class="map-canvas" role="img" aria-label="" hidden></canvas>
                   <div id="workspace-fog-overlay" class="workspace-fog-overlay" hidden>
-                    <div id="workspace-hide-rectangle" class="workspace-hide-rectangle" hidden></div>
+                    <div id="workspace-fog-rectangle" class="workspace-fog-rectangle" hidden></div>
                   </div>
                   <div
                     id="workspace-grid-overlay"
@@ -102,9 +102,12 @@
               <aside class="workspace-tools-panel" aria-labelledby="workspace-tools-heading">
                 <p class="eyebrow">Prep Tools</p>
                 <h4 id="workspace-tools-heading">Fog</h4>
-                <div class="workspace-tool-group" aria-label="Fog tools">
+                <div class="workspace-tool-group fog-tool-group" aria-label="Fog tools">
                   <button id="workspace-hide-tool" class="secondary compact-tool-button" type="button" disabled>
                     Hide rectangle
+                  </button>
+                  <button id="workspace-reveal-tool" class="secondary compact-tool-button" type="button" disabled>
+                    Reveal rectangle
                   </button>
                 </div>
                 <h4>Map Alignment</h4>

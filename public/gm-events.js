@@ -1,6 +1,6 @@
 export function wireGmEvents(elements, actions) {
   let gridDragPoint = null;
-  let hideDragPoint = null;
+  let fogDragPoint = null;
 
   elements.campaignForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -20,7 +20,8 @@ export function wireGmEvents(elements, actions) {
   elements.gmZoomIn.addEventListener("click", actions.zoomWorkspaceMapIn);
   elements.workspaceGridToggle.addEventListener("click", actions.toggleWorkspaceGrid);
   elements.workspaceGridLock.addEventListener("click", actions.toggleWorkspaceGridLock);
-  elements.workspaceHideTool.addEventListener("click", actions.toggleWorkspaceHideMode);
+  elements.workspaceHideTool.addEventListener("click", () => actions.toggleWorkspaceFogMode("hide-rectangle"));
+  elements.workspaceRevealTool.addEventListener("click", () => actions.toggleWorkspaceFogMode("reveal-rectangle"));
 
   elements.workspaceGridOverlay.addEventListener("pointerdown", (event) => {
     if (elements.workspaceFogOverlay.dataset.active === "true") return;
@@ -65,38 +66,38 @@ export function wireGmEvents(elements, actions) {
     if (elements.workspaceFogOverlay.dataset.active !== "true") return;
     event.preventDefault();
     elements.workspaceFogOverlay.setPointerCapture?.(event.pointerId);
-    hideDragPoint = {
+    fogDragPoint = {
       pointerId: event.pointerId,
       start: { clientX: event.clientX, clientY: event.clientY }
     };
-    actions.previewWorkspaceHideRectangle(hideDragPoint.start, hideDragPoint.start);
+    actions.previewWorkspaceFogRectangle(fogDragPoint.start, fogDragPoint.start);
   });
 
   elements.workspaceFogOverlay.addEventListener("pointermove", (event) => {
-    if (!hideDragPoint || hideDragPoint.pointerId !== event.pointerId) return;
+    if (!fogDragPoint || fogDragPoint.pointerId !== event.pointerId) return;
     event.preventDefault();
-    actions.previewWorkspaceHideRectangle(hideDragPoint.start, { clientX: event.clientX, clientY: event.clientY });
+    actions.previewWorkspaceFogRectangle(fogDragPoint.start, { clientX: event.clientX, clientY: event.clientY });
   });
 
   elements.workspaceFogOverlay.addEventListener("pointerup", (event) => {
-    if (!hideDragPoint || hideDragPoint.pointerId !== event.pointerId) return;
+    if (!fogDragPoint || fogDragPoint.pointerId !== event.pointerId) return;
     event.preventDefault();
-    const start = hideDragPoint.start;
-    hideDragPoint = null;
-    actions.commitWorkspaceHideRectangle(start, { clientX: event.clientX, clientY: event.clientY });
+    const start = fogDragPoint.start;
+    fogDragPoint = null;
+    actions.commitWorkspaceFogRectangle(start, { clientX: event.clientX, clientY: event.clientY });
   });
 
   elements.workspaceFogOverlay.addEventListener("pointercancel", (event) => {
-    if (hideDragPoint?.pointerId !== event.pointerId) return;
-    hideDragPoint = null;
-    actions.cancelWorkspaceHideRectangle();
+    if (fogDragPoint?.pointerId !== event.pointerId) return;
+    fogDragPoint = null;
+    actions.cancelWorkspaceFogRectangle();
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape" || !hideDragPoint) return;
+    if (event.key !== "Escape" || !fogDragPoint) return;
     event.preventDefault();
-    hideDragPoint = null;
-    actions.cancelWorkspaceHideRectangle();
+    fogDragPoint = null;
+    actions.cancelWorkspaceFogRectangle();
   });
 
   elements.campaignList.addEventListener("click", (event) => {

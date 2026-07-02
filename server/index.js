@@ -205,8 +205,8 @@ function createApp(options = {}) {
         return;
       }
 
-      if (request.body.type !== "hide-rectangle") {
-        response.status(400).json({ error: "Only hide rectangles can be added by this tool." });
+      if (!["hide-rectangle", "reveal-rectangle"].includes(request.body.type)) {
+        response.status(400).json({ error: "Only hide and reveal rectangles can be added by this tool." });
         return;
       }
 

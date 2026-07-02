@@ -3,7 +3,11 @@ import { createGmNavigation } from "./gm-navigation.js";
 
 const DEFAULT_CAMPAIGN_ICON = "🗺️";
 const GRID_CELL_SIZE = 64;
-const MIN_HIDE_RECTANGLE_SIZE = 6;
+const MIN_FOG_RECTANGLE_SIZE = 6;
+const FOG_TOOL_LABELS = {
+  "hide-rectangle": "Hide rectangle",
+  "reveal-rectangle": "Reveal rectangle"
+};
 
 function createDefaultGridState() {
   return {
@@ -62,13 +66,14 @@ export function createGmView(document) {
     workspaceGridOverlay: document.querySelector("#workspace-grid-overlay"),
     workspaceGridToggle: document.querySelector("#workspace-grid-toggle"),
     workspaceGrid: document.querySelector(".workspace-grid"),
-    workspaceHideRectangle: document.querySelector("#workspace-hide-rectangle"),
+    workspaceFogRectangle: document.querySelector("#workspace-fog-rectangle"),
     workspaceHideTool: document.querySelector("#workspace-hide-tool"),
+    workspaceRevealTool: document.querySelector("#workspace-reveal-tool"),
     workspaceShowToPlayers: document.querySelector("#workspace-show-to-players")
   };
   const navigation = createGmNavigation(elements);
   let activeMapReady = false;
-  let workspaceHideMode = false;
+  let workspaceFogMode = null;
   let workspaceGridState = createDefaultGridState();
 
   let activeMapRenderer;
@@ -84,7 +89,7 @@ export function createGmView(document) {
       if (state === "ready") elements.activeMapMessage.textContent = map.name;
       if (state === "error") elements.activeMapMessage.textContent = "Map image could not be loaded.";
       renderWorkspaceZoomControls(activeMapRenderer.getViewport());
-      renderWorkspaceHideTool();
+      renderWorkspaceFogTools();
       renderWorkspaceGridState();
     },
     onViewportChange(viewport) {
@@ -102,23 +107,31 @@ export function createGmView(document) {
     elements.gmFitMap.disabled = disabled || (viewport.zoom === 1 && viewport.panX === 0 && viewport.panY === 0);
   }
 
-  function renderWorkspaceHideTool() {
-    if (!activeMapReady) workspaceHideMode = false;
+  function renderWorkspaceFogTools() {
+    if (!activeMapReady) workspaceFogMode = null;
 
-    elements.workspaceHideTool.disabled = !activeMapReady;
-    elements.workspaceHideTool.dataset.active = String(workspaceHideMode);
-    elements.workspaceHideTool.setAttribute("aria-pressed", String(workspaceHideMode));
-    elements.workspaceHideTool.textContent = workspaceHideMode ? "Hide rectangle active" : "Hide rectangle";
-    elements.workspaceFogOverlay.hidden = !workspaceHideMode;
-    elements.workspaceFogOverlay.dataset.active = String(workspaceHideMode);
-    elements.activeMapCanvas.closest(".gm-map-stage").dataset.hideMode = String(workspaceHideMode);
-    if (!workspaceHideMode) clearWorkspaceHideDraft();
+    [
+      [elements.workspaceHideTool, "hide-rectangle"],
+      [elements.workspaceRevealTool, "reveal-rectangle"]
+    ].forEach(([button, mode]) => {
+      const active = workspaceFogMode === mode;
+      button.disabled = !activeMapReady;
+      button.dataset.active = String(active);
+      button.setAttribute("aria-pressed", String(active));
+      button.textContent = FOG_TOOL_LABELS[mode];
+    });
+    elements.workspaceFogOverlay.hidden = !workspaceFogMode;
+    elements.workspaceFogOverlay.dataset.active = String(Boolean(workspaceFogMode));
+    elements.workspaceFogOverlay.dataset.mode = workspaceFogMode || "";
+    elements.activeMapCanvas.closest(".gm-map-stage").dataset.fogMode = workspaceFogMode || "";
+    if (!workspaceFogMode) clearWorkspaceFogDraft();
   }
 
-  function clearWorkspaceHideDraft() {
-    elements.workspaceHideRectangle.hidden = true;
-    delete elements.workspaceHideRectangle.dataset.tooSmall;
-    Object.assign(elements.workspaceHideRectangle.style, {
+  function clearWorkspaceFogDraft() {
+    elements.workspaceFogRectangle.hidden = true;
+    delete elements.workspaceFogRectangle.dataset.mode;
+    delete elements.workspaceFogRectangle.dataset.tooSmall;
+    Object.assign(elements.workspaceFogRectangle.style, {
       height: "",
       left: "",
       top: "",
@@ -126,12 +139,13 @@ export function createGmView(document) {
     });
   }
 
-  function renderWorkspaceHideDraft(screenRect) {
-    elements.workspaceHideRectangle.hidden = false;
-    elements.workspaceHideRectangle.dataset.tooSmall = String(
-      screenRect.width < MIN_HIDE_RECTANGLE_SIZE || screenRect.height < MIN_HIDE_RECTANGLE_SIZE
+  function renderWorkspaceFogDraft(screenRect) {
+    elements.workspaceFogRectangle.hidden = false;
+    elements.workspaceFogRectangle.dataset.mode = workspaceFogMode || "";
+    elements.workspaceFogRectangle.dataset.tooSmall = String(
+      screenRect.width < MIN_FOG_RECTANGLE_SIZE || screenRect.height < MIN_FOG_RECTANGLE_SIZE
     );
-    Object.assign(elements.workspaceHideRectangle.style, {
+    Object.assign(elements.workspaceFogRectangle.style, {
       height: `${screenRect.height}px`,
       left: `${screenRect.x}px`,
       top: `${screenRect.y}px`,
@@ -178,10 +192,10 @@ export function createGmView(document) {
       elements.selectedEncounterStatus.textContent = "Choose an encounter card to prep it here.";
       elements.workspaceShowToPlayers.disabled = true;
       activeMapReady = false;
-      workspaceHideMode = false;
+      workspaceFogMode = null;
       activeMapRenderer.setMap(null);
       renderWorkspaceZoomControls();
-      renderWorkspaceHideTool();
+      renderWorkspaceFogTools();
       renderWorkspaceGridState(createDefaultGridState());
       return;
     }
@@ -556,10 +570,10 @@ export function createGmView(document) {
     setWorkspaceGridState(gridState) {
       renderWorkspaceGridState(gridState);
     },
-    cancelWorkspaceHideRectangle() {
-      clearWorkspaceHideDraft();
+    cancelWorkspaceFogRectangle() {
+      clearWorkspaceFogDraft();
     },
-    getWorkspaceHideRectangle(startClient, endClient) {
+    getWorkspaceFogRectangle(startClient, endClient) {
       return activeMapRenderer.getNormalizedRectFromClientPoints(startClient, endClient);
     },
     getWorkspaceGridLockSnapshot() {
@@ -574,23 +588,23 @@ export function createGmView(document) {
     workspaceFitMap() {
       return activeMapRenderer.resetViewport();
     },
-    isWorkspaceHideMode() {
-      return workspaceHideMode;
+    getWorkspaceFogMode() {
+      return workspaceFogMode;
     },
-    previewWorkspaceHideRectangle(startClient, endClient) {
+    previewWorkspaceFogRectangle(startClient, endClient) {
       const draft = activeMapRenderer.getNormalizedRectFromClientPoints(startClient, endClient);
       if (!draft || !draft.startInsideMap) {
-        clearWorkspaceHideDraft();
+        clearWorkspaceFogDraft();
         return null;
       }
-      renderWorkspaceHideDraft(draft.screenRect);
+      renderWorkspaceFogDraft(draft.screenRect);
       return draft;
     },
-    setWorkspaceHideMode(enabled) {
-      workspaceHideMode = Boolean(enabled) && activeMapReady;
-      renderWorkspaceHideTool();
+    setWorkspaceFogMode(mode) {
+      workspaceFogMode = mode && activeMapReady ? mode : null;
+      renderWorkspaceFogTools();
       renderWorkspaceGridState();
-      return workspaceHideMode;
+      return workspaceFogMode;
     },
     workspaceZoomIn() {
       return activeMapRenderer.zoomIn();

@@ -99,6 +99,11 @@ button.secondary:hover:not(:disabled) {
   color: #ffffff;
 }
 
+button.secondary[data-active="true"] {
+  background: var(--accent-strong);
+  color: #ffffff;
+}
+
 input[type="text"],
 input[type="file"],
 textarea {
@@ -736,6 +741,11 @@ h4 {
   font-size: 0.875rem;
 }
 
+.fog-tool-group .compact-tool-button {
+  width: 8.5rem;
+  max-width: 100%;
+}
+
 #gm-zoom-level {
   grid-column: 1 / -1;
   min-width: 3.25rem;
@@ -786,7 +796,7 @@ h4 {
   touch-action: none;
 }
 
-.workspace-hide-rectangle {
+.workspace-fog-rectangle {
   position: absolute;
   border: 2px solid rgb(247 235 207 / 88%);
   background: rgb(20 17 15 / 42%);
@@ -794,7 +804,16 @@ h4 {
   pointer-events: none;
 }
 
-.gm-map-stage[data-hide-mode="true"] .workspace-grid-overlay {
+.workspace-fog-rectangle[data-mode="reveal-rectangle"] {
+  border-color: rgb(180 230 255 / 92%);
+  background: rgb(247 235 207 / 28%);
+  box-shadow:
+    0 0 0 1px rgb(20 17 15 / 72%),
+    inset 0 0 0 2px rgb(180 230 255 / 36%);
+}
+
+.gm-map-stage[data-fog-mode="hide-rectangle"] .workspace-grid-overlay,
+.gm-map-stage[data-fog-mode="reveal-rectangle"] .workspace-grid-overlay {
   pointer-events: none;
 }
 

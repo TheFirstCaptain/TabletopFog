@@ -61,10 +61,10 @@ The manual-fog foundation now keeps in-memory, per-encounter ordered
 hide/reveal rectangle operations and renders fog through the shared canvas:
 semi-transparent in the GM workspace and opaque or near-opaque on the Player
 Display for only the encounter currently `Shown to Players`. The GM Encounter
-Workspace includes a first `Hide rectangle` fog tool with Escape cancel,
-tiny-drag filtering, zoom-aware map-relative geometry, and explicit input
-arbitration with the 5 ft grid. User-facing reveal and clear controls are still
-planned follow-up work.
+Workspace includes explicit `Hide rectangle` and `Reveal rectangle` fog tools
+with Escape cancel, tiny-drag filtering, zoom-aware map-relative geometry,
+ordered hide/reveal replay, and explicit input arbitration with the 5 ft grid.
+Clear Fog is still planned follow-up work.
 Campaign screens use
 `Back to Campaign Library`, and normal GM UI avoids showing local filesystem
 paths. Opening or navigating the workspace does not change the Player Display.

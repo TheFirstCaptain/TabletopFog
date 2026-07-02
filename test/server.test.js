@@ -137,6 +137,21 @@ function waitForActiveMap(client, expectedMapId) {
   });
 }
 
+function waitForActiveMapFogCount(client, expectedMapId, expectedCount) {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error(`Timed out waiting for active map ${expectedMapId} with ${expectedCount} fog operations`));
+    }, 2000);
+
+    client.on("state:sync", (state) => {
+      if (state.activeMap?.id === expectedMapId && state.activeMap.fogOperations?.length === expectedCount) {
+        clearTimeout(timeout);
+        resolve(state);
+      }
+    });
+  });
+}
+
 function waitForNoActiveMap(client) {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
@@ -795,11 +810,19 @@ test("GM API appends fog operations without persisting or exposing unshown fog",
     });
     await active;
 
-    const forestFogSync = waitForActiveMap(player, forest.json.map.id);
     const forestFog = await requestHttps(
       `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(forest.json.map.id)}/fog-operations`,
       {
         body: JSON.stringify({ type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }),
+        headers: gmHeaders(port, { "content-type": "application/json" }),
+        method: "POST"
+      }
+    );
+    const forestRevealSync = waitForActiveMapFogCount(player, forest.json.map.id, 2);
+    const forestReveal = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(forest.json.map.id)}/fog-operations`,
+      {
+        body: JSON.stringify({ type: "reveal-rectangle", rect: { x: 0.14, y: 0.14, width: 0.08, height: 0.08 } }),
         headers: gmHeaders(port, { "content-type": "application/json" }),
         method: "POST"
       }
@@ -812,21 +835,24 @@ test("GM API appends fog operations without persisting or exposing unshown fog",
         method: "POST"
       }
     );
-    const playerState = await forestFogSync;
+    const playerState = await forestRevealSync;
     const campaignJson = JSON.parse(fs.readFileSync(path.join(dataRoot, "The Long Walk", "campaign.json"), "utf8"));
 
     assert.equal(forestFog.statusCode, 201);
+    assert.equal(forestReveal.statusCode, 201);
     assert.equal(caveFog.statusCode, 201);
-    assert.deepEqual(forestFog.json.campaign.maps.find((map) => map.id === forest.json.map.id).fogOperations, [
-      { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+    assert.deepEqual(forestReveal.json.campaign.maps.find((map) => map.id === forest.json.map.id).fogOperations, [
+      { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } },
+      { type: "reveal-rectangle", rect: { x: 0.14, y: 0.14, width: 0.08, height: 0.08 } }
     ]);
     assert.deepEqual(playerState.activeMap.fogOperations, [
-      { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+      { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } },
+      { type: "reveal-rectangle", rect: { x: 0.14, y: 0.14, width: 0.08, height: 0.08 } }
     ]);
     assert.deepEqual(
       stateStore.getState().campaign.maps.map((map) => [map.id, map.fogOperations.length]),
       [
-        [forest.json.map.id, 1],
+        [forest.json.map.id, 2],
         [cave.json.map.id, 1]
       ]
     );
@@ -871,7 +897,7 @@ test("GM fog operation API rejects invalid requests without mutation", async (t)
       method: "POST"
     });
     const invalidType = await requestHttps(endpoint, {
-      body: JSON.stringify({ type: "reveal-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }),
+      body: JSON.stringify({ type: "circle-reveal", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }),
       headers: gmHeaders(port, { "content-type": "application/json" }),
       method: "POST"
     });
