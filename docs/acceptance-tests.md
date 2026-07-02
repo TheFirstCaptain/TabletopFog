@@ -984,6 +984,46 @@ Expected result:
 - No undo, operation history, brush, token, dynamic lighting, or VTT-style
   controls are introduced by F-006E.
 
+### Test: GM Pans a Zoomed Workspace Map
+
+Prerequisites:
+
+- A campaign exists with at least two encounters/maps.
+- The encounter workspace feature is implemented.
+- F-006F fog polish is implemented.
+
+Steps:
+
+1. Show one encounter to players.
+2. Open that encounter in the GM workspace.
+3. Zoom in until portions of the map extend outside the visible workspace area.
+4. Drag the map in the GM workspace.
+5. Confirm previously off-screen portions of the selected map can be brought
+   into view.
+6. Confirm the Player Display does not pan, zoom, reload, or otherwise change.
+7. Confirm campaign state, fog operations, grid state, and persisted files are
+   unchanged by GM panning.
+8. Turn on `Hide rectangle` or `Reveal rectangle` and drag on the map.
+9. Confirm the drag draws fog instead of panning while a fog drawing mode is
+   active.
+10. Turn off fog drawing, show the unlocked 5 ft grid, and drag the grid.
+11. Confirm the drag moves the grid instead of panning while grid alignment is
+    active.
+12. Use `Fit map` or open a different encounter.
+13. Confirm the GM workspace pan resets consistently with existing GM zoom
+    behavior.
+
+Expected result:
+
+- GM workspace panning is available while the selected map is zoomed in.
+- GM workspace panning is local to the current GM browser tab.
+- GM workspace panning does not mutate campaign state, fog state, grid state,
+  persistence, or the Player Display.
+- Fog drawing has priority over pan dragging while Hide or Reveal is active.
+- Grid dragging has priority over pan dragging while the unlocked grid is being
+  aligned.
+- Player Display remains read-only and keeps its independent viewport.
+
 ### Test: Player Sees Hidden Areas Obscured
 
 Prerequisites:
