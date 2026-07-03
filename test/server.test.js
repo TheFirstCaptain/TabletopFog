@@ -152,6 +152,21 @@ function waitForActiveMapFogCount(client, expectedMapId, expectedCount) {
   });
 }
 
+function waitForPlayerState(client, predicate, description) {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error(`Timed out waiting for player state: ${description}`));
+    }, 2000);
+
+    client.on("state:sync", (state) => {
+      if (predicate(state)) {
+        clearTimeout(timeout);
+        resolve(state);
+      }
+    });
+  });
+}
+
 function waitForNoActiveMap(client) {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
@@ -1119,6 +1134,145 @@ test("opening a campaign hydrates persisted fog operations", async (t) => {
       { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
     ]);
   } finally {
+    await close(secondServer.server, secondServer.io);
+  }
+});
+
+test("restores shown encounter and fog to players only after GM opens the campaign", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const firstServer = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const firstPort = await listen(firstServer.server);
+  const firstUrl = `https://127.0.0.1:${firstPort}`;
+
+  let forestMapId;
+  let caveMapId;
+  const forestFog = [
+    { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } },
+    { type: "reveal-rectangle", rect: { x: 0.14, y: 0.14, width: 0.08, height: 0.08 } }
+  ];
+  const caveFog = [{ type: "hide-rectangle", rect: { x: 0.5, y: 0.5, width: 0.1, height: 0.1 } }];
+
+  try {
+    await requestHttps(`${firstUrl}/api/campaigns`, {
+      body: JSON.stringify({ name: "The Long Walk" }),
+      headers: gmHeaders(firstPort, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const forest = await requestHttps(`${firstUrl}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(firstPort, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "forest.png"
+      }),
+      method: "POST"
+    });
+    const cave = await requestHttps(`${firstUrl}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(firstPort, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "cave.png"
+      }),
+      method: "POST"
+    });
+    forestMapId = forest.json.map.id;
+    caveMapId = cave.json.map.id;
+
+    await requestHttps(`${firstUrl}/api/campaigns/${encodeURIComponent("The Long Walk")}/active-map`, {
+      body: JSON.stringify({ mapId: forestMapId }),
+      headers: gmHeaders(firstPort, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+    await requestHttps(
+      `${firstUrl}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(forestMapId)}/fog-operations`,
+      {
+        body: JSON.stringify(forestFog[0]),
+        headers: gmHeaders(firstPort, { "content-type": "application/json" }),
+        method: "POST"
+      }
+    );
+    await requestHttps(
+      `${firstUrl}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(forestMapId)}/fog-operations`,
+      {
+        body: JSON.stringify(forestFog[1]),
+        headers: gmHeaders(firstPort, { "content-type": "application/json" }),
+        method: "POST"
+      }
+    );
+    await requestHttps(
+      `${firstUrl}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(caveMapId)}/fog-operations`,
+      {
+        body: JSON.stringify(caveFog[0]),
+        headers: gmHeaders(firstPort, { "content-type": "application/json" }),
+        method: "POST"
+      }
+    );
+  } finally {
+    await close(firstServer.server, firstServer.io);
+  }
+
+  const secondServer = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const secondPort = await listen(secondServer.server);
+  const secondUrl = `https://127.0.0.1:${secondPort}`;
+  const player = createClient(secondUrl, {
+    forceNew: true,
+    rejectUnauthorized: false,
+    reconnection: false,
+    transports: ["websocket"],
+    extraHeaders: {
+      referer: `${secondUrl}/player`
+    }
+  });
+
+  try {
+    const startupState = await waitForPlayerState(
+      player,
+      (state) => Object.hasOwn(state, "activeMap") && state.activeMap === null,
+      "empty startup player projection"
+    );
+
+    assert.equal(secondServer.stateStore.getState().campaign, null);
+    assert.equal(startupState.campaign, undefined);
+
+    const library = await requestHttps(`${secondUrl}/api/campaigns`, {
+      headers: gmHeaders(secondPort)
+    });
+
+    assert.equal(library.statusCode, 200);
+    assert.equal(library.json.campaigns[0].id, "The Long Walk");
+    assert.equal(library.json.campaigns[0].activeMapName, "forest");
+    assert.equal(secondServer.stateStore.getState().campaign, null);
+
+    const restoredPlayer = waitForPlayerState(
+      player,
+      (state) => state.activeMap?.id === forestMapId && state.activeMap.fogOperations?.length === forestFog.length,
+      "restored shown encounter with persisted fog"
+    );
+    const opened = await requestHttps(`${secondUrl}/api/campaigns/${encodeURIComponent("The Long Walk")}`, {
+      headers: gmHeaders(secondPort)
+    });
+    const restoredPlayerState = await restoredPlayer;
+
+    assert.equal(opened.statusCode, 200);
+    assert.equal(opened.json.campaign.activeMapId, forestMapId);
+    assert.deepEqual(opened.json.campaign.maps.find((map) => map.id === forestMapId).fogOperations, forestFog);
+    assert.deepEqual(opened.json.campaign.maps.find((map) => map.id === caveMapId).fogOperations, caveFog);
+    assert.equal(restoredPlayerState.campaign, undefined);
+    assert.equal(restoredPlayerState.activeMap.id, forestMapId);
+    assert.equal(restoredPlayerState.activeMap.name, "forest");
+    assert.equal(restoredPlayerState.activeMap.assetUrl, "/api/player/active-map/asset");
+    assert.equal(restoredPlayerState.activeMap.version, `The Long Walk/${forestMapId}`);
+    assert.deepEqual(restoredPlayerState.activeMap.fogOperations, forestFog);
+    assert.equal(secondServer.stateStore.getState().campaign.activeMapId, forestMapId);
+  } finally {
+    player.close();
     await close(secondServer.server, secondServer.io);
   }
 });

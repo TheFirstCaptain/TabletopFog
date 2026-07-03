@@ -1093,20 +1093,70 @@ Steps:
    autosave the encounter's fog state.
 4. Clear fog on one encounter and confirm the empty fog state is autosaved.
 5. Restart or reload the app.
-6. Open the saved campaign.
-7. Open the Player Display.
+6. Open the Player Display before opening the campaign.
+7. Confirm the Player Display remains in its waiting state.
+8. Browse the Campaign Library and confirm the Player Display remains in its
+   waiting state.
+9. Open the saved campaign as the GM.
+10. Confirm the Player Display restores the saved shown-to-players encounter
+    and its persisted fog.
+11. Open a different encounter for prep.
 
 Expected result:
 
 - Campaign metadata reloads from local, inspectable files.
 - Map names and manual ordering are restored.
-- The saved shown-to-players encounter is restored.
+- Server startup alone and Campaign Library browsing do not restore or change
+  Player Display state.
+- The saved shown-to-players encounter is restored only after the GM opens the
+  campaign.
 - Per-encounter fog state is restored.
 - Cleared fog remains cleared after reload.
 - The Player Display matches the saved shown-to-players encounter and fog state.
 - GM selected/editing encounter state is not confused with the shown-to-players
   encounter.
+- Opening a different encounter for prep after restore does not change the
+  Player Display.
 - No cloud storage or user account is required.
+
+### Test: Persistence Recovery Is Non-Destructive
+
+Prerequisites:
+
+- F-007A and F-007B persistence behavior is implemented.
+- Test campaign folders are available with valid data, malformed fog data,
+  missing map assets, and unknown forward-compatible metadata.
+
+Steps:
+
+1. Open the Campaign Library with one valid campaign and one malformed campaign
+   folder present.
+2. Confirm the valid campaign remains listed and the malformed campaign reports
+   GM-visible recovery guidance.
+3. Open a campaign that has one encounter with malformed fog and one valid
+   encounter.
+4. Confirm the valid encounter remains usable and its fog restores normally.
+5. Confirm the malformed-fog encounter reports a GM-visible diagnostic and does
+   not break map rendering.
+6. Open a campaign where the saved shown-to-players encounter has a missing map
+   asset.
+7. Confirm the Player Display enters a safe waiting or error state rather than
+   rendering stale or broken map content.
+8. Confirm unknown metadata remains preserved after a later successful explicit
+   GM mutation.
+9. Compare the affected `campaign.json` and map files before and after recovery
+   reads and failed recovery paths.
+
+Expected result:
+
+- Recovery reads do not rewrite `campaign.json`, delete assets, or strip
+  unknown metadata.
+- Malformed fog is isolated to the affected encounter where practical.
+- Missing map assets are reported to the GM and do not expose mutating controls
+  or hidden data to the Player Display.
+- Valid campaigns and unaffected encounters remain usable.
+- No cloud repair, account, map replacement, database migration, or VTT feature
+  is introduced.
 
 ## Scope Control
 

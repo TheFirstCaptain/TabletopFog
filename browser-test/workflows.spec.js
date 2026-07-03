@@ -1470,6 +1470,70 @@ test("seeded fog renders by role before drawing controls are used", async ({ app
   expect(colorDistance(playerRehiddenAfterResize, playerStillRehidden)).toBeLessThan(64);
 });
 
+test("GM campaign open restores saved shown encounter and fog to player display", async ({ app, page, context }) => {
+  const player = await context.newPage();
+  const campaignDirectory = path.join(app.dataRoot, "Saved Campaign");
+  const mapsDirectory = path.join(campaignDirectory, "maps");
+  const forestFog = [{ type: "hide-rectangle", rect: { x: 0.12, y: 0.12, width: 0.28, height: 0.28 } }];
+  fs.mkdirSync(mapsDirectory, { recursive: true });
+  fs.writeFileSync(path.join(mapsDirectory, "forest.png"), PNG_BYTES);
+  fs.writeFileSync(path.join(mapsDirectory, "cave.png"), PNG_BYTES);
+  writeCampaignRecord(app.dataRoot, "Saved Campaign", {
+    version: 1,
+    name: "Saved Campaign",
+    activeMapId: "forest",
+    maps: [
+      {
+        id: "forest",
+        name: "forest",
+        originalFileName: "forest.png",
+        file: "maps/forest.png",
+        order: 1,
+        fog: forestFog
+      },
+      {
+        id: "cave",
+        name: "cave",
+        originalFileName: "cave.png",
+        file: "maps/cave.png",
+        order: 2,
+        fog: [{ type: "hide-rectangle", rect: { x: 0.6, y: 0.6, width: 0.1, height: 0.1 } }]
+      }
+    ]
+  });
+
+  await player.goto(`${app.baseURL}/player`);
+  await expect(player.getByText("Waiting for GM.", { exact: true })).toBeVisible();
+  await expect(player.getByRole("img", { name: /Map:/ })).toBeHidden();
+
+  await openGm(page, app.baseURL);
+  const savedCard = page.locator(".campaign-card").filter({ hasText: "Saved Campaign" });
+  await expect(savedCard.locator(".campaign-card-meta")).toContainText("Shown to Players: forest");
+  await expect(player.getByText("Waiting for GM.", { exact: true })).toBeVisible();
+  await savedCard.getByRole("button", { name: "Open" }).click();
+
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("1");
+  expect(await canvasViewport(player, "#player-map")).toMatchObject({
+    fogOperations: forestFog.length,
+    zoom: 1
+  });
+  await expect(
+    page.locator(".encounter-card").filter({ hasText: "forest" }).locator(".status-pill").filter({
+      hasText: "Shown to Players"
+    })
+  ).toBeVisible();
+  await expect(page.locator("#selected-encounter-status")).toContainText("Choose an encounter card to prep it here.");
+
+  const playerBeforePrepOpen = await canvasViewport(player, "#player-map");
+  await page.getByRole("button", { name: "Open cave for prep" }).click();
+  await expect(page.getByRole("img", { name: "Map: cave" })).toBeVisible();
+  await expect(page.locator("#selected-encounter-status")).toContainText("Selected for Prep: cave");
+  await expect(page.locator("#selected-encounter-status")).toContainText("Shown to Players: forest");
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  expect(await canvasViewport(player, "#player-map")).toMatchObject(playerBeforePrepOpen);
+});
+
 test("GM Clear Fog is confirmed and scoped to the selected encounter", async ({ app, page, context }) => {
   const player = await context.newPage();
   let playerAssetRequests = 0;

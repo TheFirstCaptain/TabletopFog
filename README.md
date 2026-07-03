@@ -73,6 +73,9 @@ The Fog tools also include an always-visible `Clear Fog` action that is enabled
 only when the selected encounter has fog, asks for confirmation, clears only
 that selected encounter's fog, autosaves the empty fog state, and updates the
 Player Display live only when that encounter is currently shown to players.
+When the GM opens a saved campaign, the app restores the encounter previously
+`Shown to Players` and its persisted fog to the Player Display; server startup
+or campaign-library browsing alone leaves the Player Display waiting.
 Campaign screens use
 `Back to Campaign Library`, and normal GM UI avoids showing local filesystem
 paths. Opening or navigating the workspace does not change the Player Display.
