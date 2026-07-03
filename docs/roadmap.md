@@ -264,7 +264,7 @@ Engineering prerequisites:
 
 - Proposed P1: [E-002](./engineering/E-002.md), separate campaign storage
   responsibilities before fog persistence expands storage complexity.
-- Proposed P1: [E-004](./engineering/E-004.md), separate server transport
+- Complete P1: [E-004](./engineering/E-004.md), separated server transport
   responsibilities before save/load routes and projections expand.
 
 Acceptance criteria:

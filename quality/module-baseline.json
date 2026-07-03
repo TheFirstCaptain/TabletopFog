@@ -86,17 +86,25 @@
       "baselineLines": 43,
       "responsibility": "Resolve and load HTTPS certificate credentials."
     },
+    "server/http-routes.js": {
+      "baselineLines": 270,
+      "responsibility": "Register Express middleware, GM and Player Display pages, campaign, map, shown-to-players, fog operation, asset, static-file, and error routes while preserving GM-only mutation guards."
+    },
     "server/index.js": {
-      "baselineLines": 389,
-      "responsibility": "Compose HTTP routes, campaign deletion, campaign-card metadata updates, GM-only fog operation appends and clears, role-specific map and fog projection, Socket.IO synchronization, and HTTPS startup.",
-      "temporaryException": {
-        "engineeringId": "E-004",
-        "reason": "HTTP, role, socket, and startup responsibilities are awaiting planned separation."
-      }
+      "baselineLines": 85,
+      "responsibility": "Compose campaign storage, state store, HTTP route registration, Socket.IO synchronization, HTTPS credentials, public exports, and local startup guidance."
     },
     "server/map-image.js": {
       "baselineLines": 91,
       "responsibility": "Validate supported map image signatures, metadata, and size limits."
+    },
+    "server/role-projection.js": {
+      "baselineLines": 53,
+      "responsibility": "Classify GM versus player requests from route referers, enforce GM-only HTTP mutations, and project full GM state or read-only shown-to-players map and fog state."
+    },
+    "server/socket-sync.js": {
+      "baselineLines": 29,
+      "responsibility": "Coordinate Socket.IO connection role assignment, initial state sync, and role-projected state broadcasts."
     },
     "server/state.js": {
       "baselineLines": 156,
