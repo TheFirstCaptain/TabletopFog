@@ -61,8 +61,9 @@ When the GM workspace map is zoomed, the GM can pan it with drag or keyboard
 arrows to reach off-screen areas; that viewport movement is also local to the
 GM browser tab and does not mutate campaign, fog, grid, or Player Display
 state.
-The manual-fog foundation now keeps in-memory, per-encounter ordered
-hide/reveal rectangle operations and renders fog through the shared canvas:
+The manual-fog foundation now uses per-encounter ordered hide/reveal rectangle
+operations, autosaves successful GM fog changes to local campaign storage, and
+renders fog through the shared canvas:
 semi-transparent in the GM workspace and opaque or near-opaque on the Player
 Display for only the encounter currently `Shown to Players`. The GM Encounter
 Workspace includes explicit `Hide rectangle` and `Reveal rectangle` fog tools
@@ -70,8 +71,8 @@ with Escape cancel, tiny-drag filtering, zoom-aware map-relative geometry,
 ordered hide/reveal replay, and explicit input arbitration with the 5 ft grid.
 The Fog tools also include an always-visible `Clear Fog` action that is enabled
 only when the selected encounter has fog, asks for confirmation, clears only
-that selected encounter's in-memory fog, and updates the Player Display live
-only when that encounter is currently shown to players.
+that selected encounter's fog, autosaves the empty fog state, and updates the
+Player Display live only when that encounter is currently shown to players.
 Campaign screens use
 `Back to Campaign Library`, and normal GM UI avoids showing local filesystem
 paths. Opening or navigating the workspace does not change the Player Display.

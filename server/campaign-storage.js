@@ -10,6 +10,7 @@ const {
   displayNameFromFileName,
   normalizeCampaign,
   normalizeCampaignDescription,
+  normalizeFogOperations,
   normalizeCampaignIcon,
   normalizeCampaignName,
   normalizeFileName,
@@ -34,7 +35,7 @@ function createCampaignStorage(options = {}) {
     campaign.maps = campaign.maps.map((map, index) => ({
       ...map,
       order: index + 1,
-      fog: Array.isArray(map.fog) ? map.fog : []
+      fog: normalizeFogOperations(map.fog || [])
     }));
 
     campaignFiles.writeJsonAtomic(campaignFiles.campaignJsonPath(campaign.id), serializeCampaign(campaign));
@@ -278,6 +279,13 @@ function createCampaignStorage(options = {}) {
 
       findMap(campaign, mapId);
       campaign.activeMapId = mapId;
+      return saveCampaign(campaign);
+    },
+    setMapFog(campaignId, mapId, operations) {
+      const campaign = readCampaign(campaignId);
+      const map = findMap(campaign, mapId);
+
+      map.fog = normalizeFogOperations(operations);
       return saveCampaign(campaign);
     },
     updateCampaignMetadata(campaignId, metadata) {

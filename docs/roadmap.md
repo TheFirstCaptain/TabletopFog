@@ -245,9 +245,10 @@ Implementation notes:
 - Do not implement the old full-black-fog-starts-over-the-map behavior.
 - In V1, fog is used to hide areas on an otherwise visible map.
 - Fog belongs to the encounter. The map is the visual asset fog is drawn over.
-- V1 fog uses an ordered in-memory operation list: hide and reveal operations
+- V1 fog uses an ordered runtime operation list: hide and reveal operations
   replay in order, reveal operations cut through earlier fog, and later hide
-  operations can cover revealed areas again.
+  operations can cover revealed areas again. F-007A persists those operations
+  to local campaign storage.
 - F-006B implements the fog state/rendering foundation without user-facing fog
   drawing controls; rectangle Hide and Reveal tools follow in F-006C and
   F-006D.
@@ -262,10 +263,19 @@ Goal: Complete campaign persistence for fog state and later restore workflows af
 
 Engineering prerequisites:
 
-- Proposed P1: [E-002](./engineering/E-002.md), separate campaign storage
+- Complete P1: [E-002](./engineering/E-002.md), separated campaign storage
   responsibilities before fog persistence expands storage complexity.
 - Complete P1: [E-004](./engineering/E-004.md), separated server transport
   responsibilities before save/load routes and projections expand.
+
+Planned focused sequence:
+
+- Complete: [F-007A](./features/F-007A.md), persist per-encounter fog state.
+- Proposed: [F-007B](./features/F-007B.md), restore shown-to-players state.
+- Proposed: [F-007C](./features/F-007C.md), persistence validation and recovery
+  states.
+- Proposed: [F-007D](./features/F-007D.md), persistence status and diagnostics
+  if needed.
 
 Acceptance criteria:
 

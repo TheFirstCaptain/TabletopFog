@@ -1,5 +1,7 @@
 "use strict";
 
+const { normalizeFogOperation, normalizeFogOperations } = require("./campaign-schema");
+
 function createInitialState() {
   return {
     campaign: null,
@@ -8,56 +10,12 @@ function createInitialState() {
   };
 }
 
-const FOG_OPERATION_TYPES = new Set(["hide-rectangle", "reveal-rectangle"]);
-
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
 function fogKey(campaignId, mapId) {
   return `${campaignId}:${mapId}`;
-}
-
-function normalizeFogOperations(operations) {
-  if (!Array.isArray(operations)) {
-    throw new Error("Invalid fog operation list.");
-  }
-
-  return operations.map((operation) => {
-    const rect = operation?.rect || {};
-    const normalized = {
-      type: operation?.type,
-      rect: {
-        height: rect.height,
-        width: rect.width,
-        x: rect.x,
-        y: rect.y
-      }
-    };
-
-    if (!FOG_OPERATION_TYPES.has(normalized.type) || !isValidRect(normalized.rect)) {
-      throw new Error("Invalid fog operation.");
-    }
-
-    return normalized;
-  });
-}
-
-function normalizeFogOperation(operation) {
-  return normalizeFogOperations([operation])[0];
-}
-
-function isValidRect(rect) {
-  const values = [rect.x, rect.y, rect.width, rect.height];
-  return (
-    values.every(Number.isFinite) &&
-    rect.x >= 0 &&
-    rect.y >= 0 &&
-    rect.width > 0 &&
-    rect.height > 0 &&
-    rect.x + rect.width <= 1 &&
-    rect.y + rect.height <= 1
-  );
 }
 
 function createStateStore() {
@@ -113,6 +71,24 @@ function createStateStore() {
   return {
     getState: snapshot,
     setCampaign(campaign) {
+      if (campaign) {
+        const nextFogOperations = new Map(fogOperationsByEncounter);
+        campaign.maps.forEach((map) => {
+          const normalized = normalizeFogOperations(map.fog || []);
+          const key = fogKey(campaign.id, map.id);
+
+          if (normalized.length > 0) {
+            nextFogOperations.set(key, normalized);
+          } else {
+            nextFogOperations.delete(key);
+          }
+        });
+        fogOperationsByEncounter.clear();
+        nextFogOperations.forEach((operations, key) => {
+          fogOperationsByEncounter.set(key, operations);
+        });
+      }
+
       return updateCampaign(campaign);
     },
     setFogOperations(campaignId, mapId, operations) {

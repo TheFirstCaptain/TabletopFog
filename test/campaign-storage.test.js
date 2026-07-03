@@ -522,6 +522,122 @@ test("clears active map without changing encounter records", (t) => {
   );
 });
 
+test("persists and clears map fog while preserving campaign metadata", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const first = storage.addMap(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "forest.png"
+  });
+  const second = storage.addMap(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "cave.png"
+  });
+  storage.updateCampaignMetadata(campaign.id, { description: "Roads through a haunted borderland." });
+  const fog = [
+    { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } },
+    { type: "reveal-rectangle", rect: { x: 0.14, y: 0.14, width: 0.08, height: 0.08 } }
+  ];
+
+  const updated = storage.setMapFog(campaign.id, first.id, fog);
+  const cleared = storage.setMapFog(campaign.id, first.id, []);
+  const reloaded = createCampaignStorage({ dataRoot: root }).getCampaign(campaign.id);
+
+  assert.deepEqual(updated.maps.find((map) => map.id === first.id).fog, fog);
+  assert.deepEqual(updated.maps.find((map) => map.id === second.id).fog, []);
+  assert.deepEqual(cleared.maps.find((map) => map.id === first.id).fog, []);
+  assert.equal(reloaded.description, "Roads through a haunted borderland.");
+  assert.deepEqual(
+    reloaded.maps.map((map) => [map.id, map.name, map.file, map.order, map.fog]),
+    [
+      [first.id, "forest", "maps/forest.png", 1, []],
+      [second.id, "cave", "maps/cave.png", 2, []]
+    ]
+  );
+});
+
+test("fog persistence preserves unknown fields on recognized operations", (t) => {
+  const root = createTempRoot(t);
+  const campaignDir = path.join(root, "The Long Walk");
+  const campaignPath = path.join(campaignDir, "campaign.json");
+  fs.mkdirSync(path.join(campaignDir, "maps"), { recursive: true });
+  fs.writeFileSync(path.join(campaignDir, "maps", "forest.png"), PNG_BYTES);
+  fs.writeFileSync(path.join(campaignDir, "maps", "cave.png"), PNG_BYTES);
+  fs.writeFileSync(
+    campaignPath,
+    `${JSON.stringify(
+      {
+        version: 1,
+        name: "The Long Walk",
+        activeMapId: null,
+        maps: [
+          {
+            id: "forest",
+            name: "Forest",
+            file: "maps/forest.png",
+            order: 1,
+            fog: [
+              {
+                type: "hide-rectangle",
+                brush: "future",
+                rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2, units: "normalized" }
+              }
+            ]
+          },
+          { id: "cave", name: "Cave", file: "maps/cave.png", order: 2, fog: [] }
+        ]
+      },
+      null,
+      2
+    )}\n`
+  );
+  const storage = createCampaignStorage({ dataRoot: root });
+
+  storage.setMapFog("The Long Walk", "cave", [
+    { type: "hide-rectangle", rect: { x: 0.3, y: 0.3, width: 0.2, height: 0.2 } }
+  ]);
+
+  const saved = JSON.parse(fs.readFileSync(campaignPath, "utf8"));
+  assert.deepEqual(saved.maps[0].fog, [
+    {
+      type: "hide-rectangle",
+      brush: "future",
+      rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2, units: "normalized" }
+    }
+  ]);
+});
+
+test("rejected fog persistence preserves campaign metadata byte for byte", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const map = storage.addMap(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "forest.png"
+  });
+  storage.setMapFog(campaign.id, map.id, [
+    { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+  ]);
+  const campaignPath = path.join(root, campaign.id, "campaign.json");
+  const originalMetadata = fs.readFileSync(campaignPath, "utf8");
+
+  assert.throws(
+    () =>
+      storage.setMapFog(campaign.id, map.id, [
+        { type: "hide-rectangle", rect: { x: 0.95, y: 0.1, width: 0.2, height: 0.2 } }
+      ]),
+    /Invalid fog operation/
+  );
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+
+  assert.throws(() => storage.setMapFog(campaign.id, "missing", []), /Map not found/);
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+});
+
 test("deletes an unshown unselected map and repairs order", (t) => {
   const root = createTempRoot(t);
   const storage = createCampaignStorage({ dataRoot: root });

@@ -1352,7 +1352,7 @@ test("GM workspace panning stays local and arbitrates with fog and grid tools", 
   );
 
   const campaignJson = JSON.parse(fs.readFileSync(path.join(app.dataRoot, "The Long Walk", "campaign.json"), "utf8"));
-  expect(campaignJson.maps[0].fog).toEqual([]);
+  expect(campaignJson.maps[0].fog).toHaveLength(1);
   expect(campaignJson.activeMapId).toBe(await page.locator(".encounter-card").getAttribute("data-map-id"));
 
   await page.setViewportSize({ height: 700, width: 1024 });
@@ -1553,7 +1553,7 @@ test("GM Clear Fog is confirmed and scoped to the selected encounter", async ({ 
 
   const campaignJson = JSON.parse(fs.readFileSync(path.join(app.dataRoot, "The Long Walk", "campaign.json"), "utf8"));
   expect(campaignJson.activeMapId).toBe(forestMapId);
-  expect(campaignJson.maps.map((map) => map.fog)).toEqual([[], []]);
+  expect(campaignJson.maps.map((map) => map.fog.length)).toEqual([1, 0]);
 });
 
 test("GM rectangle Hide tool draws shown fog and isolates unshown prep fog", async ({ app, page, context }) => {

@@ -824,7 +824,8 @@ Expected result:
   Display.
 - No GM-facing fog drawing, reveal, clear, brush, debug, token, dynamic
   lighting, or VTT-style controls are introduced by F-006B.
-- Fog remains in memory and is not persisted to `campaign.json`.
+- F-006B alone does not add persistence controls. F-007A later persists fog
+  operations through the normal GM fog actions.
 
 ### Test: GM Draws Rectangle Hide Fog
 
@@ -861,8 +862,9 @@ Expected result:
 
 - Rectangle Hide controls live in the Encounter Workspace as a distinct Fog
   tools group.
-- A completed valid drag appends one in-memory `hide-rectangle` operation using
-  normalized map-relative coordinates.
+- A completed valid drag appends one runtime `hide-rectangle` operation using
+  normalized map-relative coordinates and, after F-007A, autosaves it to local
+  campaign storage.
 - Hide drawing respects GM map zoom and map positioning.
 - Tiny drags and Escape-canceled drags do not create fog operations.
 - Hide mode owns the map drag surface while active; the grid may remain visible
@@ -872,7 +874,8 @@ Expected result:
 - Opening or editing an encounter still does not show it to players.
 - No reveal, clear fog, brush, circle, undo, token, dynamic lighting, or
   VTT-style controls are introduced by F-006C.
-- Fog remains in memory and is not persisted to `campaign.json`.
+- F-006C alone does not add persistence controls. F-007A later persists fog
+  operations through the normal GM fog actions.
 
 ### Test: GM Draws Rectangle Reveal Fog
 
@@ -914,8 +917,9 @@ Expected result:
 - Rectangle Reveal controls live in the Encounter Workspace beside Hide.
 - Hide and Reveal are separate explicit buttons with mutually exclusive active
   states.
-- A completed valid Reveal drag appends one in-memory `reveal-rectangle`
-  operation using normalized map-relative coordinates.
+- A completed valid Reveal drag appends one runtime `reveal-rectangle`
+  operation using normalized map-relative coordinates and, after F-007A,
+  autosaves it to local campaign storage.
 - Reveal drawing respects GM map zoom and map positioning.
 - Reveal operations cut through earlier hide operations, and later hide
   operations can cover a revealed area again.
@@ -927,7 +931,8 @@ Expected result:
 - Opening or editing an encounter still does not show it to players.
 - No clear fog, brush, circle, undo, token, dynamic lighting, or VTT-style
   controls are introduced by F-006D.
-- Fog remains in memory and is not persisted to `campaign.json`.
+- F-006D alone does not add persistence controls. F-007A later persists fog
+  operations through the normal GM fog actions.
 
 ### Test: GM Clears All Fog From a Selected Encounter
 
@@ -969,8 +974,8 @@ Expected result:
 - `Clear Fog` is always visible in the Encounter Workspace Fog tools group.
 - `Clear Fog` is disabled when no selected encounter is ready or the selected
   encounter has no fog operations.
-- Confirming Clear Fog removes all in-memory fog operations for only the
-  selected encounter.
+- Confirming Clear Fog removes all runtime fog operations for only the selected
+  encounter and, after F-007A, autosaves the empty fog state.
 - Clear Fog can clear existing fog even when the selected map image fails to
   load.
 - Canceling the confirmation leaves fog unchanged.
@@ -980,7 +985,8 @@ Expected result:
   Display.
 - Clearing fog does not change which encounter is shown to players.
 - Player Display remains read-only.
-- Fog remains in memory and is not persisted to `campaign.json`.
+- Confirming Clear Fog updates the selected encounter's persisted fog state once
+  F-007A is implemented.
 - No undo, operation history, brush, token, dynamic lighting, or VTT-style
   controls are introduced by F-006E.
 
@@ -1083,8 +1089,9 @@ Steps:
 
 1. Rename and reorder maps in the campaign.
 2. Show one encounter to players.
-3. Add fog to at least one encounter.
-4. Save the campaign.
+3. Add fog to at least one encounter and confirm successful GM fog actions
+   autosave the encounter's fog state.
+4. Clear fog on one encounter and confirm the empty fog state is autosaved.
 5. Restart or reload the app.
 6. Open the saved campaign.
 7. Open the Player Display.
@@ -1095,6 +1102,7 @@ Expected result:
 - Map names and manual ordering are restored.
 - The saved shown-to-players encounter is restored.
 - Per-encounter fog state is restored.
+- Cleared fog remains cleared after reload.
 - The Player Display matches the saved shown-to-players encounter and fog state.
 - GM selected/editing encounter state is not confused with the shown-to-players
   encounter.

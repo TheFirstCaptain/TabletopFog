@@ -75,20 +75,20 @@
       "responsibility": "Resolve campaign data-root paths, campaign and map asset paths, directory discovery, atomic JSON writes, and contained map asset realpath checks."
     },
     "server/campaign-schema.js": {
-      "baselineLines": 215,
-      "responsibility": "Normalize and serialize campaign metadata and maps, preserve forward-compatible unknown fields, validate campaign metadata patches, and normalize safe campaign and map names."
+      "baselineLines": 262,
+      "responsibility": "Normalize and serialize campaign metadata, maps, and persisted fog operations, preserve forward-compatible unknown fields, validate campaign metadata patches, and normalize safe campaign and map names."
     },
     "server/campaign-storage.js": {
-      "baselineLines": 311,
-      "responsibility": "Coordinate campaign storage workflows, public storage API methods, map asset mutation transactions, campaign library summaries, and calls into focused schema and filesystem modules."
+      "baselineLines": 319,
+      "responsibility": "Coordinate campaign storage workflows, public storage API methods, map asset mutation transactions, persisted map fog updates, campaign library summaries, and calls into focused schema and filesystem modules."
     },
     "server/certs.js": {
       "baselineLines": 43,
       "responsibility": "Resolve and load HTTPS certificate credentials."
     },
     "server/http-routes.js": {
-      "baselineLines": 270,
-      "responsibility": "Register Express middleware, GM and Player Display pages, campaign, map, shown-to-players, fog operation, asset, static-file, and error routes while preserving GM-only mutation guards."
+      "baselineLines": 301,
+      "responsibility": "Register Express middleware, GM and Player Display pages, campaign, map, shown-to-players, persisted fog operation, asset, static-file, and error routes while preserving GM-only mutation guards."
     },
     "server/index.js": {
       "baselineLines": 85,
@@ -107,8 +107,8 @@
       "responsibility": "Coordinate Socket.IO connection role assignment, initial state sync, and role-projected state broadcasts."
     },
     "server/state.js": {
-      "baselineLines": 156,
-      "responsibility": "Maintain snapshot-safe in-memory active campaign state and encounter-scoped fog operation state, including target validation, atomic fog append, clear, and pruning for removed encounters."
+      "baselineLines": 132,
+      "responsibility": "Maintain snapshot-safe active campaign state and encounter-scoped fog operation state, including persisted fog hydration, target validation, atomic fog append, clear, and pruning for removed encounters."
     }
   }
 }

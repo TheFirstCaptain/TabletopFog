@@ -757,7 +757,7 @@ test("projects in-memory fog only to the appropriate role and shown encounter", 
   }
 });
 
-test("GM API appends fog operations without persisting or exposing unshown fog", async (t) => {
+test("GM API appends fog operations with persistence without exposing unshown fog", async (t) => {
   const dataRoot = createTempRoot(t);
   const { server, io, stateStore } = createTabletopFogServer({
     credentials: createTestCertificate(t),
@@ -858,7 +858,13 @@ test("GM API appends fog operations without persisting or exposing unshown fog",
     );
     assert.deepEqual(
       campaignJson.maps.map((map) => map.fog),
-      [[], []]
+      [
+        [
+          { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } },
+          { type: "reveal-rectangle", rect: { x: 0.14, y: 0.14, width: 0.08, height: 0.08 } }
+        ],
+        [{ type: "hide-rectangle", rect: { x: 0.4, y: 0.4, width: 0.1, height: 0.1 } }]
+      ]
     );
   } finally {
     player.close();
@@ -866,7 +872,7 @@ test("GM API appends fog operations without persisting or exposing unshown fog",
   }
 });
 
-test("GM API clears fog without persisting or changing the shown encounter", async (t) => {
+test("GM API clears persisted fog without changing the shown encounter", async (t) => {
   const dataRoot = createTempRoot(t);
   const { server, io, stateStore } = createTabletopFogServer({
     credentials: createTestCertificate(t),
@@ -1017,6 +1023,8 @@ test("GM fog operation API rejects invalid requests without mutation", async (t)
       headers: gmHeaders(port, { "content-type": "application/json" }),
       method: "POST"
     });
+    const campaignPath = path.join(dataRoot, "The Long Walk", "campaign.json");
+    const originalMetadata = fs.readFileSync(campaignPath, "utf8");
     const invalidType = await requestHttps(endpoint, {
       body: JSON.stringify({ type: "circle-reveal", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }),
       headers: gmHeaders(port, { "content-type": "application/json" }),
@@ -1049,8 +1057,69 @@ test("GM fog operation API rejects invalid requests without mutation", async (t)
     assert.deepEqual(stateStore.getState().campaign.maps[0].fogOperations, [
       { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
     ]);
+    assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
   } finally {
     await close(server, io);
+  }
+});
+
+test("opening a campaign hydrates persisted fog operations", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const firstServer = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const firstPort = await listen(firstServer.server);
+  const firstUrl = `https://127.0.0.1:${firstPort}`;
+
+  try {
+    await requestHttps(`${firstUrl}/api/campaigns`, {
+      body: JSON.stringify({ name: "The Long Walk" }),
+      headers: gmHeaders(firstPort, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const forest = await requestHttps(`${firstUrl}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(firstPort, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "forest.png"
+      }),
+      method: "POST"
+    });
+    await requestHttps(
+      `${firstUrl}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(forest.json.map.id)}/fog-operations`,
+      {
+        body: JSON.stringify({ type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }),
+        headers: gmHeaders(firstPort, { "content-type": "application/json" }),
+        method: "POST"
+      }
+    );
+  } finally {
+    await close(firstServer.server, firstServer.io);
+  }
+
+  const secondServer = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const secondPort = await listen(secondServer.server);
+  const secondUrl = `https://127.0.0.1:${secondPort}`;
+
+  try {
+    const opened = await requestHttps(`${secondUrl}/api/campaigns/${encodeURIComponent("The Long Walk")}`, {
+      headers: gmHeaders(secondPort)
+    });
+
+    assert.equal(opened.statusCode, 200);
+    assert.deepEqual(opened.json.campaign.maps[0].fogOperations, [
+      { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+    ]);
+    assert.deepEqual(secondServer.stateStore.getState().campaign.maps[0].fogOperations, [
+      { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+    ]);
+  } finally {
+    await close(secondServer.server, secondServer.io);
   }
 });
 

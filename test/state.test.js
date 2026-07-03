@@ -58,6 +58,69 @@ test("state store keeps normalized fog operations in memory per encounter", () =
   assert.equal(store.getState().campaign.maps[0].fogOperations[1].rect.width, 0.1);
 });
 
+test("state store hydrates persisted map fog when a campaign is opened", () => {
+  const store = createStateStore();
+  const persistedFog = [
+    { type: "hide-rectangle", rect: { x: 0.1, y: 0.2, width: 0.3, height: 0.4 } },
+    { type: "reveal-rectangle", rect: { x: 0.2, y: 0.3, width: 0.1, height: 0.1 } }
+  ];
+  const state = store.setCampaign({
+    id: "The Long Walk",
+    activeMapId: "forest",
+    maps: [
+      { id: "forest", name: "Forest", fog: persistedFog },
+      { id: "cave", name: "Cave", fog: [] }
+    ]
+  });
+
+  assert.deepEqual(state.campaign.maps[0].fogOperations, persistedFog);
+  assert.deepEqual(state.campaign.maps[1].fogOperations, []);
+
+  persistedFog[0].rect.x = 0.9;
+  state.campaign.maps[0].fogOperations[1].rect.width = 0.9;
+
+  assert.equal(store.getState().campaign.maps[0].fogOperations[0].rect.x, 0.1);
+  assert.equal(store.getState().campaign.maps[0].fogOperations[1].rect.width, 0.1);
+});
+
+test("state store preserves current state when persisted fog hydration fails", () => {
+  const store = createStateStore();
+  store.setCampaign({
+    id: "The Long Walk",
+    activeMapId: "forest",
+    maps: [
+      {
+        id: "forest",
+        name: "Forest",
+        fog: [{ type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }]
+      }
+    ]
+  });
+  const before = store.getState();
+
+  assert.throws(
+    () =>
+      store.setCampaign({
+        id: "The Long Walk",
+        activeMapId: "forest",
+        maps: [
+          {
+            id: "forest",
+            name: "Forest",
+            fog: [{ type: "hide-rectangle", rect: { x: 0.2, y: 0.2, width: 0.2, height: 0.2 } }]
+          },
+          {
+            id: "cave",
+            name: "Cave",
+            fog: [{ type: "hide-rectangle", rect: { x: 0.95, y: 0.2, width: 0.2, height: 0.2 } }]
+          }
+        ]
+      }),
+    /Invalid fog operation/
+  );
+  assert.deepEqual(store.getState(), before);
+});
+
 test("state store appends one fog operation atomically", () => {
   const store = createStateStore();
   store.setCampaign({
@@ -142,7 +205,7 @@ test("state store rejects invalid fog operations without changing state", () => 
   ]);
 });
 
-test("state store preserves in-memory fog when campaign metadata is reloaded", () => {
+test("state store replaces in-memory fog with persisted fog when campaign metadata is reloaded", () => {
   const store = createStateStore();
   store.setCampaign({
     id: "The Long Walk",
@@ -156,13 +219,18 @@ test("state store preserves in-memory fog when campaign metadata is reloaded", (
   const state = store.setCampaign({
     id: "The Long Walk",
     activeMapId: "forest",
-    maps: [{ id: "forest", name: "Renamed Forest", fog: [] }]
+    maps: [
+      {
+        id: "forest",
+        name: "Renamed Forest",
+        fog: [{ type: "reveal-rectangle", rect: { x: 0.2, y: 0.2, width: 0.1, height: 0.1 } }]
+      }
+    ]
   });
 
   assert.equal(state.campaign.maps[0].name, "Renamed Forest");
-  assert.deepEqual(state.campaign.maps[0].fog, []);
   assert.deepEqual(state.campaign.maps[0].fogOperations, [
-    { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+    { type: "reveal-rectangle", rect: { x: 0.2, y: 0.2, width: 0.1, height: 0.1 } }
   ]);
 });
 

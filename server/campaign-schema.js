@@ -4,6 +4,7 @@ const CAMPAIGN_EXTRA_FIELDS = Symbol("campaignExtraFields");
 const MAP_EXTRA_FIELDS = Symbol("mapExtraFields");
 const MAX_CAMPAIGN_DESCRIPTION_LENGTH = 160;
 const MAX_CAMPAIGN_ICON_LENGTH = 4;
+const FOG_OPERATION_TYPES = new Set(["hide-rectangle", "reveal-rectangle"]);
 const campaignFields = new Set(["version", "name", "description", "icon", "activeMapId", "maps"]);
 const mapFields = new Set(["id", "name", "originalFileName", "file", "order", "fog"]);
 const metadataFields = new Set(["description", "icon", "name"]);
@@ -60,6 +61,50 @@ function collectExtraFields(value, knownFields) {
   return Object.fromEntries(Object.entries(value).filter(([key]) => !knownFields.has(key)));
 }
 
+function normalizeFogOperations(operations) {
+  if (!Array.isArray(operations)) {
+    throw new Error("Invalid fog operation list.");
+  }
+
+  return operations.map((operation) => {
+    const rect = operation?.rect || {};
+    const normalized = {
+      ...operation,
+      type: operation?.type,
+      rect: {
+        ...rect,
+        height: rect.height,
+        width: rect.width,
+        x: rect.x,
+        y: rect.y
+      }
+    };
+
+    if (!FOG_OPERATION_TYPES.has(normalized.type) || !isValidRect(normalized.rect)) {
+      throw new Error("Invalid fog operation.");
+    }
+
+    return normalized;
+  });
+}
+
+function normalizeFogOperation(operation) {
+  return normalizeFogOperations([operation])[0];
+}
+
+function isValidRect(rect) {
+  const values = [rect.x, rect.y, rect.width, rect.height];
+  return (
+    values.every(Number.isFinite) &&
+    rect.x >= 0 &&
+    rect.y >= 0 &&
+    rect.width > 0 &&
+    rect.height > 0 &&
+    rect.x + rect.width <= 1 &&
+    rect.y + rect.height <= 1
+  );
+}
+
 function normalizeCampaign(campaignId, rawCampaign) {
   const sourceMaps = Array.isArray(rawCampaign.maps) ? rawCampaign.maps : [];
   const decorated = sourceMaps.map((map, index) => ({
@@ -83,7 +128,7 @@ function normalizeCampaign(campaignId, rawCampaign) {
       originalFileName: map.originalFileName ? String(map.originalFileName) : undefined,
       file: String(map.file || ""),
       order: index + 1,
-      fog: Array.isArray(map.fog) ? map.fog : []
+      fog: Array.isArray(map.fog) ? normalizeFogOperations(map.fog) : []
     };
 
     Object.defineProperty(normalizedMap, MAP_EXTRA_FIELDS, {
@@ -130,7 +175,7 @@ function serializeCampaign(campaign) {
       ...(map.originalFileName ? { originalFileName: map.originalFileName } : {}),
       file: map.file,
       order: map.order,
-      fog: map.fog || []
+      fog: normalizeFogOperations(map.fog || [])
     }))
   };
 }
@@ -205,6 +250,8 @@ module.exports = {
   displayNameFromFileName,
   normalizeCampaign,
   normalizeCampaignDescription,
+  normalizeFogOperation,
+  normalizeFogOperations,
   normalizeCampaignIcon,
   normalizeCampaignName,
   normalizeFileName,

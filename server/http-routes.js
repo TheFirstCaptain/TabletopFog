@@ -4,6 +4,7 @@ const path = require("node:path");
 
 const express = require("express");
 
+const { normalizeFogOperation } = require("./campaign-schema");
 const { MAX_MAP_FILE_BYTES } = require("./map-image");
 const { requireGm } = require("./role-projection");
 
@@ -199,11 +200,20 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
         return;
       }
 
-      const state = stateStore.appendFogOperation(request.params.campaignId, request.params.mapId, request.body);
+      const target = getCurrentMapState(stateStore, request.params.campaignId, request.params.mapId);
+      const operation = normalizeFogOperation(request.body);
+      const campaign = withAssetUrls(
+        campaignStorage,
+        campaignStorage.setMapFog(request.params.campaignId, request.params.mapId, [
+          ...(target.fogOperations || []),
+          operation
+        ])
+      );
+      const state = stateStore.setCampaign(campaign);
       onStateChange(state);
       response.status(201).json({ campaign: state.campaign });
     } catch (error) {
-      if (/Invalid fog operation/.test(error.message)) {
+      if (/Invalid fog operation|Map not found/.test(error.message)) {
         response.status(400).json({ error: error.message });
         return;
       }
@@ -213,11 +223,16 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
 
   app.delete("/api/campaigns/:campaignId/maps/:mapId/fog-operations", requireGm, (request, response, next) => {
     try {
-      const state = stateStore.clearFogOperations(request.params.campaignId, request.params.mapId);
+      getCurrentMapState(stateStore, request.params.campaignId, request.params.mapId);
+      const campaign = withAssetUrls(
+        campaignStorage,
+        campaignStorage.setMapFog(request.params.campaignId, request.params.mapId, [])
+      );
+      const state = stateStore.setCampaign(campaign);
       onStateChange(state);
       response.json({ campaign: state.campaign });
     } catch (error) {
-      if (/Invalid fog operation target/.test(error.message)) {
+      if (/Invalid fog operation target|Map not found/.test(error.message)) {
         response.status(400).json({ error: error.message });
         return;
       }
@@ -263,6 +278,22 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
 
 function withAssetUrls(campaignStorage, campaign) {
   return campaignStorage.addAssetUrls(campaign);
+}
+
+function getCurrentMapState(stateStore, campaignId, mapId) {
+  const campaign = stateStore.getState().campaign;
+
+  if (!campaign || campaign.id !== campaignId) {
+    throw new Error("Invalid fog operation target.");
+  }
+
+  const map = campaign.maps.find((candidate) => candidate.id === mapId);
+
+  if (!map) {
+    throw new Error("Invalid fog operation target.");
+  }
+
+  return map;
 }
 
 module.exports = {

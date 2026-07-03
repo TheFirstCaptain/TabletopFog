@@ -3,6 +3,7 @@
 const { test: base, expect } = require("@playwright/test");
 
 const { createTabletopFogServer } = require("../server");
+const { createCampaignStorage } = require("../server/campaign-storage");
 const { createTestCertificateResource } = require("../test-support/certificate");
 const { createTemporaryDirectoryResource } = require("../test-support/temp-directory");
 
@@ -49,12 +50,14 @@ async function runWithIsolatedApp(use, options = {}) {
       credentials: certificate,
       dataRoot: campaignData.directory
     });
+    const campaignStorage = createCampaignStorage({ dataRoot: campaignData.directory });
     const port = await dependencies.listenServer(serverBundle.server);
     await use({
       baseURL: `https://127.0.0.1:${port}`,
       dataRoot: campaignData.directory,
       seedFogOperations(campaignId, mapId, operations) {
-        serverBundle.stateStore.setFogOperations(campaignId, mapId, operations);
+        const campaign = campaignStorage.addAssetUrls(campaignStorage.setMapFog(campaignId, mapId, operations));
+        serverBundle.stateStore.setCampaign(campaign);
         serverBundle.syncState();
       }
     });
