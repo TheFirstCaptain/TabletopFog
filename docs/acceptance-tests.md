@@ -1000,17 +1000,25 @@ Steps:
 4. Drag the map in the GM workspace.
 5. Confirm previously off-screen portions of the selected map can be brought
    into view.
-6. Confirm the Player Display does not pan, zoom, reload, or otherwise change.
-7. Confirm campaign state, fog operations, grid state, and persisted files are
+6. Focus the GM workspace map and use arrow keys.
+7. Confirm keyboard panning also moves the GM workspace viewport without
+   changing the Player Display.
+8. Confirm the Player Display does not pan, zoom, reload, or otherwise change.
+9. Confirm campaign state, fog operations, grid state, and persisted files are
    unchanged by GM panning.
-8. Turn on `Hide rectangle` or `Reveal rectangle` and drag on the map.
-9. Confirm the drag draws fog instead of panning while a fog drawing mode is
+10. Turn on `Hide rectangle` or `Reveal rectangle` and drag on the map.
+11. Confirm the drag draws fog instead of panning while a fog drawing mode is
    active.
-10. Turn off fog drawing, show the unlocked 5 ft grid, and drag the grid.
-11. Confirm the drag moves the grid instead of panning while grid alignment is
+12. Turn off fog drawing, show the unlocked 5 ft grid, and drag the grid.
+13. Confirm the drag moves the grid instead of panning while grid alignment is
     active.
-12. Use `Fit map` or open a different encounter.
-13. Confirm the GM workspace pan resets consistently with existing GM zoom
+14. Lock the grid and drag the map.
+15. Confirm the locked grid remains anchored to the panned map instead of
+    blocking pan or lagging behind the map.
+16. Repeat zoomed GM workspace panning at desktop, Chromebook-sized, and narrow
+    viewport widths.
+17. Use `Fit map` or open a different encounter.
+18. Confirm the GM workspace pan resets consistently with existing GM zoom
     behavior.
 
 Expected result:
@@ -1019,9 +1027,13 @@ Expected result:
 - GM workspace panning is local to the current GM browser tab.
 - GM workspace panning does not mutate campaign state, fog state, grid state,
   persistence, or the Player Display.
+- GM workspace keyboard panning is available as local viewport control.
 - Fog drawing has priority over pan dragging while Hide or Reveal is active.
 - Grid dragging has priority over pan dragging while the unlocked grid is being
   aligned.
+- A locked grid stays anchored to the map while the GM pans.
+- GM workspace panning remains usable at desktop, Chromebook-sized, and narrow
+  viewport widths without horizontal overflow.
 - Player Display remains read-only and keeps its independent viewport.
 
 ### Test: Player Sees Hidden Areas Obscured

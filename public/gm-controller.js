@@ -159,10 +159,6 @@ export function createGmController({ api, socket, state, view }) {
     setShownEncounter(mapId === activeMapId ? null : mapId);
   }
 
-  function fitWorkspaceMap() {
-    view.workspaceFitMap();
-  }
-
   function moveWorkspaceGrid(deltaX, deltaY) {
     const current = state.getSelectedEncounterGridState();
     if (!current.visible) {
@@ -273,14 +269,6 @@ export function createGmController({ api, socket, state, view }) {
     view.setWorkspaceFogMode(view.getWorkspaceFogMode() === mode ? null : mode);
   }
 
-  function zoomWorkspaceMapIn() {
-    view.workspaceZoomIn();
-  }
-
-  function zoomWorkspaceMapOut() {
-    view.workspaceZoomOut();
-  }
-
   function backToLibrary() {
     state.closeCampaign();
     view.hideCampaign();
@@ -297,10 +285,11 @@ export function createGmController({ api, socket, state, view }) {
       commitWorkspaceFogRectangle,
       deleteCampaign,
       deleteMap,
-      fitWorkspaceMap,
+      fitWorkspaceMap: view.workspaceFitMap,
       moveWorkspaceGrid,
       moveMap,
       openCampaign,
+      panWorkspaceMap: view.workspacePanMap,
       previewWorkspaceFogRectangle,
       renameMap,
       selectEncounter,
@@ -311,8 +300,8 @@ export function createGmController({ api, socket, state, view }) {
       showWorkspaceEncounter,
       updateCampaignMetadata,
       uploadMap,
-      zoomWorkspaceMapIn,
-      zoomWorkspaceMapOut
+      zoomWorkspaceMapIn: view.workspaceZoomIn,
+      zoomWorkspaceMapOut: view.workspaceZoomOut
     },
     start() {
       socket.on("connect", () => view.setStatus("Live", "live"));

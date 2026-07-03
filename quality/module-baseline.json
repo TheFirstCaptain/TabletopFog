@@ -7,8 +7,8 @@
       "responsibility": "Send GM campaign, campaign deletion, campaign-card metadata, map, and fog-operation append and clear API requests and convert failed responses into client errors."
     },
     "public/gm-controller.js": {
-      "baselineLines": 328,
-      "responsibility": "Coordinate GM campaign library, campaign deletion, campaign-card metadata, encounter gallery, encounter workspace, GM-local map alignment, rectangle Hide and Reveal fog editing, Clear Fog, map, view, and Socket.IO workflows."
+      "baselineLines": 317,
+      "responsibility": "Coordinate GM campaign library, campaign deletion, campaign-card metadata, encounter gallery, encounter workspace, GM-local map alignment and panning, rectangle Hide and Reveal fog editing, Clear Fog, map, view, and Socket.IO workflows."
     },
     "public/gm-events.js": {
       "baselineLines": 177,
@@ -31,7 +31,7 @@
       "responsibility": "Compose and start the browser-native GM client modules."
     },
     "public/map-canvas.js": {
-      "baselineLines": 476,
+      "baselineLines": 473,
       "responsibility": "Render active maps and ordered fog operations on a DPR-aware canvas with contain geometry, reusable fog mask composition, normalized map-rectangle conversion, local zoom and pan, guarded image loading, pointer input, and deterministic cleanup."
     },
     "public/player.js": {
@@ -70,13 +70,17 @@
       "baselineLines": 141,
       "responsibility": "Prepare certificates, resolve LAN addresses, and start the local server workflow."
     },
+    "server/campaign-files.js": {
+      "baselineLines": 100,
+      "responsibility": "Resolve campaign data-root paths, campaign and map asset paths, directory discovery, atomic JSON writes, and contained map asset realpath checks."
+    },
+    "server/campaign-schema.js": {
+      "baselineLines": 215,
+      "responsibility": "Normalize and serialize campaign metadata and maps, preserve forward-compatible unknown fields, validate campaign metadata patches, and normalize safe campaign and map names."
+    },
     "server/campaign-storage.js": {
-      "baselineLines": 570,
-      "responsibility": "Manage campaign metadata, campaign deletion, campaign-card metadata, map ordering, filesystem persistence, and asset containment.",
-      "temporaryException": {
-        "engineeringId": "E-002",
-        "reason": "Schema, validation, serialization, and filesystem responsibilities are awaiting planned separation."
-      }
+      "baselineLines": 311,
+      "responsibility": "Coordinate campaign storage workflows, public storage API methods, map asset mutation transactions, campaign library summaries, and calls into focused schema and filesystem modules."
     },
     "server/certs.js": {
       "baselineLines": 43,

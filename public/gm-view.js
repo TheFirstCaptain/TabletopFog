@@ -82,6 +82,7 @@ export function createGmView(document) {
   activeMapRenderer = createMapCanvasRenderer({
     canvas: elements.activeMapCanvas,
     fogOpacity: 0.45,
+    interactive: true,
     onStatus({ map, state }) {
       activeMapReady = state === "ready";
       elements.activeMapMessage.dataset.state = state;
@@ -161,12 +162,10 @@ export function createGmView(document) {
     const shouldShowGrid = activeMapReady && workspaceGridState.visible;
     const lockedZoomRatio =
       workspaceGridState.locked && workspaceGridState.lockZoom > 0 ? viewport.zoom / workspaceGridState.lockZoom : 1;
-    const lockedOffsetX =
-      Number(elements.activeMapCanvas.dataset.drawX) +
-      (workspaceGridState.lockOffsetX - workspaceGridState.lockDrawX) * lockedZoomRatio;
-    const lockedOffsetY =
-      Number(elements.activeMapCanvas.dataset.drawY) +
-      (workspaceGridState.lockOffsetY - workspaceGridState.lockDrawY) * lockedZoomRatio;
+    const drawX = Number(elements.activeMapCanvas.dataset.drawX);
+    const drawY = Number(elements.activeMapCanvas.dataset.drawY);
+    const lockedOffsetX = drawX + (workspaceGridState.lockOffsetX - workspaceGridState.lockDrawX) * lockedZoomRatio;
+    const lockedOffsetY = drawY + (workspaceGridState.lockOffsetY - workspaceGridState.lockDrawY) * lockedZoomRatio;
     const offsetX = workspaceGridState.locked ? lockedOffsetX : workspaceGridState.offsetX;
     const offsetY = workspaceGridState.locked ? lockedOffsetY : workspaceGridState.offsetY;
     const cellSize = GRID_CELL_SIZE * lockedZoomRatio;
@@ -599,6 +598,7 @@ export function createGmView(document) {
     workspaceFitMap() {
       return activeMapRenderer.resetViewport();
     },
+    workspacePanMap: activeMapRenderer.panBy,
     getWorkspaceFogMode() {
       return workspaceFogMode;
     },

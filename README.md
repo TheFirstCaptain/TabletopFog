@@ -57,6 +57,10 @@ lock, and unlock a 5 ft grid overlay. Before lock, the grid is a fixed
 screen-space alignment aid; after lock, it scales with the GM map zoom. These
 controls are GM-only, non-persistent, and local to the current browser tab; the
 Player Display changes only when the GM explicitly uses `Show to Players`.
+When the GM workspace map is zoomed, the GM can pan it with drag or keyboard
+arrows to reach off-screen areas; that viewport movement is also local to the
+GM browser tab and does not mutate campaign, fog, grid, or Player Display
+state.
 The manual-fog foundation now keeps in-memory, per-encounter ordered
 hide/reveal rectangle operations and renders fog through the shared canvas:
 semi-transparent in the GM workspace and opaque or near-opaque on the Player

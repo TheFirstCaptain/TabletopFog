@@ -144,7 +144,7 @@ Planned focused UI polish sequence before fog:
 - Complete: [F-005N](./features/F-005N.md), encounter workspace map density.
 - Complete: [F-005O](./features/F-005O.md), one-line GM app header.
 - Complete: [F-005P](./features/F-005P.md), campaign encounter gallery simplification.
-- Proposed: [F-006](./features/F-006.md), manual fog of war.
+- Complete: [F-006](./features/F-006.md), manual fog of war.
 
 Status:
 
@@ -210,8 +210,8 @@ Planned focused sequence:
 - Complete: [F-006C](./features/F-006C.md), rectangle hide tool.
 - Complete: [F-006D](./features/F-006D.md), rectangle reveal tool.
 - Complete: [F-006E](./features/F-006E.md), clear fog.
-- Proposed: [F-006F](./features/F-006F.md), fog tool polish and validation.
-- Proposed: [F-006](./features/F-006.md), manual fog of war umbrella
+- Complete: [F-006F](./features/F-006F.md), fog tool polish and validation.
+- Complete: [F-006](./features/F-006.md), manual fog of war umbrella
   completion.
 
 Acceptance criteria:
@@ -227,8 +227,11 @@ Acceptance criteria:
 - Opening, zooming, aligning, locking, or unlocking the grid does not change the
   Player Display.
 - Maps start visible.
-- GM can add fog or hide areas on the selected/editing encounter using simple shapes such as rectangles or circles.
+- GM can add fog or hide areas on the selected/editing encounter using
+  rectangles.
 - GM can remove or reveal fog from hidden areas during play.
+- GM can pan a zoomed workspace map locally without changing Player Display,
+  campaign state, fog state, grid state, or persistence.
 - Player receives fog updates only for the encounter currently shown to players.
 - If the GM edits fog on an encounter not shown to players, the Player Display does not change.
 - If the GM edits fog on the encounter currently shown to players, the Player Display updates live.

@@ -18,6 +18,12 @@ export function wireGmEvents(elements, actions) {
   elements.gmZoomOut.addEventListener("click", actions.zoomWorkspaceMapOut);
   elements.gmFitMap.addEventListener("click", actions.fitWorkspaceMap);
   elements.gmZoomIn.addEventListener("click", actions.zoomWorkspaceMapIn);
+  elements.activeMapCanvas.addEventListener("keydown", (event) => {
+    const pan = { ArrowDown: [0, -50], ArrowLeft: [50, 0], ArrowRight: [-50, 0], ArrowUp: [0, 50] }[event.key];
+    if (!pan) return;
+    event.preventDefault();
+    actions.panWorkspaceMap(...pan);
+  });
   elements.workspaceGridToggle.addEventListener("click", actions.toggleWorkspaceGrid);
   elements.workspaceGridLock.addEventListener("click", actions.toggleWorkspaceGridLock);
   elements.workspaceHideTool.addEventListener("click", () => actions.toggleWorkspaceFogMode("hide-rectangle"));
@@ -26,7 +32,6 @@ export function wireGmEvents(elements, actions) {
 
   elements.workspaceGridOverlay.addEventListener("pointerdown", (event) => {
     if (elements.workspaceFogOverlay.dataset.active === "true") return;
-    if (elements.workspaceGridOverlay.dataset.locked === "true") return;
     elements.workspaceGridOverlay.setPointerCapture?.(event.pointerId);
     gridDragPoint = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
     elements.workspaceGridOverlay.dataset.dragging = "true";
@@ -51,12 +56,7 @@ export function wireGmEvents(elements, actions) {
 
   elements.workspaceGridOverlay.addEventListener("keydown", (event) => {
     if (elements.workspaceFogOverlay.dataset.active === "true") return;
-    const delta = {
-      ArrowDown: [0, 1],
-      ArrowLeft: [-1, 0],
-      ArrowRight: [1, 0],
-      ArrowUp: [0, -1]
-    }[event.key];
+    const delta = { ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1] }[event.key];
     if (!delta) return;
     event.preventDefault();
     const step = event.shiftKey ? 10 : 1;

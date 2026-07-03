@@ -124,12 +124,16 @@ export function createMapCanvasRenderer({
     state.panX = clamp(state.panX, -maxPanX, maxPanX);
     state.panY = clamp(state.panY, -maxPanY, maxPanY);
 
-    return {
-      height,
-      width,
-      x: (state.stageWidth - width) / 2 + state.panX,
-      y: (state.stageHeight - height) / 2 + state.panY
-    };
+    const x = (state.stageWidth - width) / 2 + state.panX;
+    const y = (state.stageHeight - height) / 2 + state.panY;
+    canvas.dataset.drawHeight = String(Math.round(height));
+    canvas.dataset.drawWidth = String(Math.round(width));
+    canvas.dataset.drawX = String(Math.round(x));
+    canvas.dataset.drawY = String(Math.round(y));
+    canvas.dataset.fogOperations = String(state.fogOperations.length);
+    canvas.dataset.panX = String(Math.round(state.panX));
+    canvas.dataset.panY = String(Math.round(state.panY));
+    return { height, width, x, y };
   }
 
   function draw() {
@@ -151,13 +155,6 @@ export function createMapCanvasRenderer({
 
     context.drawImage(state.image, metrics.x, metrics.y, metrics.width, metrics.height);
     drawFog(metrics);
-    canvas.dataset.drawWidth = String(Math.round(metrics.width));
-    canvas.dataset.drawHeight = String(Math.round(metrics.height));
-    canvas.dataset.drawX = String(Math.round(metrics.x));
-    canvas.dataset.drawY = String(Math.round(metrics.y));
-    canvas.dataset.fogOperations = String(state.fogOperations.length);
-    canvas.dataset.panX = String(Math.round(state.panX));
-    canvas.dataset.panY = String(Math.round(state.panY));
   }
 
   function drawFog(metrics) {

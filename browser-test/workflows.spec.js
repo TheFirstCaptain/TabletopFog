@@ -165,6 +165,19 @@ async function waitForCanvasFrame(page, selector) {
   );
 }
 
+async function canvasViewport(page, selector) {
+  return page.locator(selector).evaluate((canvas) => ({
+    drawHeight: Number(canvas.dataset.drawHeight),
+    drawWidth: Number(canvas.dataset.drawWidth),
+    drawX: Number(canvas.dataset.drawX),
+    drawY: Number(canvas.dataset.drawY),
+    fogOperations: Number(canvas.dataset.fogOperations),
+    panX: Number(canvas.dataset.panX),
+    panY: Number(canvas.dataset.panY),
+    zoom: Number(canvas.dataset.zoom)
+  }));
+}
+
 function colorDistance(left, right) {
   return Math.abs(left.red - right.red) + Math.abs(left.green - right.green) + Math.abs(left.blue - right.blue);
 }
@@ -1238,6 +1251,132 @@ test("GM workspace map alignment controls stay local to the GM browser tab", asy
   await expect(page.getByRole("img", { name: "Map: forest" })).toBeVisible();
   await expect(grid).toBeHidden();
   await expect(page.getByText("100%", { exact: true })).toBeVisible();
+});
+
+test("GM workspace panning stays local and arbitrates with fog and grid tools", async ({ app, page, context }) => {
+  const player = await context.newPage();
+  let playerAssetRequests = 0;
+  await player.route("**/api/player/active-map/asset*", (route) => {
+    playerAssetRequests += 1;
+    return route.continue();
+  });
+
+  await page.setViewportSize({ height: 768, width: 1366 });
+  await openGm(page, app.baseURL);
+  await createCampaign(page);
+  await uploadMapFile(page, await sizedPngFile(page, "wide-ruins.png", 900, 300, "#d9b978", "#704020"));
+  await page.getByRole("button", { name: "Show to Players", exact: true }).click();
+  await player.goto(`${app.baseURL}/player`);
+  await expect(player.getByRole("img", { name: "Map: wide-ruins" })).toBeVisible();
+  const playerRequestsBeforePan = playerAssetRequests;
+  const playerViewportBeforePan = await canvasViewport(player, "#player-map");
+
+  await page.getByRole("button", { name: "Open wide-ruins for prep" }).click();
+  const gmCanvas = page.getByRole("img", { name: "Map: wide-ruins" });
+  await expect(gmCanvas).toBeVisible();
+  await page.getByRole("button", { name: "Zoom in" }).click();
+  await page.getByRole("button", { name: "Zoom in" }).click();
+  await page.getByRole("button", { name: "Zoom in" }).click();
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-zoom")).toBe("1.75");
+  const gmViewportBeforePan = await canvasViewport(page, "#active-map-canvas");
+
+  const canvasBox = await page.locator("#active-map-canvas").boundingBox();
+  await page.mouse.move(canvasBox.x + canvasBox.width / 2, canvasBox.y + canvasBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(canvasBox.x + canvasBox.width / 2 - 160, canvasBox.y + canvasBox.height / 2 - 30, {
+    steps: 5
+  });
+  await page.mouse.up();
+  await expect
+    .poll(async () => (await canvasViewport(page, "#active-map-canvas")).panX)
+    .not.toBe(gmViewportBeforePan.panX);
+  const gmViewportAfterPointerPan = await canvasViewport(page, "#active-map-canvas");
+  expect(await canvasViewport(player, "#player-map")).toMatchObject(playerViewportBeforePan);
+  expect(playerAssetRequests).toBe(playerRequestsBeforePan);
+
+  await gmCanvas.focus();
+  await page.keyboard.press("ArrowLeft");
+  await expect
+    .poll(async () => (await canvasViewport(page, "#active-map-canvas")).panX)
+    .not.toBe(gmViewportAfterPointerPan.panX);
+  const gmViewportAfterKeyboardPan = await canvasViewport(page, "#active-map-canvas");
+  expect(await canvasViewport(player, "#player-map")).toMatchObject(playerViewportBeforePan);
+
+  await page.getByRole("button", { name: "Hide rectangle" }).click();
+  await dragMapRectangle(page, "#active-map-canvas", { x: 0.58, y: 0.24 }, { x: 0.72, y: 0.52 });
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("1");
+  const gmViewportAfterFog = await canvasViewport(page, "#active-map-canvas");
+  expect(gmViewportAfterFog.panX).toBe(gmViewportAfterKeyboardPan.panX);
+  expect(gmViewportAfterFog.panY).toBe(gmViewportAfterKeyboardPan.panY);
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("1");
+
+  await page.getByRole("button", { name: "Hide rectangle" }).click();
+  await page.getByRole("button", { name: "Show grid" }).click();
+  const grid = page.locator("#workspace-grid-overlay");
+  await expect(grid).toBeVisible();
+  const gridBeforeDrag = await grid.evaluate((overlay) => ({
+    offsetX: overlay.dataset.offsetX,
+    offsetY: overlay.dataset.offsetY
+  }));
+  const panBeforeGridDrag = await canvasViewport(page, "#active-map-canvas");
+  const gridBox = await grid.boundingBox();
+  await page.mouse.move(gridBox.x + gridBox.width / 2, gridBox.y + gridBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(gridBox.x + gridBox.width / 2 + 24, gridBox.y + gridBox.height / 2 + 18, { steps: 4 });
+  await page.mouse.up();
+  await expect.poll(() => grid.getAttribute("data-offset-x")).not.toBe(gridBeforeDrag.offsetX);
+  const panAfterUnlockedGridDrag = await canvasViewport(page, "#active-map-canvas");
+  expect(panAfterUnlockedGridDrag.panX).toBe(panBeforeGridDrag.panX);
+  expect(panAfterUnlockedGridDrag.panY).toBe(panBeforeGridDrag.panY);
+
+  await page.getByRole("button", { name: "Lock grid" }).click();
+  const lockedGridBeforePan = await grid.evaluate((overlay) => ({
+    drawX: Number(document.querySelector("#active-map-canvas").dataset.drawX),
+    offsetX: Number(overlay.dataset.offsetX)
+  }));
+  const panBeforeLockedGridDrag = await canvasViewport(page, "#active-map-canvas");
+  await page.mouse.move(gridBox.x + gridBox.width / 2, gridBox.y + gridBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(gridBox.x + gridBox.width / 2 - 50, gridBox.y + gridBox.height / 2, { steps: 4 });
+  await page.mouse.up();
+  await expect
+    .poll(async () => (await canvasViewport(page, "#active-map-canvas")).panX)
+    .not.toBe(panBeforeLockedGridDrag.panX);
+  const lockedGridAfterPan = await grid.evaluate((overlay) => ({
+    drawX: Number(document.querySelector("#active-map-canvas").dataset.drawX),
+    offsetX: Number(overlay.dataset.offsetX)
+  }));
+  expect(lockedGridAfterPan.offsetX).not.toBe(lockedGridBeforePan.offsetX);
+  expect(lockedGridAfterPan.offsetX - lockedGridAfterPan.drawX).toBe(
+    lockedGridBeforePan.offsetX - lockedGridBeforePan.drawX
+  );
+
+  const campaignJson = JSON.parse(fs.readFileSync(path.join(app.dataRoot, "The Long Walk", "campaign.json"), "utf8"));
+  expect(campaignJson.maps[0].fog).toEqual([]);
+  expect(campaignJson.activeMapId).toBe(await page.locator(".encounter-card").getAttribute("data-map-id"));
+
+  await page.setViewportSize({ height: 700, width: 1024 });
+  await page.getByRole("button", { name: "Fit map" }).click();
+  await page.getByRole("button", { name: "Zoom in" }).click();
+  await page.getByRole("button", { name: "Zoom in" }).click();
+  const chromebookPanBefore = await canvasViewport(page, "#active-map-canvas");
+  await gmCanvas.focus();
+  await page.keyboard.press("ArrowLeft");
+  await expect
+    .poll(async () => (await canvasViewport(page, "#active-map-canvas")).panX)
+    .not.toBe(chromebookPanBefore.panX);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+  await page.setViewportSize({ height: 844, width: 390 });
+  await page.getByRole("button", { name: "Fit map" }).click();
+  await page.getByRole("button", { name: "Zoom in" }).click();
+  await expect(page.getByRole("button", { name: "Hide rectangle" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Reveal rectangle" })).toBeVisible();
+  const narrowPanBefore = await canvasViewport(page, "#active-map-canvas");
+  await gmCanvas.focus();
+  await page.keyboard.press("ArrowLeft");
+  await expect.poll(async () => (await canvasViewport(page, "#active-map-canvas")).panX).not.toBe(narrowPanBefore.panX);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
 test("seeded fog renders by role before drawing controls are used", async ({ app, page, context }) => {

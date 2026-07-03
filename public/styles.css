@@ -776,6 +776,14 @@ h4 {
   height: 100%;
 }
 
+.gm-map-stage .map-canvas {
+  cursor: grab;
+}
+
+.gm-map-stage .map-canvas[data-panning="true"] {
+  cursor: grabbing;
+}
+
 .workspace-grid-overlay {
   --grid-cell-size: 64px;
   position: absolute;
@@ -823,6 +831,7 @@ h4 {
 
 .workspace-grid-overlay[data-locked="true"] {
   cursor: default;
+  pointer-events: none;
 }
 
 .map-state-message {

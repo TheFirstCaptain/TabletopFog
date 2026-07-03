@@ -1,192 +1,32 @@
 "use strict";
 
 const fs = require("node:fs");
-const os = require("node:os");
 const path = require("node:path");
 
+const { createCampaignFiles, getDefaultDataRoot } = require("./campaign-files");
+const {
+  MAX_CAMPAIGN_DESCRIPTION_LENGTH,
+  createUserError,
+  displayNameFromFileName,
+  normalizeCampaign,
+  normalizeCampaignDescription,
+  normalizeCampaignIcon,
+  normalizeCampaignName,
+  normalizeFileName,
+  normalizePathSegment,
+  serializeCampaign,
+  splitFileName,
+  validateCampaignMetadataPatch
+} = require("./campaign-schema");
 const { validateMapImage } = require("./map-image");
 
-const CAMPAIGN_EXTRA_FIELDS = Symbol("campaignExtraFields");
-const MAP_EXTRA_FIELDS = Symbol("mapExtraFields");
-const MAX_CAMPAIGN_DESCRIPTION_LENGTH = 160;
-const MAX_CAMPAIGN_ICON_LENGTH = 4;
-const campaignFields = new Set(["version", "name", "description", "icon", "activeMapId", "maps"]);
-const metadataFields = new Set(["description", "icon", "name"]);
-const mapFields = new Set(["id", "name", "originalFileName", "file", "order", "fog"]);
-
-function getDefaultDataRoot(env = process.env) {
-  return env.TABLETOPFOG_DATA_DIR || path.join(os.homedir(), "TabletopFog", "tabletopfog-data");
-}
-
-function normalizePathSegment(value) {
-  return String(value || "")
-    .replace(/[^A-Za-z0-9 _-]+/g, "-")
-    .replace(/\s*-\s*/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/\s+/g, " ")
-    .replace(/^[ ._-]+|[ ._-]+$/g, "");
-}
-
-function splitFileName(fileName) {
-  const normalizedSeparators = String(fileName || "").replace(/[\\/]+/g, "-");
-  const lastDot = normalizedSeparators.lastIndexOf(".");
-
-  if (lastDot <= 0 || lastDot === normalizedSeparators.length - 1) {
-    return {
-      extension: "",
-      name: normalizedSeparators
-    };
-  }
-
-  return {
-    extension: normalizeExtension(normalizedSeparators.slice(lastDot)),
-    name: normalizedSeparators.slice(0, lastDot)
-  };
-}
-
-function normalizeExtension(extension) {
-  const safe = String(extension || "").replace(/[^A-Za-z0-9.]/g, "");
-
-  if (!/^\.[A-Za-z0-9]+$/.test(safe)) {
-    return "";
-  }
-
-  return safe;
-}
-
-function normalizeFileName(fileName) {
-  const { extension, name } = splitFileName(fileName);
-  const safeName = normalizePathSegment(name);
-
-  return safeName ? `${safeName}${extension}` : "";
-}
-
-function displayNameFromFileName(fileName) {
-  const { name } = splitFileName(fileName);
-  return String(name || "").replace(/^[ ._-]+|[ ._-]+$/g, "") || normalizePathSegment(fileName);
-}
-
-function collectExtraFields(value, knownFields) {
-  return Object.fromEntries(Object.entries(value).filter(([key]) => !knownFields.has(key)));
-}
-
 function createCampaignStorage(options = {}) {
-  const dataRoot = path.resolve(options.dataRoot || getDefaultDataRoot(options.env));
-
-  function ensureDataRoot() {
-    fs.mkdirSync(dataRoot, { recursive: true });
-  }
-
-  function campaignDir(campaignId) {
-    return path.join(dataRoot, campaignId);
-  }
-
-  function campaignJsonPath(campaignId) {
-    return path.join(campaignDir(campaignId), "campaign.json");
-  }
-
-  function mapsDir(campaignId) {
-    return path.join(campaignDir(campaignId), "maps");
-  }
-
-  function assertSafeId(id, label) {
-    if (!id || id.includes("/") || id.includes("\\") || id === "." || id === "..") {
-      throw createUserError(400, `Invalid ${label}.`);
-    }
-  }
-
-  function assertCampaignExists(campaignId) {
-    assertSafeId(campaignId, "campaign");
-
-    if (!fs.existsSync(campaignJsonPath(campaignId))) {
-      throw createUserError(404, "Campaign not found.");
-    }
-  }
-
-  function writeJsonAtomic(filePath, data) {
-    const tempPath = `${filePath}.tmp-${process.pid}-${Date.now()}`;
-    fs.writeFileSync(tempPath, `${JSON.stringify(data, null, 2)}\n`);
-    fs.renameSync(tempPath, filePath);
-  }
-
-  function normalizeCampaign(campaignId, rawCampaign) {
-    const sourceMaps = Array.isArray(rawCampaign.maps) ? rawCampaign.maps : [];
-    const decorated = sourceMaps.map((map, index) => ({
-      map,
-      index,
-      order: Number.isInteger(map.order) && map.order > 0 ? map.order : index + 1
-    }));
-
-    decorated.sort((left, right) => {
-      if (left.order !== right.order) {
-        return left.order - right.order;
-      }
-
-      return left.index - right.index;
-    });
-
-    const maps = decorated.map(({ map }, index) => {
-      const normalizedMap = {
-        id: String(map.id || normalizePathSegment(map.name || `map-${index + 1}`)),
-        name: String(map.name || map.originalFileName || `Map ${index + 1}`),
-        originalFileName: map.originalFileName ? String(map.originalFileName) : undefined,
-        file: String(map.file || ""),
-        order: index + 1,
-        fog: Array.isArray(map.fog) ? map.fog : []
-      };
-
-      Object.defineProperty(normalizedMap, MAP_EXTRA_FIELDS, {
-        enumerable: true,
-        value: collectExtraFields(map, mapFields)
-      });
-      return normalizedMap;
-    });
-
-    const campaign = {
-      version: Number.isInteger(rawCampaign.version) ? rawCampaign.version : 1,
-      id: campaignId,
-      name: String(rawCampaign.name || campaignId),
-      description: typeof rawCampaign.description === "string" ? rawCampaign.description : "",
-      icon: typeof rawCampaign.icon === "string" ? rawCampaign.icon : "",
-      activeMapId: rawCampaign.activeMapId || null,
-      maps
-    };
-
-    Object.defineProperty(campaign, CAMPAIGN_EXTRA_FIELDS, {
-      enumerable: true,
-      value: collectExtraFields(rawCampaign, campaignFields)
-    });
-
-    if (campaign.activeMapId && !campaign.maps.some((map) => map.id === campaign.activeMapId)) {
-      campaign.activeMapId = null;
-    }
-
-    return campaign;
-  }
-
-  function serializeCampaign(campaign) {
-    return {
-      ...(campaign[CAMPAIGN_EXTRA_FIELDS] || {}),
-      version: campaign.version || 1,
-      name: campaign.name,
-      ...(campaign.description ? { description: campaign.description } : {}),
-      ...(campaign.icon ? { icon: campaign.icon } : {}),
-      activeMapId: campaign.activeMapId || null,
-      maps: campaign.maps.map((map) => ({
-        ...(map[MAP_EXTRA_FIELDS] || {}),
-        id: map.id,
-        name: map.name,
-        ...(map.originalFileName ? { originalFileName: map.originalFileName } : {}),
-        file: map.file,
-        order: map.order,
-        fog: map.fog || []
-      }))
-    };
-  }
+  const campaignFiles = createCampaignFiles(options);
+  const { dataRoot } = campaignFiles;
 
   function readCampaign(campaignId) {
-    assertCampaignExists(campaignId);
-    const raw = JSON.parse(fs.readFileSync(campaignJsonPath(campaignId), "utf8"));
+    campaignFiles.assertCampaignExists(campaignId);
+    const raw = JSON.parse(fs.readFileSync(campaignFiles.campaignJsonPath(campaignId), "utf8"));
     return normalizeCampaign(campaignId, raw);
   }
 
@@ -197,16 +37,8 @@ function createCampaignStorage(options = {}) {
       fog: Array.isArray(map.fog) ? map.fog : []
     }));
 
-    writeJsonAtomic(campaignJsonPath(campaign.id), serializeCampaign(campaign));
+    campaignFiles.writeJsonAtomic(campaignFiles.campaignJsonPath(campaign.id), serializeCampaign(campaign));
     return normalizeCampaign(campaign.id, serializeCampaign(campaign));
-  }
-
-  function existingNames(dirPath) {
-    if (!fs.existsSync(dirPath)) {
-      return new Set();
-    }
-
-    return new Set(fs.readdirSync(dirPath).map((entry) => entry.toLowerCase()));
   }
 
   function uniqueName(baseName, taken) {
@@ -242,34 +74,8 @@ function createCampaignStorage(options = {}) {
     return map;
   }
 
-  function getContainedMapAssetPath(campaignId, map) {
-    const relativeFile = map.file.replace(/\\/g, "/");
-
-    if (!relativeFile.startsWith("maps/")) {
-      throw createUserError(400, "Invalid map asset path.");
-    }
-
-    const resolved = path.resolve(campaignDir(campaignId), map.file);
-    const mapsRoot = fs.realpathSync(mapsDir(campaignId));
-    let realAssetPath;
-
-    try {
-      realAssetPath = fs.realpathSync(resolved);
-    } catch (_error) {
-      throw createUserError(404, "Map asset not found.");
-    }
-
-    const relative = path.relative(mapsRoot, realAssetPath);
-
-    if (relative.startsWith("..") || path.isAbsolute(relative)) {
-      throw createUserError(400, "Invalid map asset path.");
-    }
-
-    return realAssetPath;
-  }
-
   function getCampaignLibrary() {
-    ensureDataRoot();
+    campaignFiles.ensureDataRoot();
     const campaigns = [];
     const diagnostics = [];
 
@@ -318,9 +124,9 @@ function createCampaignStorage(options = {}) {
 
       validateMapImage(content, mapInput.contentType, safeFileName);
 
-      fs.mkdirSync(mapsDir(campaignId), { recursive: true });
-      const storedFileName = uniqueName(safeFileName, existingNames(mapsDir(campaignId)));
-      const storedPath = path.join(mapsDir(campaignId), storedFileName);
+      fs.mkdirSync(campaignFiles.mapsDir(campaignId), { recursive: true });
+      const storedFileName = uniqueName(safeFileName, campaignFiles.existingNames(campaignFiles.mapsDir(campaignId)));
+      const storedPath = path.join(campaignFiles.mapsDir(campaignId), storedFileName);
       const mapId = uniqueName(
         splitFileName(storedFileName).name,
         new Set(campaign.maps.map((map) => map.id.toLowerCase()))
@@ -347,20 +153,20 @@ function createCampaignStorage(options = {}) {
       return map;
     },
     createCampaign(name) {
-      ensureDataRoot();
+      campaignFiles.ensureDataRoot();
       const safeName = normalizePathSegment(name);
 
       if (!safeName) {
         throw createUserError(400, "A valid campaign name is required.");
       }
 
-      const taken = existingNames(dataRoot);
+      const taken = campaignFiles.existingNames(dataRoot);
 
       if (taken.has(safeName.toLowerCase())) {
         throw createUserError(409, "Campaign already exists.");
       }
 
-      const dir = campaignDir(safeName);
+      const dir = campaignFiles.campaignDir(safeName);
 
       try {
         fs.mkdirSync(path.join(dir, "maps"), { recursive: true });
@@ -371,7 +177,7 @@ function createCampaignStorage(options = {}) {
           activeMapId: null,
           maps: []
         };
-        writeJsonAtomic(campaignJsonPath(safeName), serializeCampaign(campaign));
+        campaignFiles.writeJsonAtomic(campaignFiles.campaignJsonPath(safeName), serializeCampaign(campaign));
         return campaign;
       } catch (error) {
         fs.rmSync(dir, { recursive: true, force: true });
@@ -385,7 +191,7 @@ function createCampaignStorage(options = {}) {
         throw createUserError(409, "Delete this campaign's encounters before deleting the campaign.");
       }
 
-      fs.rmSync(campaignDir(campaignId), { recursive: true, force: true });
+      fs.rmSync(campaignFiles.campaignDir(campaignId), { recursive: true, force: true });
     },
     getCampaign(campaignId) {
       return readCampaign(campaignId);
@@ -396,7 +202,7 @@ function createCampaignStorage(options = {}) {
       const map = findMap(campaign, mapId);
 
       return {
-        filePath: getContainedMapAssetPath(campaignId, map),
+        filePath: campaignFiles.getContainedMapAssetPath(campaignId, map),
         map
       };
     },
@@ -411,7 +217,7 @@ function createCampaignStorage(options = {}) {
         throw createUserError(409, "Clear this encounter from the Player Display before deleting it.");
       }
 
-      const assetPath = getContainedMapAssetPath(campaignId, map);
+      const assetPath = campaignFiles.getContainedMapAssetPath(campaignId, map);
       const deletePath = `${assetPath}.delete-${process.pid}-${Date.now()}`;
       fs.renameSync(assetPath, deletePath);
 
@@ -475,24 +281,7 @@ function createCampaignStorage(options = {}) {
       return saveCampaign(campaign);
     },
     updateCampaignMetadata(campaignId, metadata) {
-      if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
-        throw createUserError(400, "Campaign metadata must be an object.");
-      }
-
-      if (
-        !Object.hasOwn(metadata, "description") &&
-        !Object.hasOwn(metadata, "icon") &&
-        !Object.hasOwn(metadata, "name")
-      ) {
-        throw createUserError(400, "Campaign metadata must include name, description, or icon.");
-      }
-
-      Object.keys(metadata).forEach((key) => {
-        if (!metadataFields.has(key)) {
-          throw createUserError(400, "Campaign metadata must include only name, description, or icon.");
-        }
-      });
-
+      validateCampaignMetadataPatch(metadata);
       const campaign = readCampaign(campaignId);
 
       if (Object.hasOwn(metadata, "name")) {
@@ -510,54 +299,6 @@ function createCampaignStorage(options = {}) {
       return saveCampaign(campaign);
     }
   };
-}
-
-function normalizeCampaignName(value) {
-  if (typeof value !== "string") {
-    throw createUserError(400, "Campaign name must be text.");
-  }
-
-  const name = value.trim();
-
-  if (!normalizePathSegment(name)) {
-    throw createUserError(400, "A valid campaign name is required.");
-  }
-
-  return name;
-}
-
-function normalizeCampaignDescription(value) {
-  if (typeof value !== "string") {
-    throw createUserError(400, "Campaign description must be text.");
-  }
-
-  const description = value.trim();
-
-  if (description.length > MAX_CAMPAIGN_DESCRIPTION_LENGTH) {
-    throw createUserError(400, `Campaign description must be ${MAX_CAMPAIGN_DESCRIPTION_LENGTH} characters or fewer.`);
-  }
-
-  return description;
-}
-
-function normalizeCampaignIcon(value) {
-  if (typeof value !== "string") {
-    throw createUserError(400, "Campaign icon must be text.");
-  }
-
-  const icon = value.trim();
-
-  if (Array.from(icon).length > MAX_CAMPAIGN_ICON_LENGTH) {
-    throw createUserError(400, "Campaign icon must be one emoji or short symbol.");
-  }
-
-  return icon;
-}
-
-function createUserError(statusCode, message) {
-  const error = new Error(message);
-  error.statusCode = statusCode;
-  return error;
 }
 
 module.exports = {
