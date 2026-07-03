@@ -271,7 +271,8 @@ Engineering prerequisites:
 Planned focused sequence:
 
 - Complete: [F-007A](./features/F-007A.md), persist per-encounter fog state.
-- Proposed: [F-007B](./features/F-007B.md), restore shown-to-players state.
+- Active: [F-007B](./features/F-007B.md), restore shown-to-players state after
+  GM campaign open.
 - Proposed: [F-007C](./features/F-007C.md), persistence validation and recovery
   states.
 - Proposed: [F-007D](./features/F-007D.md), persistence status and diagnostics
