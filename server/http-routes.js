@@ -109,7 +109,7 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
           originalFileName: request.get("x-file-name")
         });
         const campaign = withAssetUrls(campaignStorage, campaignStorage.getCampaign(request.params.campaignId));
-        const state = stateStore.setCampaign(campaign);
+        const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
         onStateChange(state);
         response.status(201).json({
           campaign: state.campaign,
@@ -125,7 +125,7 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
     try {
       const map = campaignStorage.renameMap(request.params.campaignId, request.params.mapId, request.body.name);
       const campaign = withAssetUrls(campaignStorage, campaignStorage.getCampaign(request.params.campaignId));
-      const state = stateStore.setCampaign(campaign);
+      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
       onStateChange(state);
       response.json({
         campaign: state.campaign,
@@ -142,7 +142,7 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
         campaignStorage,
         campaignStorage.deleteMap(request.params.campaignId, request.params.mapId)
       );
-      const state = stateStore.setCampaign(campaign);
+      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
       onStateChange(state);
       response.json({ campaign: state.campaign });
     } catch (error) {
@@ -156,7 +156,7 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
         campaignStorage,
         campaignStorage.reorderMaps(request.params.campaignId, request.body.mapIds)
       );
-      const state = stateStore.setCampaign(campaign);
+      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
       onStateChange(state);
       response.json({ campaign: state.campaign });
     } catch (error) {
@@ -180,7 +180,7 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
         campaignStorage,
         campaignStorage.setActiveMap(request.params.campaignId, request.body.mapId)
       );
-      const state = stateStore.setCampaign(campaign);
+      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
       onStateChange(state);
       response.json({ campaign: state.campaign });
     } catch (error) {
@@ -209,7 +209,8 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
           operation
         ])
       );
-      const state = stateStore.setCampaign(campaign);
+      stateStore.appendFogOperation(request.params.campaignId, request.params.mapId, operation);
+      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
       onStateChange(state);
       response.status(201).json({ campaign: state.campaign });
     } catch (error) {
@@ -228,10 +229,35 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
         campaignStorage,
         campaignStorage.setMapFog(request.params.campaignId, request.params.mapId, [])
       );
-      const state = stateStore.setCampaign(campaign);
+      stateStore.clearFogOperations(request.params.campaignId, request.params.mapId);
+      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
       onStateChange(state);
       response.json({ campaign: state.campaign });
     } catch (error) {
+      if (/Invalid fog operation target|Map not found/.test(error.message)) {
+        response.status(400).json({ error: error.message });
+        return;
+      }
+      next(error);
+    }
+  });
+
+  app.post("/api/campaigns/:campaignId/maps/:mapId/fog-operations/undo", requireGm, (request, response, next) => {
+    try {
+      const previousOperations = stateStore.getNextFogUndoOperations(request.params.campaignId, request.params.mapId);
+      const campaign = withAssetUrls(
+        campaignStorage,
+        campaignStorage.setMapFog(request.params.campaignId, request.params.mapId, previousOperations)
+      );
+      stateStore.consumeFogUndo(request.params.campaignId, request.params.mapId);
+      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
+      onStateChange(state);
+      response.json({ campaign: state.campaign });
+    } catch (error) {
+      if (/No fog action to undo/.test(error.message)) {
+        response.status(409).json({ error: "No fog action to undo." });
+        return;
+      }
       if (/Invalid fog operation target|Map not found/.test(error.message)) {
         response.status(400).json({ error: error.message });
         return;

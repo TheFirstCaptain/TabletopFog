@@ -81,11 +81,13 @@ export function createGmView(document) {
     workspaceClearFog: document.querySelector("#workspace-clear-fog"),
     workspaceHideTool: document.querySelector("#workspace-hide-tool"),
     workspaceRevealTool: document.querySelector("#workspace-reveal-tool"),
+    workspaceUndoFog: document.querySelector("#workspace-undo-fog"),
     workspaceShowToPlayers: document.querySelector("#workspace-show-to-players")
   };
   const navigation = createGmNavigation(elements);
   let activeMapReady = false;
   let workspaceFogMode = null;
+  let workspaceCanUndoFog = false;
   let workspaceFogOperationCount = 0;
   let workspaceGridState = createDefaultGridState();
   elements.playerUrl.value = new URL("/player", document.defaultView.location.origin).href;
@@ -136,6 +138,8 @@ export function createGmView(document) {
       button.textContent = FOG_TOOL_LABELS[mode];
     });
     elements.workspaceClearFog.disabled = workspaceFogOperationCount === 0;
+    elements.workspaceUndoFog.disabled = !activeMapReady || !workspaceCanUndoFog;
+    elements.workspaceUndoFog.textContent = "Undo";
     elements.workspaceFogOverlay.hidden = !workspaceFogMode;
     elements.workspaceFogOverlay.dataset.active = String(Boolean(workspaceFogMode));
     elements.workspaceFogOverlay.dataset.mode = workspaceFogMode || "";
@@ -207,6 +211,7 @@ export function createGmView(document) {
       elements.workspaceShowToPlayers.disabled = true;
       activeMapReady = false;
       workspaceFogMode = null;
+      workspaceCanUndoFog = false;
       workspaceFogOperationCount = 0;
       activeMapRenderer.setMap(null);
       renderWorkspaceZoomControls();
@@ -228,6 +233,7 @@ export function createGmView(document) {
       "aria-label",
       shownToPlayers ? "Shown to Players - clear from Player Display" : "Show to Players from workspace"
     );
+    workspaceCanUndoFog = Boolean(selectedEncounter.canUndoFogOperation);
     workspaceFogOperationCount = selectedEncounter.fogOperations?.length || 0;
     renderWorkspaceGridState(gridState);
     activeMapRenderer.setMap({ ...selectedEncounter, campaignId: campaign.id });
@@ -387,7 +393,7 @@ export function createGmView(document) {
     confirmClearFog(name, shownToPlayers) {
       const playerImpact = shownToPlayers ? "\nThe Player Display will update immediately." : "";
       return document.defaultView.confirm(
-        `Clear fog?\n\nThis removes all fog from "${name}".${playerImpact}\nThis can't be undone.`
+        `Clear fog?\n\nThis removes all fog from "${name}".${playerImpact}\nYou can use Undo until this campaign is reloaded.`
       );
     },
     clearMapFile() {

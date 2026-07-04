@@ -3,16 +3,16 @@
   "roots": ["server", "public", "scripts"],
   "modules": {
     "public/gm-api.js": {
-      "baselineLines": 96,
-      "responsibility": "Send GM campaign, campaign deletion, campaign-card metadata, map, and fog-operation append and clear API requests and convert failed responses into client errors."
+      "baselineLines": 104,
+      "responsibility": "Send GM campaign, campaign deletion, campaign-card metadata, map, and fog-operation append, clear, and undo API requests and convert failed responses into client errors."
     },
     "public/gm-controller.js": {
-      "baselineLines": 333,
-      "responsibility": "Coordinate GM campaign library, Player Display URL copy, campaign deletion, campaign-card metadata, encounter gallery, encounter workspace, GM-local map alignment and panning, rectangle Hide and Reveal fog editing, Clear Fog, map, view, and Socket.IO workflows."
+      "baselineLines": 355,
+      "responsibility": "Coordinate GM campaign library, Player Display URL copy, campaign deletion, campaign-card metadata, encounter gallery, encounter workspace, GM-local map alignment and panning, rectangle Hide and Reveal fog editing, Clear Fog, Undo fog, map, view, and Socket.IO workflows."
     },
     "public/gm-events.js": {
-      "baselineLines": 178,
-      "responsibility": "Translate static and delegated GM campaign, Player Display URL copy, campaign deletion, campaign-card metadata, direct encounter gallery administration, encounter workspace, GM-local map alignment, rectangle Hide and Reveal pointer input, Clear Fog, and map DOM events into controller actions."
+      "baselineLines": 179,
+      "responsibility": "Translate static and delegated GM campaign, Player Display URL copy, campaign deletion, campaign-card metadata, direct encounter gallery administration, encounter workspace, GM-local map alignment, rectangle Hide and Reveal pointer input, Clear Fog, Undo fog, and map DOM events into controller actions."
     },
     "public/gm-navigation.js": {
       "baselineLines": 39,
@@ -23,8 +23,8 @@
       "responsibility": "Maintain GM campaign library, current campaign, GM-local selected encounter, explicit client screen state, and per-encounter GM-tab map alignment state."
     },
     "public/gm-view.js": {
-      "baselineLines": 658,
-      "responsibility": "Render the GM campaign card library, Player Display URL sharing, campaign recovery messaging, campaign deletion controls, campaign-card metadata editing, direct encounter gallery administration, encounter workspace shell, GM-local map alignment controls, rectangle Hide and Reveal fog controls, Clear Fog state and confirmation, draft state, messages, status, and shared-canvas map plus semi-transparent fog preview."
+      "baselineLines": 664,
+      "responsibility": "Render the GM campaign card library, Player Display URL sharing, campaign recovery messaging, campaign deletion controls, campaign-card metadata editing, direct encounter gallery administration, encounter workspace shell, GM-local map alignment controls, rectangle Hide and Reveal fog controls, Clear Fog state and confirmation, Undo fog availability, draft state, messages, status, and shared-canvas map plus semi-transparent fog preview."
     },
     "public/gm.js": {
       "baselineLines": 19,
@@ -87,8 +87,8 @@
       "responsibility": "Resolve and load HTTPS certificate credentials."
     },
     "server/http-routes.js": {
-      "baselineLines": 301,
-      "responsibility": "Register Express middleware, GM and Player Display pages, campaign, map, shown-to-players, persisted fog operation, asset, static-file, and error routes while preserving GM-only mutation guards."
+      "baselineLines": 327,
+      "responsibility": "Register Express middleware, GM and Player Display pages, campaign, map, shown-to-players, persisted fog operation append, clear, undo, asset, static-file, and error routes while preserving GM-only mutation guards."
     },
     "server/index.js": {
       "baselineLines": 85,
@@ -107,8 +107,8 @@
       "responsibility": "Coordinate Socket.IO connection role assignment, initial state sync, and role-projected state broadcasts."
     },
     "server/state.js": {
-      "baselineLines": 132,
-      "responsibility": "Maintain snapshot-safe active campaign state and encounter-scoped fog operation state, including persisted fog hydration, target validation, atomic fog append, clear, and pruning for removed encounters."
+      "baselineLines": 189,
+      "responsibility": "Maintain snapshot-safe active campaign state and encounter-scoped fog operation state, including persisted fog hydration, runtime-only undo history, target validation, atomic fog append, clear, undo, and pruning for removed encounters."
     }
   }
 }

@@ -272,6 +272,27 @@ export function createGmController({ api, socket, state, view }) {
     }
   }
 
+  async function undoWorkspaceFog() {
+    const campaign = state.getCurrentCampaign();
+    const selectedEncounterId = state.getSelectedEncounterId();
+
+    if (!campaign || !selectedEncounterId) {
+      return;
+    }
+
+    view.setWorkspaceFogMode(null);
+    view.cancelWorkspaceFogRectangle();
+
+    try {
+      const payload = await api.undoFogOperation(campaign.id, selectedEncounterId);
+      state.setCurrentCampaign(payload.campaign);
+      renderCurrentCampaign();
+      view.setCampaignMessage("Fog undone.");
+    } catch (_error) {
+      view.setCampaignMessage("Could not undo fog. Nothing changed.");
+    }
+  }
+
   function cancelWorkspaceFogRectangle() {
     view.cancelWorkspaceFogRectangle();
   }
@@ -314,6 +335,7 @@ export function createGmController({ api, socket, state, view }) {
       toggleWorkspaceGridLock,
       toggleWorkspaceFogMode,
       showWorkspaceEncounter,
+      undoWorkspaceFog,
       updateCampaignMetadata,
       uploadMap,
       zoomWorkspaceMapIn: view.workspaceZoomIn,

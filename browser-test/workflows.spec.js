@@ -1678,6 +1678,7 @@ test("GM Clear Fog is confirmed and scoped to the selected encounter", async ({ 
   page.once("dialog", async (dialog) => {
     expect(dialog.message()).toContain('This removes all fog from "forest".');
     expect(dialog.message()).toContain("The Player Display will update immediately.");
+    expect(dialog.message()).toContain("You can use Undo until this campaign is reloaded.");
     await dialog.dismiss();
   });
   await clearFog.click();
@@ -1712,6 +1713,7 @@ test("GM Clear Fog is confirmed and scoped to the selected encounter", async ({ 
   page.once("dialog", async (dialog) => {
     expect(dialog.message()).toContain('This removes all fog from "cave".');
     expect(dialog.message()).not.toContain("The Player Display will update immediately.");
+    expect(dialog.message()).toContain("You can use Undo until this campaign is reloaded.");
     await dialog.accept();
   });
   await clearFog.click();
@@ -1723,6 +1725,104 @@ test("GM Clear Fog is confirmed and scoped to the selected encounter", async ({ 
 
   const campaignJson = JSON.parse(fs.readFileSync(path.join(app.dataRoot, "The Long Walk", "campaign.json"), "utf8"));
   expect(campaignJson.activeMapId).toBe(forestMapId);
+  expect(campaignJson.maps.map((map) => map.fog.length)).toEqual([1, 0]);
+});
+
+test("GM Undo fog action walks back shown and unshown fog changes", async ({ app, page, context }) => {
+  const player = await context.newPage();
+  let playerAssetRequests = 0;
+  await player.route("**/api/player/active-map/asset*", (route) => {
+    playerAssetRequests += 1;
+    return route.continue();
+  });
+
+  await page.setViewportSize({ height: 768, width: 1366 });
+  await openGm(page, app.baseURL);
+  await createCampaign(page);
+  await uploadMapFile(page, await sizedPngFile(page, "forest.png", 200, 100, "#d9b978", "#704020"));
+  await uploadMapFile(page, await sizedPngFile(page, "cave.png", 200, 100, "#2c2430", "#b08968"));
+
+  const forestCard = page.locator(".encounter-card").filter({ hasText: "forest" });
+  const caveCard = page.locator(".encounter-card").filter({ hasText: "cave" });
+  await forestCard.getByRole("button", { name: "Show to Players", exact: true }).click();
+  await forestCard.getByRole("button", { name: "Open forest for prep" }).click();
+  await player.goto(`${app.baseURL}/player`);
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+
+  const undo = page.getByRole("button", { name: "Undo", exact: true });
+  await expect(undo).toBeVisible();
+  await expect(undo).toBeDisabled();
+
+  await page.getByRole("button", { name: "Hide rectangle" }).click();
+  await dragMapRectangle(page, "#active-map-canvas", { x: 0.5, y: 0.7 }, { x: 0.1, y: 0.2 });
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("1");
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("1");
+  await expect(undo).toBeEnabled();
+
+  await page.getByRole("button", { name: "Reveal rectangle" }).click();
+  await dragMapRectangle(page, "#active-map-canvas", { x: 0.16, y: 0.26 }, { x: 0.3, y: 0.42 });
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("2");
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("2");
+
+  const rejectUndo = (route) =>
+    route.fulfill({
+      body: JSON.stringify({ error: "Simulated undo failure." }),
+      contentType: "application/json",
+      status: 500
+    });
+  await page.route("**/fog-operations/undo", rejectUndo);
+  await undo.click();
+  await expect(page.locator("#campaign-message")).toHaveText("Could not undo fog. Nothing changed.");
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("2");
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("2");
+  await page.unroute("**/fog-operations/undo", rejectUndo);
+
+  await undo.click();
+  await expect(page.locator("#campaign-message")).toHaveText("Fog undone.");
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("1");
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("1");
+  await expect(undo).toBeEnabled();
+
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toContain('This removes all fog from "forest".');
+    expect(dialog.message()).toContain("You can use Undo until this campaign is reloaded.");
+    await dialog.accept();
+  });
+  await page.getByRole("button", { name: "Clear Fog" }).click();
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("0");
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("0");
+  await expect(undo).toBeEnabled();
+
+  await undo.click();
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("1");
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("1");
+
+  await undo.click();
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("0");
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("0");
+  await expect(undo).toBeDisabled();
+
+  await page.getByRole("button", { name: "Hide rectangle" }).click();
+  await dragMapRectangle(page, "#active-map-canvas", { x: 0.25, y: 0.2 }, { x: 0.45, y: 0.45 });
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("1");
+  const playerAssetRequestsBeforeUnshownUndo = playerAssetRequests;
+
+  await page.getByRole("button", { name: "Back to Campaign" }).click();
+  await caveCard.getByRole("button", { name: "Open cave for prep" }).click();
+  await page.getByRole("button", { name: "Hide rectangle" }).click();
+  await dragMapRectangle(page, "#active-map-canvas", { x: 0.4, y: 0.2 }, { x: 0.6, y: 0.6 });
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("1");
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("1");
+  await expect(undo).toBeEnabled();
+
+  await undo.click();
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("0");
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("1");
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeUnshownUndo);
+  await expect(player.locator("input, select, textarea, [contenteditable=true], [data-action]")).toHaveCount(0);
+
+  const campaignJson = JSON.parse(fs.readFileSync(path.join(app.dataRoot, "The Long Walk", "campaign.json"), "utf8"));
   expect(campaignJson.maps.map((map) => map.fog.length)).toEqual([1, 0]);
 });
 

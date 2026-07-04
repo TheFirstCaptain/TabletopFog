@@ -1030,13 +1030,13 @@ h4 {
 
   .fog-tool-group {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .fog-tool-group .compact-tool-button {
     width: auto;
-    padding-inline: 0.35rem;
-    font-size: 0.8125rem;
+    padding-inline: 0.25rem;
+    font-size: 0.75rem;
   }
 
   .gm-map-stage {

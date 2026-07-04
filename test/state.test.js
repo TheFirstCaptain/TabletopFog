@@ -152,6 +152,118 @@ test("state store appends one fog operation atomically", () => {
   assert.deepEqual(state.campaign.maps[1].fogOperations, []);
 });
 
+test("state store undoes appended fog operations per encounter", () => {
+  const store = createStateStore();
+  store.setCampaign({
+    id: "The Long Walk",
+    activeMapId: "forest",
+    maps: [
+      { id: "forest", name: "Forest" },
+      { id: "cave", name: "Cave" }
+    ]
+  });
+
+  store.appendFogOperation("The Long Walk", "forest", {
+    type: "hide-rectangle",
+    rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 }
+  });
+  store.appendFogOperation("The Long Walk", "forest", {
+    type: "reveal-rectangle",
+    rect: { x: 0.14, y: 0.14, width: 0.08, height: 0.08 }
+  });
+  store.appendFogOperation("The Long Walk", "cave", {
+    type: "hide-rectangle",
+    rect: { x: 0.5, y: 0.5, width: 0.1, height: 0.1 }
+  });
+
+  const undoReveal = store.undoFogOperation("The Long Walk", "forest");
+
+  assert.equal(undoReveal.campaign.maps[0].canUndoFogOperation, true);
+  assert.deepEqual(undoReveal.campaign.maps[0].fogOperations, [
+    { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+  ]);
+  assert.deepEqual(undoReveal.campaign.maps[1].fogOperations, [
+    { type: "hide-rectangle", rect: { x: 0.5, y: 0.5, width: 0.1, height: 0.1 } }
+  ]);
+
+  const undoHide = store.undoFogOperation("The Long Walk", "forest");
+
+  assert.equal(undoHide.campaign.maps[0].canUndoFogOperation, false);
+  assert.deepEqual(undoHide.campaign.maps[0].fogOperations, []);
+  assert.deepEqual(undoHide.campaign.maps[1].fogOperations, [
+    { type: "hide-rectangle", rect: { x: 0.5, y: 0.5, width: 0.1, height: 0.1 } }
+  ]);
+  assert.equal(store.canUndoFogOperation("The Long Walk", "forest"), false);
+  assert.equal(store.canUndoFogOperation("The Long Walk", "cave"), true);
+});
+
+test("state store undoes clear fog by restoring the prior ordered operation list", () => {
+  const store = createStateStore();
+  store.setCampaign({ id: "The Long Walk", maps: [{ id: "forest", name: "Forest" }] });
+  const operations = [
+    { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } },
+    { type: "reveal-rectangle", rect: { x: 0.14, y: 0.14, width: 0.08, height: 0.08 } }
+  ];
+  store.setFogOperations("The Long Walk", "forest", operations);
+
+  const cleared = store.clearFogOperations("The Long Walk", "forest");
+
+  assert.equal(cleared.campaign.maps[0].canUndoFogOperation, true);
+  assert.deepEqual(cleared.campaign.maps[0].fogOperations, []);
+
+  const restored = store.undoFogOperation("The Long Walk", "forest");
+
+  assert.equal(restored.campaign.maps[0].canUndoFogOperation, false);
+  assert.deepEqual(restored.campaign.maps[0].fogOperations, operations);
+});
+
+test("state store rejects undo without history or a valid target without changing state", () => {
+  const store = createStateStore();
+  store.setCampaign({ id: "The Long Walk", maps: [{ id: "forest", name: "Forest" }] });
+  store.appendFogOperation("The Long Walk", "forest", {
+    type: "hide-rectangle",
+    rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 }
+  });
+  const before = store.getState();
+
+  assert.throws(() => store.undoFogOperation("The Long Walk", "missing"), /Invalid fog operation target/);
+  assert.throws(() => store.undoFogOperation("Wrong Campaign", "forest"), /Invalid fog operation target/);
+
+  assert.deepEqual(store.getState(), before);
+
+  store.undoFogOperation("The Long Walk", "forest");
+  const emptyHistory = store.getState();
+
+  assert.throws(() => store.undoFogOperation("The Long Walk", "forest"), /No fog action to undo/);
+  assert.deepEqual(store.getState(), emptyHistory);
+});
+
+test("state store clears runtime undo history on campaign reload", () => {
+  const store = createStateStore();
+  store.setCampaign({ id: "The Long Walk", maps: [{ id: "forest", name: "Forest" }] });
+  store.appendFogOperation("The Long Walk", "forest", {
+    type: "hide-rectangle",
+    rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 }
+  });
+
+  assert.equal(store.canUndoFogOperation("The Long Walk", "forest"), true);
+
+  const reloaded = store.setCampaign({
+    id: "The Long Walk",
+    maps: [
+      {
+        id: "forest",
+        name: "Forest",
+        fog: [{ type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }]
+      }
+    ]
+  });
+
+  assert.equal(reloaded.campaign.maps[0].canUndoFogOperation, false);
+  assert.equal(store.canUndoFogOperation("The Long Walk", "forest"), false);
+  assert.throws(() => store.undoFogOperation("The Long Walk", "forest"), /No fog action to undo/);
+});
+
 test("state store rejects invalid appended fog operations without changing state", () => {
   const store = createStateStore();
   store.setCampaign({ id: "The Long Walk", maps: [{ id: "forest" }] });

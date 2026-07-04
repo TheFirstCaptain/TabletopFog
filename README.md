@@ -10,7 +10,7 @@ TabletopFog has completed the first local connectivity spike, campaign/map
 library, fantasy visual theme, active-map display polish, campaign landing page
 polish, encounter gallery entry, and encounter workspace shell, including
 Chromebook-host and iPad-player validation through F-005, with automated
-quality validation through F-008B. The HTTPS app serves
+quality validation through F-008C. The HTTPS app serves
 separate GM View and Player Display pages, stores local campaign folders, lets
 the GM manage map-backed encounter cards, and syncs only the current encounter
 shown to players to the read-only Player Display over Socket.IO.
@@ -76,6 +76,10 @@ The Fog tools also include an always-visible `Clear Fog` action that is enabled
 only when the selected encounter has fog, asks for confirmation, clears only
 that selected encounter's fog, autosaves the empty fog state, and updates the
 Player Display live only when that encounter is currently shown to players.
+The same Fog tools include a compact `Undo` action for the selected encounter;
+it can walk back recent Hide, Reveal, and Clear Fog actions during the current
+runtime, autosaves the resulting fog state, and intentionally loses undo
+history on campaign reload or server restart.
 When the GM opens a saved campaign, the app restores the encounter previously
 `Shown to Players` and its persisted fog to the Player Display; server startup
 or campaign-library browsing alone leaves the Player Display waiting.

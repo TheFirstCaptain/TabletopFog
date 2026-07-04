@@ -82,6 +82,14 @@ export function createGmApi(fetchRequest) {
         }
       );
     },
+    undoFogOperation(campaignId, mapId) {
+      return request(
+        `/api/campaigns/${encodeURIComponent(campaignId)}/maps/${encodeURIComponent(mapId)}/fog-operations/undo`,
+        {
+          method: "POST"
+        }
+      );
+    },
     async uploadMap(campaignId, file) {
       return request(`/api/campaigns/${encodeURIComponent(campaignId)}/maps`, {
         body: await file.arrayBuffer(),

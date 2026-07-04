@@ -9,6 +9,7 @@ const test = require("node:test");
 
 const { io: createClient } = require("socket.io-client");
 const { createTabletopFogServer, getRoleFromReferer, projectStateForRole } = require("../server");
+const { createCampaignStorage } = require("../server/campaign-storage");
 const { createTestCertificate } = require("../test-support/certificate");
 const { PNG_BYTES } = require("../test-support/fixtures");
 const { createTemporaryDirectory } = require("../test-support/temp-directory");
@@ -1005,6 +1006,403 @@ test("GM API clears persisted fog without changing the shown encounter", async (
     );
   } finally {
     player.close();
+    await close(server, io);
+  }
+});
+
+test("GM API undoes persisted fog actions with shown and unshown projection boundaries", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const { server, io, stateStore } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+  const clientOptions = {
+    forceNew: true,
+    rejectUnauthorized: false,
+    reconnection: false,
+    transports: ["websocket"]
+  };
+  const player = createClient(url, {
+    ...clientOptions,
+    extraHeaders: {
+      referer: `${url}/player`
+    }
+  });
+
+  try {
+    await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: "The Long Walk" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const forest = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "forest.png"
+      }),
+      method: "POST"
+    });
+    const cave = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "cave.png"
+      }),
+      method: "POST"
+    });
+    const active = waitForActiveMap(player, forest.json.map.id);
+    await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/active-map`, {
+      body: JSON.stringify({ mapId: forest.json.map.id }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+    await active;
+
+    const forestEndpoint = `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(forest.json.map.id)}/fog-operations`;
+    const forestUndoEndpoint = `${forestEndpoint}/undo`;
+    const caveEndpoint = `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(cave.json.map.id)}/fog-operations`;
+    const caveUndoEndpoint = `${caveEndpoint}/undo`;
+
+    await requestHttps(forestEndpoint, {
+      body: JSON.stringify({ type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const forestRevealSync = waitForActiveMapFogCount(player, forest.json.map.id, 2);
+    await requestHttps(forestEndpoint, {
+      body: JSON.stringify({ type: "reveal-rectangle", rect: { x: 0.14, y: 0.14, width: 0.08, height: 0.08 } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    await forestRevealSync;
+    await requestHttps(caveEndpoint, {
+      body: JSON.stringify({ type: "hide-rectangle", rect: { x: 0.4, y: 0.4, width: 0.1, height: 0.1 } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+
+    const undoRevealSync = waitForActiveMapFogCount(player, forest.json.map.id, 1);
+    const undoReveal = await requestHttps(forestUndoEndpoint, {
+      headers: gmHeaders(port),
+      method: "POST"
+    });
+    const undoRevealPlayerState = await undoRevealSync;
+
+    assert.equal(undoReveal.statusCode, 200);
+    assert.equal(undoReveal.json.campaign.activeMapId, forest.json.map.id);
+    assert.equal(undoReveal.json.campaign.maps.find((map) => map.id === forest.json.map.id).canUndoFogOperation, true);
+    assert.deepEqual(undoRevealPlayerState.activeMap.fogOperations, [
+      { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+    ]);
+
+    const clearSync = waitForActiveMapFogCount(player, forest.json.map.id, 0);
+    const clearForest = await requestHttps(forestEndpoint, {
+      headers: gmHeaders(port),
+      method: "DELETE"
+    });
+    await clearSync;
+    assert.equal(clearForest.json.campaign.maps.find((map) => map.id === forest.json.map.id).canUndoFogOperation, true);
+
+    const undoClearSync = waitForActiveMapFogCount(player, forest.json.map.id, 1);
+    const undoClear = await requestHttps(forestUndoEndpoint, {
+      headers: gmHeaders(port),
+      method: "POST"
+    });
+    await undoClearSync;
+    assert.deepEqual(undoClear.json.campaign.maps.find((map) => map.id === forest.json.map.id).fogOperations, [
+      { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+    ]);
+
+    const caveUndo = await requestHttps(caveUndoEndpoint, {
+      headers: gmHeaders(port),
+      method: "POST"
+    });
+    assert.equal(caveUndo.statusCode, 200);
+    assert.equal(caveUndo.json.campaign.activeMapId, forest.json.map.id);
+    assert.deepEqual(caveUndo.json.campaign.maps.find((map) => map.id === cave.json.map.id).fogOperations, []);
+    assert.deepEqual(projectStateForRole(stateStore.getState(), "player").activeMap.fogOperations, [
+      { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+    ]);
+
+    const noHistory = await requestHttps(caveUndoEndpoint, {
+      headers: gmHeaders(port),
+      method: "POST"
+    });
+    const missingTarget = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent("missing")}/fog-operations/undo`,
+      {
+        headers: gmHeaders(port),
+        method: "POST"
+      }
+    );
+    const playerRequest = await requestHttps(forestUndoEndpoint, {
+      headers: playerHeaders(port),
+      method: "POST"
+    });
+    const campaignJson = JSON.parse(fs.readFileSync(path.join(dataRoot, "The Long Walk", "campaign.json"), "utf8"));
+
+    assert.equal(noHistory.statusCode, 409);
+    assert.equal(missingTarget.statusCode, 400);
+    assert.equal(playerRequest.statusCode, 403);
+    assert.deepEqual(
+      campaignJson.maps.map((map) => map.fog),
+      [[{ type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }], []]
+    );
+  } finally {
+    player.close();
+    await close(server, io);
+  }
+});
+
+test("fog undo history is runtime only and does not survive campaign reload", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const firstServer = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const firstPort = await listen(firstServer.server);
+  const firstUrl = `https://127.0.0.1:${firstPort}`;
+
+  try {
+    await requestHttps(`${firstUrl}/api/campaigns`, {
+      body: JSON.stringify({ name: "The Long Walk" }),
+      headers: gmHeaders(firstPort, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const forest = await requestHttps(`${firstUrl}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(firstPort, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "forest.png"
+      }),
+      method: "POST"
+    });
+    const fog = await requestHttps(
+      `${firstUrl}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(forest.json.map.id)}/fog-operations`,
+      {
+        body: JSON.stringify({ type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }),
+        headers: gmHeaders(firstPort, { "content-type": "application/json" }),
+        method: "POST"
+      }
+    );
+
+    assert.equal(fog.json.campaign.maps[0].canUndoFogOperation, true);
+  } finally {
+    await close(firstServer.server, firstServer.io);
+  }
+
+  const secondServer = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const secondPort = await listen(secondServer.server);
+  const secondUrl = `https://127.0.0.1:${secondPort}`;
+
+  try {
+    const opened = await requestHttps(`${secondUrl}/api/campaigns/${encodeURIComponent("The Long Walk")}`, {
+      headers: gmHeaders(secondPort)
+    });
+    const undo = await requestHttps(
+      `${secondUrl}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(opened.json.campaign.maps[0].id)}/fog-operations/undo`,
+      {
+        headers: gmHeaders(secondPort),
+        method: "POST"
+      }
+    );
+
+    assert.deepEqual(opened.json.campaign.maps[0].fogOperations, [
+      { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+    ]);
+    assert.equal(opened.json.campaign.maps[0].canUndoFogOperation, false);
+    assert.equal(undo.statusCode, 409);
+  } finally {
+    await close(secondServer.server, secondServer.io);
+  }
+});
+
+test("failed fog undo persistence leaves state storage projection and undo history unchanged", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const realStorage = createCampaignStorage({ dataRoot });
+  let failFogPersistence = false;
+  const campaignStorage = {
+    ...realStorage,
+    setMapFog(campaignId, mapId, operations) {
+      if (failFogPersistence) {
+        throw new Error("Simulated fog persistence failure.");
+      }
+      return realStorage.setMapFog(campaignId, mapId, operations);
+    }
+  };
+  const { server, io, stateStore } = createTabletopFogServer({
+    campaignStorage,
+    credentials: createTestCertificate(t)
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+  const clientOptions = {
+    forceNew: true,
+    rejectUnauthorized: false,
+    reconnection: false,
+    transports: ["websocket"]
+  };
+  const player = createClient(url, {
+    ...clientOptions,
+    extraHeaders: {
+      referer: `${url}/player`
+    }
+  });
+
+  try {
+    await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: "The Long Walk" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const forest = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "forest.png"
+      }),
+      method: "POST"
+    });
+    const active = waitForActiveMap(player, forest.json.map.id);
+    await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/active-map`, {
+      body: JSON.stringify({ mapId: forest.json.map.id }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+    await active;
+
+    const fogEndpoint = `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(forest.json.map.id)}/fog-operations`;
+    const undoEndpoint = `${fogEndpoint}/undo`;
+    const fogSync = waitForActiveMapFogCount(player, forest.json.map.id, 1);
+    await requestHttps(fogEndpoint, {
+      body: JSON.stringify({ type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    await fogSync;
+
+    const campaignPath = path.join(dataRoot, "The Long Walk", "campaign.json");
+    const storageBefore = fs.readFileSync(campaignPath, "utf8");
+    const stateBefore = stateStore.getState();
+    const playerBefore = projectStateForRole(stateBefore, "player");
+    failFogPersistence = true;
+
+    const rejectedUndo = await requestHttps(undoEndpoint, {
+      headers: gmHeaders(port),
+      method: "POST"
+    });
+
+    assert.equal(rejectedUndo.statusCode, 500);
+    assert.deepEqual(stateStore.getState(), stateBefore);
+    assert.deepEqual(projectStateForRole(stateStore.getState(), "player"), playerBefore);
+    assert.equal(fs.readFileSync(campaignPath, "utf8"), storageBefore);
+    assert.equal(stateStore.canUndoFogOperation("The Long Walk", forest.json.map.id), true);
+
+    failFogPersistence = false;
+    const undoSync = waitForActiveMapFogCount(player, forest.json.map.id, 0);
+    const successfulUndo = await requestHttps(undoEndpoint, {
+      headers: gmHeaders(port),
+      method: "POST"
+    });
+    await undoSync;
+
+    assert.equal(successfulUndo.statusCode, 200);
+    assert.deepEqual(successfulUndo.json.campaign.maps[0].fogOperations, []);
+    assert.equal(successfulUndo.json.campaign.maps[0].canUndoFogOperation, false);
+  } finally {
+    player.close();
+    await close(server, io);
+  }
+});
+
+test("fog undo rejects malformed and stale targets without changing state", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const { server, io, stateStore } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+
+  try {
+    await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: "The Long Walk" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const forest = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "forest.png"
+      }),
+      method: "POST"
+    });
+    const cave = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "cave.png"
+      }),
+      method: "POST"
+    });
+
+    const forestEndpoint = `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(forest.json.map.id)}/fog-operations`;
+    const forestUndoEndpoint = `${forestEndpoint}/undo`;
+    const caveEndpoint = `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(cave.json.map.id)}/fog-operations`;
+    const caveUndoEndpoint = `${caveEndpoint}/undo`;
+    await requestHttps(forestEndpoint, {
+      body: JSON.stringify({ type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    await requestHttps(caveEndpoint, {
+      body: JSON.stringify({ type: "hide-rectangle", rect: { x: 0.4, y: 0.4, width: 0.1, height: 0.1 } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+
+    const beforeMalformed = stateStore.getState();
+    const malformed = await requestHttps(forestUndoEndpoint, {
+      body: "{",
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+
+    assert.equal(malformed.statusCode, 400);
+    assert.deepEqual(stateStore.getState(), beforeMalformed);
+    assert.equal(stateStore.canUndoFogOperation("The Long Walk", forest.json.map.id), true);
+
+    await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(cave.json.map.id)}`,
+      {
+        headers: gmHeaders(port),
+        method: "DELETE"
+      }
+    );
+    const beforeStaleUndo = stateStore.getState();
+    const staleUndo = await requestHttps(caveUndoEndpoint, {
+      headers: gmHeaders(port),
+      method: "POST"
+    });
+
+    assert.equal(staleUndo.statusCode, 400);
+    assert.deepEqual(stateStore.getState(), beforeStaleUndo);
+    assert.equal(stateStore.canUndoFogOperation("The Long Walk", cave.json.map.id), false);
+    assert.equal(stateStore.canUndoFogOperation("The Long Walk", forest.json.map.id), true);
+  } finally {
     await close(server, io);
   }
 });

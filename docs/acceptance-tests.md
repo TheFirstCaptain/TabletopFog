@@ -1052,6 +1052,67 @@ Expected result:
 - No undo, operation history, brush, token, dynamic lighting, or VTT-style
   controls are introduced by F-006E.
 
+### Test: GM Can Undo Recent Fog Actions
+
+Prerequisites:
+
+- A campaign exists with at least two encounters/maps.
+- The encounter workspace feature is implemented.
+- F-007A fog persistence is implemented.
+- F-008C Undo Fog Action is implemented.
+
+Steps:
+
+1. Show one encounter to players.
+2. Open that shown encounter in the GM workspace.
+3. Confirm `Undo` is visible in the Fog tools group and disabled before an
+   undoable fog action exists.
+4. Add fog with `Hide rectangle`.
+5. Confirm `Undo` becomes enabled and the Player Display updates live.
+6. Add a `Reveal rectangle` operation.
+7. Click `Undo`.
+8. Confirm the reveal operation is undone, the hide operation remains, and the
+   Player Display updates live.
+9. Click `Clear Fog`, confirm the dialog, and confirm all fog is removed from
+   the selected encounter.
+10. Click `Undo`.
+11. Confirm the selected encounter's prior ordered fog operations are restored.
+12. Click `Undo` repeatedly until no undoable fog actions remain.
+13. Confirm each click walks back one fog action and `Undo` becomes disabled
+    when the runtime history is empty.
+14. Add fog to the shown encounter again.
+15. Open a different selected/editing encounter without showing it to players.
+16. Add fog to that unshown selected encounter.
+17. Click `Undo`.
+18. Confirm the unshown selected encounter changes in the GM workspace while the
+    Player Display remains on the original shown encounter with its fog
+    unchanged.
+19. Attempt an undo request after the selected encounter has no undoable fog
+    history, or after the target encounter has been removed.
+20. Confirm the GM sees quiet local status text such as `Could not undo fog.
+    Nothing changed.`
+21. Reload or restart the campaign after a successful fog action.
+22. Confirm the resulting fog state remains persisted, but `Undo` is disabled
+    because undo history is runtime-only.
+
+Expected result:
+
+- Undo affects only the selected encounter.
+- Undo removes the latest Hide or Reveal operation for the selected encounter.
+- Undo restores the prior ordered fog operation list after Clear Fog.
+- Undo can be clicked repeatedly, one action at a time.
+- Successful undo autosaves the resulting selected encounter fog state.
+- Undo history is runtime-only and does not survive campaign reloads or server
+  restarts.
+- Undoing fog on an encounter currently `Shown to Players` updates the Player
+  Display live.
+- Undoing fog on an unshown selected encounter does not change the Player
+  Display.
+- Rejected undo requests leave runtime state, campaign storage, and Player
+  Display unchanged.
+- Rejected undo requests show quiet GM-local status text.
+- Player Display remains read-only.
+
 ### Test: GM Pans a Zoomed Workspace Map
 
 Prerequisites:
