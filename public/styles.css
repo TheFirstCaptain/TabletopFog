@@ -251,6 +251,33 @@ h4 {
   padding: 0.75rem;
 }
 
+.player-url-share {
+  display: grid;
+  gap: 0.4rem;
+  margin: 1rem 0;
+}
+
+.player-url-share label {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.player-url-copy-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+}
+
+.player-url-copy-row input {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-url-share p {
+  min-height: 1.25rem;
+  margin-bottom: 0;
+}
+
 .inline-form {
   display: grid;
   grid-template-columns: minmax(8rem, 1fr) minmax(14rem, 2fr) auto;
@@ -913,6 +940,18 @@ h4 {
   font-size: 0.875rem;
 }
 
+.fullscreen-message {
+  flex-basis: 100%;
+  min-height: 1.1rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+  text-align: right;
+}
+
+.fullscreen-message:empty {
+  display: none;
+}
+
 #zoom-level {
   min-width: 3.5rem;
   color: var(--accent-strong);
@@ -962,6 +1001,7 @@ h4 {
 
   .inline-form,
   .add-encounter-form,
+  .player-url-copy-row,
   .workspace-grid {
     grid-template-columns: 1fr;
   }
@@ -1012,5 +1052,9 @@ h4 {
     width: 100%;
     justify-content: center;
     margin-left: 0;
+  }
+
+  .fullscreen-message {
+    text-align: center;
   }
 }

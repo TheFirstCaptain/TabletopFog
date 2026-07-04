@@ -154,6 +154,21 @@ export function createGmController({ api, socket, state, view }) {
     }
   }
 
+  async function copyPlayerUrl() {
+    const url = view.getPlayerUrl();
+
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error("Clipboard unavailable.");
+      }
+      await navigator.clipboard.writeText(url);
+      view.setPlayerUrlMessage("Player URL copied.");
+    } catch (_error) {
+      view.selectPlayerUrl();
+      view.setPlayerUrlMessage(view.copySelectedPlayerUrl() ? "Player URL copied." : "Select and copy the Player URL.");
+    }
+  }
+
   function toggleShownEncounter(mapId) {
     const activeMapId = state.getCurrentCampaign()?.activeMapId || null;
     setShownEncounter(mapId === activeMapId ? null : mapId);
@@ -279,6 +294,7 @@ export function createGmController({ api, socket, state, view }) {
     actions: {
       backToLibrary,
       backToEncounters,
+      copyPlayerUrl,
       createCampaign,
       cancelWorkspaceFogRectangle,
       clearWorkspaceFog,

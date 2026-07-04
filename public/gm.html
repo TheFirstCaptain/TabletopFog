@@ -21,6 +21,17 @@
           </div>
         </div>
 
+        <div class="player-url-share">
+          <label id="player-url-heading" for="player-url">Player Display URL</label>
+          <div class="player-url-copy-row">
+            <input id="player-url" type="text" readonly />
+            <button id="copy-player-url" class="secondary" type="button" aria-label="Copy Player Display URL">
+              Copy
+            </button>
+          </div>
+          <p id="player-url-message" class="muted" aria-live="polite"></p>
+        </div>
+
         <form id="campaign-form" class="inline-form">
           <label for="campaign-name">New campaign</label>
           <input id="campaign-name" name="campaign-name" type="text" autocomplete="off" required />

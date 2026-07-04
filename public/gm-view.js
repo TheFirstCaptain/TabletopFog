@@ -66,6 +66,9 @@ export function createGmView(document) {
     mapFile: document.querySelector("#map-file"),
     mapForm: document.querySelector("#map-form"),
     mapList: document.querySelector("#map-list"),
+    playerUrl: document.querySelector("#player-url"),
+    playerUrlCopy: document.querySelector("#copy-player-url"),
+    playerUrlMessage: document.querySelector("#player-url-message"),
     selectedEncounterHeading: document.querySelector("#selected-encounter-heading"),
     selectedEncounterStatus: document.querySelector("#selected-encounter-status"),
     status: document.querySelector("#connection-status"),
@@ -85,6 +88,7 @@ export function createGmView(document) {
   let workspaceFogMode = null;
   let workspaceFogOperationCount = 0;
   let workspaceGridState = createDefaultGridState();
+  elements.playerUrl.value = new URL("/player", document.defaultView.location.origin).href;
 
   let activeMapRenderer;
   activeMapRenderer = createMapCanvasRenderer({
@@ -392,6 +396,16 @@ export function createGmView(document) {
     hideCampaign() {
       navigation.showLibrary();
     },
+    copySelectedPlayerUrl() {
+      try {
+        return document.execCommand?.("copy") === true;
+      } catch (_error) {
+        return false;
+      }
+    },
+    getPlayerUrl() {
+      return elements.playerUrl.value;
+    },
     renderCampaign(campaign, selectedEncounterId = null, screen = "campaign", gridState = createDefaultGridState()) {
       if (!campaign) {
         navigation.showLibrary();
@@ -582,6 +596,13 @@ export function createGmView(document) {
     },
     setLibraryMessage(message) {
       elements.libraryMessage.textContent = message;
+    },
+    selectPlayerUrl() {
+      elements.playerUrl.focus();
+      elements.playerUrl.select();
+    },
+    setPlayerUrlMessage(message) {
+      elements.playerUrlMessage.textContent = message;
     },
     setStatus(message, state) {
       elements.status.textContent = message;

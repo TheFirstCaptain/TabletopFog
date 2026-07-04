@@ -25,7 +25,9 @@ required.
 GM View and Player Display now share a canvas rendering foundation with centered
 contain scaling. Player Zoom out, Fit map, Zoom in, drag, and pinch controls
 change only that browser's local viewport; they do not mutate campaign state or
-change the GM View or another Player Display.
+change the GM View or another Player Display. The Player Display also has a
+player-local fullscreen control with quiet fallback messaging when browser
+fullscreen is unavailable.
 
 The GM campaign landing page now uses calm campaign cards with balanced emoji
 icons, editable names and two-line descriptions, quiet map and
@@ -80,6 +82,8 @@ Malformed persisted fog and missing restored map assets now recover
 non-destructively with quiet GM-facing diagnostics, keeping valid campaign data
 usable and leaving the Player Display in a safe state when restoration would be
 unsafe.
+The Campaign Library shows the current-origin Player Display URL with a quiet
+copy action for table setup.
 Campaign screens use
 `Back to Campaign Library`, and normal GM UI avoids showing local filesystem
 paths. Opening or navigating the workspace does not change the Player Display.

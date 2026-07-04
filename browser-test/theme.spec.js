@@ -109,7 +109,7 @@ test("loads the local fantasy theme with accessible desktop and narrow layouts",
   expect(contrast(palette.focus, palette.panel)).toBeGreaterThanOrEqual(3);
   expect(contrast(palette.stageText, palette.stage)).toBeGreaterThanOrEqual(4.5);
 
-  await page.keyboard.press("Tab");
+  await page.getByLabel("New campaign").focus();
   const focus = await page.getByLabel("New campaign").evaluate((element) => {
     const computed = getComputedStyle(element);
     return {

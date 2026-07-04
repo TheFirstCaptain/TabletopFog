@@ -225,6 +225,52 @@ test("GM creates, reopens, uploads, renames, and reorders campaign maps", async 
   await expect(page.getByRole("button", { name: "Move Forest Ambush down" })).toBeDisabled();
 });
 
+test("GM can view and copy the Player Display URL", async ({ app, page, context }) => {
+  await page.addInitScript(() => {
+    window.__copiedPlayerUrls = [];
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async (text) => {
+          window.__copiedPlayerUrls.push(text);
+        }
+      }
+    });
+  });
+
+  await openGm(page, app.baseURL);
+  const playerUrl = page.getByRole("textbox", { name: "Player Display URL" });
+  await expect(playerUrl).toHaveValue(`${app.baseURL}/player`);
+  await page.getByRole("button", { name: "Copy Player Display URL" }).click();
+  await expect(page.getByText("Player URL copied.", { exact: true })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.__copiedPlayerUrls)).toEqual([`${app.baseURL}/player`]);
+
+  const player = await context.newPage();
+  await player.goto(`${app.baseURL}/player`);
+  await expect(player.getByText("Waiting for GM.", { exact: true })).toBeVisible();
+
+  await page.setViewportSize({ height: 844, width: 390 });
+  await expect(playerUrl).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test("GM Player Display URL copy fallback keeps the URL selectable", async ({ app, page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: undefined
+    });
+    document.execCommand = () => false;
+  });
+
+  await openGm(page, app.baseURL);
+  const playerUrl = page.getByRole("textbox", { name: "Player Display URL" });
+  await page.getByRole("button", { name: "Copy Player Display URL" }).click();
+  await expect(page.getByText("Select and copy the Player URL.", { exact: true })).toBeVisible();
+  await expect(playerUrl).toBeFocused();
+  await expect(playerUrl).toHaveValue(`${app.baseURL}/player`);
+});
+
 test("GM edits campaign card details without changing player display", async ({ app, page, context }) => {
   const player = await context.newPage();
   let playerAssetRequests = 0;
@@ -1864,6 +1910,80 @@ test("active map uses centered contain geometry across table viewports", async (
   }));
   expect(portraitMetrics.drawWidth).toBeLessThanOrEqual(portraitMetrics.stageWidth);
   expect(portraitMetrics.drawHeight).toBeLessThanOrEqual(portraitMetrics.stageHeight);
+});
+
+test("Player Display can enter and exit fullscreen locally", async ({ app, page, context }) => {
+  const player = await context.newPage();
+  await player.addInitScript(() => {
+    window.__fullscreenRequests = [];
+    let fullscreenElement = null;
+
+    Object.defineProperty(document, "fullscreenElement", {
+      configurable: true,
+      get: () => fullscreenElement
+    });
+    Object.defineProperty(Element.prototype, "requestFullscreen", {
+      configurable: true,
+      value: async function requestFullscreen() {
+        fullscreenElement = this;
+        window.__fullscreenRequests.push(this.className);
+        document.dispatchEvent(new Event("fullscreenchange"));
+      }
+    });
+    Object.defineProperty(document, "exitFullscreen", {
+      configurable: true,
+      value: async () => {
+        fullscreenElement = null;
+        document.dispatchEvent(new Event("fullscreenchange"));
+      }
+    });
+  });
+
+  await openGm(page, app.baseURL);
+  await createCampaign(page);
+  await uploadMapFile(page, await sizedPngFile(page, "landscape.png", 800, 400));
+  await page.getByRole("button", { name: "Show to Players", exact: true }).click();
+
+  await player.goto(`${app.baseURL}/player`);
+  await expect(player.getByRole("img", { name: "Map: landscape" })).toBeVisible();
+  await expect(player.getByRole("button", { name: "Enter fullscreen" })).toBeVisible();
+  await player.getByRole("button", { name: "Enter fullscreen" }).click();
+  await expect(player.getByRole("button", { name: "Exit fullscreen" })).toBeVisible();
+  await expect.poll(() => player.evaluate(() => window.__fullscreenRequests)).toEqual(["player-display"]);
+  await expect
+    .poll(() => player.evaluate(() => document.fullscreenElement?.classList.contains("player-display")))
+    .toBe(true);
+  await expect(player.getByRole("img", { name: "Map: landscape" })).toBeVisible();
+  await expect(player.locator("input, select, textarea, [contenteditable=true], [data-action]")).toHaveCount(0);
+
+  await player.getByRole("button", { name: "Exit fullscreen" }).click();
+  await expect(player.getByRole("button", { name: "Enter fullscreen" })).toBeVisible();
+  await expect.poll(() => player.evaluate(() => document.fullscreenElement === null)).toBe(true);
+});
+
+test("Player Display fullscreen failure stays local and quiet", async ({ app, page, context }) => {
+  const player = await context.newPage();
+  await player.addInitScript(() => {
+    Object.defineProperty(Element.prototype, "requestFullscreen", {
+      configurable: true,
+      value: async () => {
+        throw new Error("Denied.");
+      }
+    });
+  });
+
+  await openGm(page, app.baseURL);
+  await createCampaign(page);
+  await uploadMapFile(page, await sizedPngFile(page, "forest.png", 800, 400));
+  await page.getByRole("button", { name: "Show to Players", exact: true }).click();
+
+  await player.goto(`${app.baseURL}/player`);
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  await player.getByRole("button", { name: "Enter fullscreen" }).click();
+  await expect(player.getByText("Fullscreen is unavailable in this browser.", { exact: true })).toBeVisible();
+  await expect(player.getByRole("button", { name: "Enter fullscreen" })).toBeVisible();
+  await expect(page.getByLabel("Breadcrumb")).toHaveText("Campaign Library / The Long Walk");
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
 });
 
 test("same map ID in another campaign resets the player viewport", async ({ app, page, context }) => {

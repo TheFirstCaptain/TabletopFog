@@ -14,6 +14,7 @@ export function wireGmEvents(elements, actions) {
 
   elements.backToLibrary.addEventListener("click", actions.backToLibrary);
   elements.backToEncounters.addEventListener("click", actions.backToEncounters);
+  elements.playerUrlCopy.addEventListener("click", actions.copyPlayerUrl);
   elements.workspaceShowToPlayers.addEventListener("click", actions.showWorkspaceEncounter);
   elements.gmZoomOut.addEventListener("click", actions.zoomWorkspaceMapOut);
   elements.gmFitMap.addEventListener("click", actions.fitWorkspaceMap);

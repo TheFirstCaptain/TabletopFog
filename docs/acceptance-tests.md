@@ -87,6 +87,68 @@ Expected result:
 - The result makes no claim about Safari, physical iPad or TV behavior, LAN
   routing, Chromebook hosting, or certificate trust.
 
+## Table Quality-of-Life: Player Display URL Sharing
+
+### Test: GM Can Copy the Player Display URL
+
+Prerequisites:
+
+- The local HTTPS server is running.
+- The GM View is open in a browser.
+
+Steps:
+
+1. Open the GM View.
+2. Confirm the Campaign Library shows `Player Display URL`.
+3. Confirm the displayed URL uses the current browser origin with the `/player`
+   path.
+4. Click `Copy`.
+5. If browser clipboard access is available, confirm the URL is copied and the
+   GM sees a quiet copied message.
+6. If browser clipboard access is unavailable, confirm the URL field is selected
+   and the GM sees quiet guidance to copy it manually.
+7. Open the Player Display URL in another browser tab.
+
+Expected result:
+
+- The GM can copy or manually select the Player Display URL without reading the
+  terminal.
+- The URL utility is GM-only and does not expose campaign storage details.
+- Viewing or copying the URL does not create a campaign, open a campaign, change
+  the `Shown to Players` encounter, or mutate the Player Display.
+- QR code generation, LAN IP discovery, and certificate guidance remain out of
+  scope for this test.
+
+## Table Quality-of-Life: Fullscreen Player View
+
+### Test: Player Display Can Enter and Exit Fullscreen
+
+Prerequisites:
+
+- The local HTTPS server is running.
+- The GM View has shown an encounter to players.
+- The Player Display is open in a browser.
+
+Steps:
+
+1. Open the Player Display.
+2. Confirm the player status bar shows `Enter fullscreen`.
+3. Click `Enter fullscreen`.
+4. Confirm the browser requests fullscreen for the Player Display and the
+   control changes to `Exit fullscreen`.
+5. Click `Exit fullscreen`.
+6. Confirm fullscreen exits and the control returns to `Enter fullscreen`.
+7. If fullscreen is unavailable or denied, confirm the Player Display remains
+   usable and shows quiet local guidance.
+
+Expected result:
+
+- Fullscreen behavior is local to the current Player Display browser.
+- Entering, exiting, or failing fullscreen does not change the GM View,
+  campaign state, shown encounter, map, fog, or another Player Display.
+- The Player Display remains read-only and exposes no shared-state mutation
+  controls.
+
 ## Milestone 2 Follow-Up: Fantasy Visual Theme
 
 ### Test: Theme Loads Locally and Preserves Map Contrast
