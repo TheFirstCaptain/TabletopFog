@@ -121,7 +121,8 @@ test("campaign library reports invalid folders without modifying them", (t) => {
     diagnostics: [
       {
         campaignId: "Broken Campaign",
-        message: "Campaign metadata could not be read. Fix or restore campaign.json, then reload the library."
+        message: "Campaign metadata could not be read. Fix or restore campaign.json, then reload the library.",
+        type: "skipped"
       }
     ]
   });
@@ -636,6 +637,183 @@ test("rejected fog persistence preserves campaign metadata byte for byte", (t) =
 
   assert.throws(() => storage.setMapFog(campaign.id, "missing", []), /Map not found/);
   assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+});
+
+test("recovers malformed persisted fog per encounter without rewriting metadata", (t) => {
+  const root = createTempRoot(t);
+  const campaignDir = path.join(root, "The Long Walk");
+  const campaignPath = path.join(campaignDir, "campaign.json");
+  fs.mkdirSync(path.join(campaignDir, "maps"), { recursive: true });
+  fs.writeFileSync(path.join(campaignDir, "maps", "forest.png"), PNG_BYTES);
+  fs.writeFileSync(path.join(campaignDir, "maps", "cave.png"), PNG_BYTES);
+  const originalJson = `${JSON.stringify(
+    {
+      version: 1,
+      name: "The Long Walk",
+      activeMapId: "forest",
+      maps: [
+        {
+          id: "forest",
+          name: "Forest",
+          file: "maps/forest.png",
+          order: 1,
+          fog: [{ type: "hide-rectangle", rect: { x: 0.95, y: 0.1, width: 0.2, height: 0.2 } }]
+        },
+        {
+          id: "cave",
+          name: "Cave",
+          file: "maps/cave.png",
+          order: 2,
+          fog: [{ type: "hide-rectangle", rect: { x: 0.2, y: 0.2, width: 0.2, height: 0.2 } }],
+          futureField: { keep: true }
+        }
+      ],
+      futureCampaignField: "keep"
+    },
+    null,
+    2
+  )}\n`;
+  fs.writeFileSync(campaignPath, originalJson);
+  const storage = createCampaignStorage({ dataRoot: root });
+
+  const campaign = storage.getCampaign("The Long Walk");
+
+  assert.equal(campaign.activeMapId, "forest");
+  assert.deepEqual(
+    campaign.maps.map((map) => [map.id, map.fog]),
+    [
+      ["forest", []],
+      ["cave", [{ type: "hide-rectangle", rect: { x: 0.2, y: 0.2, width: 0.2, height: 0.2 } }]]
+    ]
+  );
+  assert.deepEqual(campaign.recoveryDiagnostics, [
+    {
+      code: "invalid-fog",
+      mapId: "forest",
+      message: "Fog for this encounter could not be restored. The map opened without fog.",
+      severity: "warning"
+    }
+  ]);
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalJson);
+
+  storage.renameMap("The Long Walk", "cave", "Cavern");
+  const saved = JSON.parse(fs.readFileSync(campaignPath, "utf8"));
+  assert.deepEqual(saved.futureCampaignField, "keep");
+  assert.deepEqual(saved.maps.find((map) => map.id === "cave").futureField, { keep: true });
+});
+
+test("reports non-array persisted fog as recovered malformed fog", (t) => {
+  const root = createTempRoot(t);
+  const campaignDir = path.join(root, "The Long Walk");
+  const campaignPath = path.join(campaignDir, "campaign.json");
+  fs.mkdirSync(path.join(campaignDir, "maps"), { recursive: true });
+  fs.writeFileSync(path.join(campaignDir, "maps", "forest.png"), PNG_BYTES);
+  const originalJson = `${JSON.stringify(
+    {
+      version: 1,
+      name: "The Long Walk",
+      activeMapId: "forest",
+      maps: [{ id: "forest", name: "Forest", file: "maps/forest.png", order: 1, fog: { bad: true } }]
+    },
+    null,
+    2
+  )}\n`;
+  fs.writeFileSync(campaignPath, originalJson);
+  const storage = createCampaignStorage({ dataRoot: root });
+
+  const campaign = storage.getCampaign("The Long Walk");
+
+  assert.deepEqual(campaign.maps[0].fog, []);
+  assert.deepEqual(campaign.recoveryDiagnostics, [
+    {
+      code: "invalid-fog",
+      mapId: "forest",
+      message: "Fog for this encounter could not be restored. The map opened without fog.",
+      severity: "warning"
+    }
+  ]);
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalJson);
+});
+
+test("reports missing map assets and clears missing shown encounter only in memory", (t) => {
+  const root = createTempRoot(t);
+  const campaignDir = path.join(root, "The Long Walk");
+  const campaignPath = path.join(campaignDir, "campaign.json");
+  fs.mkdirSync(path.join(campaignDir, "maps"), { recursive: true });
+  fs.writeFileSync(path.join(campaignDir, "maps", "cave.png"), PNG_BYTES);
+  const originalJson = `${JSON.stringify(
+    {
+      version: 1,
+      name: "The Long Walk",
+      activeMapId: "forest",
+      maps: [
+        { id: "forest", name: "Forest", file: "maps/forest.png", order: 1, fog: [] },
+        { id: "cave", name: "Cave", file: "maps/cave.png", order: 2, fog: [] }
+      ]
+    },
+    null,
+    2
+  )}\n`;
+  fs.writeFileSync(campaignPath, originalJson);
+  const storage = createCampaignStorage({ dataRoot: root });
+
+  const campaign = storage.getCampaign("The Long Walk");
+  const library = storage.getCampaignLibrary();
+
+  assert.equal(campaign.activeMapId, null);
+  assert.deepEqual(campaign.recoveryDiagnostics, [
+    {
+      code: "missing-map-asset",
+      mapId: "forest",
+      message: "This encounter's map image could not be found.",
+      severity: "warning"
+    },
+    {
+      code: "shown-encounter-not-restored",
+      mapId: "forest",
+      message: "The saved Shown to Players encounter could not be restored. The Player Display is waiting for the GM.",
+      severity: "warning"
+    }
+  ]);
+  assert.deepEqual(library.campaigns, [
+    {
+      id: "The Long Walk",
+      name: "The Long Walk",
+      activeMapName: null,
+      mapCount: 2
+    }
+  ]);
+  assert.deepEqual(library.diagnostics, [
+    {
+      campaignId: "The Long Walk",
+      message: "This encounter's map image could not be found.",
+      type: "recovered"
+    },
+    {
+      campaignId: "The Long Walk",
+      message: "The saved Shown to Players encounter could not be restored. The Player Display is waiting for the GM.",
+      type: "recovered"
+    }
+  ]);
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalJson);
+});
+
+test("rejects showing encounters with missing map assets without rewriting metadata", (t) => {
+  const root = createTempRoot(t);
+  const campaignDir = path.join(root, "The Long Walk");
+  const campaignPath = path.join(campaignDir, "campaign.json");
+  fs.mkdirSync(path.join(campaignDir, "maps"), { recursive: true });
+  const originalJson = `${JSON.stringify({
+    version: 1,
+    name: "The Long Walk",
+    activeMapId: null,
+    maps: [{ id: "forest", name: "Forest", file: "maps/forest.png", order: 1, fog: [] }]
+  })}\n`;
+  fs.writeFileSync(campaignPath, originalJson);
+  const storage = createCampaignStorage({ dataRoot: root });
+
+  assert.throws(() => storage.setActiveMap("The Long Walk", "forest"), /map image could not be found/);
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalJson);
 });
 
 test("deletes an unshown unselected map and repairs order", (t) => {

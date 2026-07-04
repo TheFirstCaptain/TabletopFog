@@ -18,6 +18,14 @@ function createDefaultGridState() {
   };
 }
 
+function recoveryMessage(campaign) {
+  const count = campaign.recoveryDiagnostics?.length || 0;
+  if (count === 0) return "";
+
+  const issueText = count === 1 ? "1 campaign issue" : `${count} campaign issues`;
+  return `Recovered ${issueText}. Original campaign files were not changed.`;
+}
+
 function createButton(document, { action, className, disabled, index, mapId, text }) {
   const button = document.createElement("button");
   button.type = "button";
@@ -397,7 +405,8 @@ export function createGmView(document) {
         navigation.showCampaign(campaign);
       }
       elements.campaignHeading.textContent = campaign.name;
-      elements.campaignMessage.textContent = campaign.maps.length === 0 ? "Add an encounter map to begin." : "";
+      elements.campaignMessage.textContent =
+        recoveryMessage(campaign) || (campaign.maps.length === 0 ? "Add an encounter map to begin." : "");
       renderMaps(campaign, selectedEncounterId);
       renderSelectedEncounter(campaign, selectedEncounterId, screen, gridState);
     },
@@ -408,7 +417,8 @@ export function createGmView(document) {
       diagnostics.forEach((diagnostic) => {
         const item = document.createElement("p");
         item.className = "library-diagnostic";
-        item.textContent = `Skipped campaign "${diagnostic.campaignId}": ${diagnostic.message}`;
+        const prefix = diagnostic.type === "recovered" ? "Recovered campaign" : "Skipped campaign";
+        item.textContent = `${prefix} "${diagnostic.campaignId}": ${diagnostic.message}`;
         elements.libraryDiagnostics.append(item);
       });
 

@@ -106,6 +106,11 @@ function isValidRect(rect) {
 }
 
 function normalizeCampaign(campaignId, rawCampaign) {
+  return normalizeCampaignWithOptions(campaignId, rawCampaign);
+}
+
+function normalizeCampaignWithOptions(campaignId, rawCampaign, options = {}) {
+  const recoveryDiagnostics = [];
   const sourceMaps = Array.isArray(rawCampaign.maps) ? rawCampaign.maps : [];
   const decorated = sourceMaps.map((map, index) => ({
     map,
@@ -122,13 +127,36 @@ function normalizeCampaign(campaignId, rawCampaign) {
   });
 
   const maps = decorated.map(({ map }, index) => {
+    let fog;
+    const normalizedMapId = String(map.id || normalizePathSegment(map.name || `map-${index + 1}`));
+
+    try {
+      if (Object.hasOwn(map, "fog") && !Array.isArray(map.fog)) {
+        throw new Error("Invalid fog operation list.");
+      }
+
+      fog = Array.isArray(map.fog) ? normalizeFogOperations(map.fog) : [];
+    } catch (error) {
+      if (!options.recover) {
+        throw error;
+      }
+
+      fog = [];
+      recoveryDiagnostics.push({
+        code: "invalid-fog",
+        mapId: normalizedMapId,
+        message: "Fog for this encounter could not be restored. The map opened without fog.",
+        severity: "warning"
+      });
+    }
+
     const normalizedMap = {
-      id: String(map.id || normalizePathSegment(map.name || `map-${index + 1}`)),
+      id: normalizedMapId,
       name: String(map.name || map.originalFileName || `Map ${index + 1}`),
       originalFileName: map.originalFileName ? String(map.originalFileName) : undefined,
       file: String(map.file || ""),
       order: index + 1,
-      fog: Array.isArray(map.fog) ? normalizeFogOperations(map.fog) : []
+      fog
     };
 
     Object.defineProperty(normalizedMap, MAP_EXTRA_FIELDS, {
@@ -155,6 +183,10 @@ function normalizeCampaign(campaignId, rawCampaign) {
 
   if (campaign.activeMapId && !campaign.maps.some((map) => map.id === campaign.activeMapId)) {
     campaign.activeMapId = null;
+  }
+
+  if (options.recover) {
+    campaign.recoveryDiagnostics = recoveryDiagnostics;
   }
 
   return campaign;
@@ -249,6 +281,7 @@ module.exports = {
   createUserError,
   displayNameFromFileName,
   normalizeCampaign,
+  normalizeCampaignWithOptions,
   normalizeCampaignDescription,
   normalizeFogOperation,
   normalizeFogOperations,

@@ -89,6 +89,55 @@ Map upload supports PNG, JPEG, GIF, and WebP files up to 100 MB. The server
 checks image signatures, filename extensions, and content types before writing a
 map file or changing campaign metadata.
 
+### Campaign Storage Format
+
+The current local storage format is intentionally simple and inspectable:
+
+```text
+<data-root>/
+  <Campaign Folder>/
+    campaign.json
+    maps/
+      <copied map assets>
+```
+
+`campaign.json` currently uses `version: 1`, a display `name`, optional
+campaign card metadata such as `description` and `icon`, an `activeMapId`
+implementation field for the encounter currently `Shown to Players`, and a
+`maps` array. Each `maps` entry represents an encounter map asset with `id`,
+display `name`, optional `originalFileName`, relative `file`, display `order`,
+and ordered `fog` operations.
+
+Fog operations are stored as normalized rectangles in map-relative coordinates:
+
+```json
+{
+  "type": "hide-rectangle",
+  "rect": { "x": 0.1, "y": 0.1, "width": 0.2, "height": 0.2 }
+}
+```
+
+The supported operation types are `hide-rectangle` and `reveal-rectangle`.
+Coordinates must be finite numbers, non-negative, greater than zero for width
+and height, and contained inside the normalized `0..1` map bounds.
+
+Campaign reads are non-destructive. When a persisted fog list is malformed, the
+server keeps the campaign and unaffected encounters usable where practical,
+loads the affected encounter without runtime fog, and attaches GM-only recovery
+diagnostics. When the saved `Shown to Players` encounter has malformed fog but a
+valid map asset, the Player Display restores the map without that malformed
+fog. When the saved `Shown to Players` encounter's map asset is missing or
+invalid, the server restores a safe empty Player Display state and reports the
+problem to the GM.
+
+Recovery reads do not rewrite `campaign.json`, delete assets, or strip unknown
+metadata. A later successful explicit GM mutation, such as rename, reorder,
+show, fog edit, or clear, writes the current supported storage shape back to
+disk and preserves unknown campaign and map metadata where the compatibility
+policy supports it. Treat broader field renames, storage migrations, or moving
+from JSON files to another datastore as reviewed future work, not automatic
+repair.
+
 ## Validation Commands
 
 Install dependencies:

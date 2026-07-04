@@ -9,6 +9,7 @@ const {
   createUserError,
   displayNameFromFileName,
   normalizeCampaign,
+  normalizeCampaignWithOptions,
   normalizeCampaignDescription,
   normalizeFogOperations,
   normalizeCampaignIcon,
@@ -28,7 +29,7 @@ function createCampaignStorage(options = {}) {
   function readCampaign(campaignId) {
     campaignFiles.assertCampaignExists(campaignId);
     const raw = JSON.parse(fs.readFileSync(campaignFiles.campaignJsonPath(campaignId), "utf8"));
-    return normalizeCampaign(campaignId, raw);
+    return recoverCampaignAssets(campaignId, normalizeCampaignWithOptions(campaignId, raw, { recover: true }));
   }
 
   function saveCampaign(campaign) {
@@ -65,6 +66,56 @@ function createCampaignStorage(options = {}) {
     };
   }
 
+  function recoverCampaignAssets(campaignId, campaign) {
+    const recoveryDiagnostics = [...(campaign.recoveryDiagnostics || [])];
+    const availabilityByMapId = new Map();
+
+    campaign.maps.forEach((map) => {
+      try {
+        campaignFiles.getContainedMapAssetPath(campaignId, map);
+        availabilityByMapId.set(map.id, true);
+      } catch (_error) {
+        availabilityByMapId.set(map.id, false);
+        recoveryDiagnostics.push({
+          code: "missing-map-asset",
+          mapId: map.id,
+          message: "This encounter's map image could not be found.",
+          severity: "warning"
+        });
+      }
+    });
+
+    const recovered = {
+      ...campaign,
+      maps: campaign.maps.map((map) => ({
+        ...map,
+        assetAvailable: availabilityByMapId.get(map.id) !== false
+      })),
+      recoveryDiagnostics
+    };
+
+    if (recovered.activeMapId && availabilityByMapId.get(recovered.activeMapId) === false) {
+      recovered.recoveryDiagnostics.push({
+        code: "shown-encounter-not-restored",
+        mapId: recovered.activeMapId,
+        message:
+          "The saved Shown to Players encounter could not be restored. The Player Display is waiting for the GM.",
+        severity: "warning"
+      });
+      recovered.activeMapId = null;
+    }
+
+    return recovered;
+  }
+
+  function assertMapAssetAvailable(campaignId, map) {
+    try {
+      campaignFiles.getContainedMapAssetPath(campaignId, map);
+    } catch (_error) {
+      throw createUserError(409, "This encounter's map image could not be found.");
+    }
+  }
+
   function findMap(campaign, mapId) {
     const map = campaign.maps.find((candidate) => candidate.id === mapId);
 
@@ -95,10 +146,18 @@ function createCampaignStorage(options = {}) {
             activeMapName: activeMap ? activeMap.name : null,
             mapCount: campaign.maps.length
           });
+          (campaign.recoveryDiagnostics || []).forEach((diagnostic) => {
+            diagnostics.push({
+              campaignId: entry.name,
+              message: diagnostic.message,
+              type: "recovered"
+            });
+          });
         } catch (_error) {
           diagnostics.push({
             campaignId: entry.name,
-            message: "Campaign metadata could not be read. Fix or restore campaign.json, then reload the library."
+            message: "Campaign metadata could not be read. Fix or restore campaign.json, then reload the library.",
+            type: "skipped"
           });
         }
       });
@@ -278,6 +337,7 @@ function createCampaignStorage(options = {}) {
       }
 
       findMap(campaign, mapId);
+      assertMapAssetAvailable(campaignId, findMap(campaign, mapId));
       campaign.activeMapId = mapId;
       return saveCampaign(campaign);
     },

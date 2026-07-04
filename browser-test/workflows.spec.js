@@ -368,6 +368,64 @@ test("campaign landing cards keep diagnostics and deferred controls out of scope
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
+test("GM sees recovery diagnostics while Player Display receives safe restored state", async ({
+  app,
+  page,
+  context
+}) => {
+  const recoveredDirectory = path.join(app.dataRoot, "Recovered Campaign");
+  fs.mkdirSync(path.join(recoveredDirectory, "maps"), { recursive: true });
+  fs.writeFileSync(path.join(recoveredDirectory, "maps", "forest.png"), PNG_BYTES);
+  writeCampaignRecord(app.dataRoot, "Recovered Campaign", {
+    version: 1,
+    name: "Recovered Campaign",
+    activeMapId: "forest",
+    maps: [
+      {
+        id: "forest",
+        name: "Forest",
+        file: "maps/forest.png",
+        order: 1,
+        fog: [{ type: "hide-rectangle", rect: { x: 0.95, y: 0.1, width: 0.2, height: 0.2 } }]
+      }
+    ]
+  });
+
+  writeCampaignRecord(app.dataRoot, "Missing Asset Campaign", {
+    version: 1,
+    name: "Missing Asset Campaign",
+    activeMapId: "forest",
+    maps: [{ id: "forest", name: "Forest", file: "maps/forest.png", order: 1, fog: [] }]
+  });
+
+  const player = await context.newPage();
+  await player.goto(`${app.baseURL}/player`);
+  await expect(player.getByText("Waiting for GM.")).toBeVisible();
+
+  await openGm(page, app.baseURL);
+  await expect(page.locator(".campaign-card").filter({ hasText: "Recovered Campaign" })).toBeVisible();
+  await expect(page.locator(".campaign-card").filter({ hasText: "Missing Asset Campaign" })).toBeVisible();
+
+  await page
+    .locator(".campaign-card")
+    .filter({ hasText: "Recovered Campaign" })
+    .getByRole("button", { name: "Open" })
+    .click();
+  await expect(page.getByText("Recovered 1 campaign issue. Original campaign files were not changed.")).toBeVisible();
+  await expect(player.getByRole("img", { name: "Map: Forest" })).toBeVisible();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("0");
+
+  await page.getByRole("button", { name: "Back to Campaign Library" }).click();
+  await page
+    .locator(".campaign-card")
+    .filter({ hasText: "Missing Asset Campaign" })
+    .getByRole("button", { name: "Open" })
+    .click();
+  await expect(page.getByText("Recovered 2 campaign issues. Original campaign files were not changed.")).toBeVisible();
+  await expect(player.getByText("Waiting for GM.")).toBeVisible();
+  await expect(player.getByText(app.dataRoot)).toHaveCount(0);
+});
+
 test("campaign cards keep long text, metadata, hover, and focus presentation restrained", async ({ app, page }) => {
   const longDescription =
     "Ancient roads, ruined towers, borderland villages, rival patrols, secret shrines, and weathered maps pull this campaign across the western marches at dusk now!!";
@@ -393,7 +451,7 @@ test("campaign cards keep long text, metadata, hover, and focus presentation res
     activeMapId: "causeway",
     maps: [
       {
-        file: "causeway.png",
+        file: "maps/causeway.png",
         fog: [],
         id: "causeway",
         name: shownEncounterName,
@@ -404,6 +462,8 @@ test("campaign cards keep long text, metadata, hover, and focus presentation res
     name: longCampaignName,
     version: 1
   });
+  fs.mkdirSync(path.join(app.dataRoot, longCampaignName, "maps"), { recursive: true });
+  fs.writeFileSync(path.join(app.dataRoot, longCampaignName, "maps", "causeway.png"), PNG_BYTES);
   fs.mkdirSync(path.join(app.dataRoot, "Broken Campaign"));
   fs.writeFileSync(path.join(app.dataRoot, "Broken Campaign", "campaign.json"), "{not-json");
 

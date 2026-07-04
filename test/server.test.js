@@ -505,7 +505,8 @@ test("campaign API reports invalid folders while preserving valid campaigns", as
     assert.deepEqual(response.json.diagnostics, [
       {
         campaignId: "Broken Campaign",
-        message: "Campaign metadata could not be read. Fix or restore campaign.json, then reload the library."
+        message: "Campaign metadata could not be read. Fix or restore campaign.json, then reload the library.",
+        type: "skipped"
       }
     ]);
     assert.equal(fs.readFileSync(invalidMetadataPath, "utf8"), invalidMetadata);
@@ -1274,6 +1275,161 @@ test("restores shown encounter and fog to players only after GM opens the campai
   } finally {
     player.close();
     await close(secondServer.server, secondServer.io);
+  }
+});
+
+test("restores shown encounter with malformed fog as a GM-diagnosed empty fog state", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const campaignDir = path.join(dataRoot, "The Long Walk");
+  fs.mkdirSync(path.join(campaignDir, "maps"), { recursive: true });
+  fs.writeFileSync(path.join(campaignDir, "maps", "forest.png"), PNG_BYTES);
+  fs.writeFileSync(
+    path.join(campaignDir, "campaign.json"),
+    `${JSON.stringify(
+      {
+        version: 1,
+        name: "The Long Walk",
+        activeMapId: "forest",
+        maps: [
+          {
+            id: "forest",
+            name: "Forest",
+            file: "maps/forest.png",
+            order: 1,
+            fog: [{ type: "hide-rectangle", rect: { x: 0.95, y: 0.1, width: 0.2, height: 0.2 } }]
+          }
+        ]
+      },
+      null,
+      2
+    )}\n`
+  );
+  const { server, io, stateStore } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+  const player = createClient(url, {
+    forceNew: true,
+    rejectUnauthorized: false,
+    reconnection: false,
+    transports: ["websocket"],
+    extraHeaders: {
+      referer: `${url}/player`
+    }
+  });
+
+  try {
+    await waitForPlayerState(
+      player,
+      (state) => Object.hasOwn(state, "activeMap") && state.activeMap === null,
+      "empty startup player projection"
+    );
+    const restoredPlayer = waitForPlayerState(
+      player,
+      (state) => state.activeMap?.id === "forest" && state.activeMap.fogOperations?.length === 0,
+      "recovered shown encounter without malformed fog"
+    );
+    const opened = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}`, {
+      headers: gmHeaders(port)
+    });
+    const playerState = await restoredPlayer;
+
+    assert.equal(opened.statusCode, 200);
+    assert.equal(opened.json.campaign.activeMapId, "forest");
+    assert.deepEqual(opened.json.campaign.maps[0].fogOperations, []);
+    assert.deepEqual(opened.json.campaign.recoveryDiagnostics, [
+      {
+        code: "invalid-fog",
+        mapId: "forest",
+        message: "Fog for this encounter could not be restored. The map opened without fog.",
+        severity: "warning"
+      }
+    ]);
+    assert.equal(playerState.campaign, undefined);
+    assert.equal(playerState.activeMap.id, "forest");
+    assert.deepEqual(playerState.activeMap.fogOperations, []);
+    assert.equal(stateStore.getState().campaign.activeMapId, "forest");
+  } finally {
+    player.close();
+    await close(server, io);
+  }
+});
+
+test("restores missing shown map asset as empty Player Display without path leakage", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const campaignDir = path.join(dataRoot, "The Long Walk");
+  const campaignPath = path.join(campaignDir, "campaign.json");
+  fs.mkdirSync(path.join(campaignDir, "maps"), { recursive: true });
+  const originalMetadata = `${JSON.stringify(
+    {
+      version: 1,
+      name: "The Long Walk",
+      activeMapId: "forest",
+      maps: [{ id: "forest", name: "Forest", file: "maps/forest.png", order: 1, fog: [] }]
+    },
+    null,
+    2
+  )}\n`;
+  fs.writeFileSync(campaignPath, originalMetadata);
+  const { server, io, stateStore } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+  const player = createClient(url, {
+    forceNew: true,
+    rejectUnauthorized: false,
+    reconnection: false,
+    transports: ["websocket"],
+    extraHeaders: {
+      referer: `${url}/player`
+    }
+  });
+
+  try {
+    await waitForPlayerState(
+      player,
+      (state) => Object.hasOwn(state, "activeMap") && state.activeMap === null,
+      "empty startup player projection"
+    );
+    const restoredPlayer = waitForPlayerState(
+      player,
+      (state) => Object.hasOwn(state, "activeMap") && state.activeMap === null,
+      "missing shown asset remains empty"
+    );
+    const opened = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}`, {
+      headers: gmHeaders(port)
+    });
+    const playerState = await restoredPlayer;
+
+    assert.equal(opened.statusCode, 200);
+    assert.equal(opened.json.campaign.activeMapId, null);
+    assert.deepEqual(opened.json.campaign.recoveryDiagnostics, [
+      {
+        code: "missing-map-asset",
+        mapId: "forest",
+        message: "This encounter's map image could not be found.",
+        severity: "warning"
+      },
+      {
+        code: "shown-encounter-not-restored",
+        mapId: "forest",
+        message:
+          "The saved Shown to Players encounter could not be restored. The Player Display is waiting for the GM.",
+        severity: "warning"
+      }
+    ]);
+    assert.equal(playerState.campaign, undefined);
+    assert.equal(playerState.activeMap, null);
+    assert.equal(JSON.stringify(playerState).includes(dataRoot), false);
+    assert.equal(stateStore.getState().campaign.activeMapId, null);
+    assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+  } finally {
+    player.close();
+    await close(server, io);
   }
 });
 

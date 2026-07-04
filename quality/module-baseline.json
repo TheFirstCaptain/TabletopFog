@@ -23,8 +23,8 @@
       "responsibility": "Maintain GM campaign library, current campaign, GM-local selected encounter, explicit client screen state, and per-encounter GM-tab map alignment state."
     },
     "public/gm-view.js": {
-      "baselineLines": 627,
-      "responsibility": "Render the GM campaign card library, campaign deletion controls, campaign-card metadata editing, direct encounter gallery administration, encounter workspace shell, GM-local map alignment controls, rectangle Hide and Reveal fog controls, Clear Fog state and confirmation, draft state, messages, status, and shared-canvas map plus semi-transparent fog preview."
+      "baselineLines": 637,
+      "responsibility": "Render the GM campaign card library, campaign recovery messaging, campaign deletion controls, campaign-card metadata editing, direct encounter gallery administration, encounter workspace shell, GM-local map alignment controls, rectangle Hide and Reveal fog controls, Clear Fog state and confirmation, draft state, messages, status, and shared-canvas map plus semi-transparent fog preview."
     },
     "public/gm.js": {
       "baselineLines": 19,
@@ -75,12 +75,12 @@
       "responsibility": "Resolve campaign data-root paths, campaign and map asset paths, directory discovery, atomic JSON writes, and contained map asset realpath checks."
     },
     "server/campaign-schema.js": {
-      "baselineLines": 262,
-      "responsibility": "Normalize and serialize campaign metadata, maps, and persisted fog operations, preserve forward-compatible unknown fields, validate campaign metadata patches, and normalize safe campaign and map names."
+      "baselineLines": 295,
+      "responsibility": "Normalize and recovery-normalize campaign metadata, maps, and persisted fog operations, serialize supported storage shape, preserve forward-compatible unknown fields, validate campaign metadata patches, and normalize safe campaign and map names."
     },
     "server/campaign-storage.js": {
-      "baselineLines": 319,
-      "responsibility": "Coordinate campaign storage workflows, public storage API methods, map asset mutation transactions, persisted map fog updates, campaign library summaries, and calls into focused schema and filesystem modules."
+      "baselineLines": 379,
+      "responsibility": "Coordinate campaign storage workflows, recovery diagnostics, public storage API methods, map asset mutation transactions, persisted map fog updates, campaign library summaries, and calls into focused schema and filesystem modules."
     },
     "server/certs.js": {
       "baselineLines": 43,
