@@ -9,7 +9,8 @@ This project is intentionally not a full virtual tabletop. V1 includes local cam
 TabletopFog has completed the first local connectivity spike, campaign/map
 library, fantasy visual theme, active-map display polish, campaign landing page
 polish, encounter gallery entry, and encounter workspace shell, including
-Chromebook-host and iPad-player validation through F-005. The HTTPS app serves
+Chromebook-host and iPad-player validation through F-005, with automated
+quality validation through F-008B. The HTTPS app serves
 separate GM View and Player Display pages, stores local campaign folders, lets
 the GM manage map-backed encounter cards, and syncs only the current encounter
 shown to players to the read-only Player Display over Socket.IO.

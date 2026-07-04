@@ -273,10 +273,13 @@ Planned focused sequence:
 - Complete: [F-007A](./features/F-007A.md), persist per-encounter fog state.
 - Complete: [F-007B](./features/F-007B.md), restore shown-to-players state
   after GM campaign open.
-- Clarifying: [F-007C](./features/F-007C.md), persistence validation and
+- Complete: [F-007C](./features/F-007C.md), persistence validation and
   recovery states.
-- Proposed: [F-007D](./features/F-007D.md), persistence status and diagnostics
-  if needed.
+- Deferred: [F-007D](./features/F-007D.md), persistence status and diagnostics;
+  F-007C covers the currently needed recovery diagnostics.
+
+Status: complete. The optional F-007D status indicator remains deferred until
+table use shows a clear need for additional persistence feedback.
 
 Acceptance criteria:
 
@@ -301,11 +304,13 @@ Goal: Improve table usability after the core workflow is proven.
 
 Acceptance criteria:
 
-- Better reveal/hide brush.
-- Undo fog action.
-- Clear fog or reset fog.
-- Fullscreen Player Display.
-- QR code or copied player URL.
+- Complete: copied Player Display URL.
+- Complete: fullscreen Player Display.
+- Proposed: better reveal/hide brush.
+- Proposed: undo fog action.
+- Proposed: clear or reset fog beyond the existing per-encounter Clear Fog
+  action if table use shows a gap.
+- Deferred: QR code generation.
 - Better GM map controls if needed.
 
 Implementation notes:
