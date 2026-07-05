@@ -540,7 +540,7 @@ test("persists and clears map fog while preserving campaign metadata", (t) => {
   storage.updateCampaignMetadata(campaign.id, { description: "Roads through a haunted borderland." });
   const fog = [
     { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } },
-    { type: "reveal-rectangle", rect: { x: 0.14, y: 0.14, width: 0.08, height: 0.08 } }
+    { type: "reveal-circle", circle: { x: 0.18, y: 0.18, radius: 0.04 } }
   ];
 
   const updated = storage.setMapFog(campaign.id, first.id, fog);
@@ -582,9 +582,9 @@ test("fog persistence preserves unknown fields on recognized operations", (t) =>
             order: 1,
             fog: [
               {
-                type: "hide-rectangle",
+                type: "hide-circle",
                 brush: "future",
-                rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2, units: "normalized" }
+                circle: { x: 0.1, y: 0.1, radius: 0.2, units: "short-side" }
               }
             ]
           },
@@ -604,9 +604,9 @@ test("fog persistence preserves unknown fields on recognized operations", (t) =>
   const saved = JSON.parse(fs.readFileSync(campaignPath, "utf8"));
   assert.deepEqual(saved.maps[0].fog, [
     {
-      type: "hide-rectangle",
+      type: "hide-circle",
       brush: "future",
-      rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2, units: "normalized" }
+      circle: { x: 0.1, y: 0.1, radius: 0.2, units: "short-side" }
     }
   ]);
 });
@@ -627,10 +627,7 @@ test("rejected fog persistence preserves campaign metadata byte for byte", (t) =
   const originalMetadata = fs.readFileSync(campaignPath, "utf8");
 
   assert.throws(
-    () =>
-      storage.setMapFog(campaign.id, map.id, [
-        { type: "hide-rectangle", rect: { x: 0.95, y: 0.1, width: 0.2, height: 0.2 } }
-      ]),
+    () => storage.setMapFog(campaign.id, map.id, [{ type: "hide-circle", circle: { x: 1.1, y: 0.1, radius: 0.2 } }]),
     /Invalid fog operation/
   );
   assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
@@ -657,7 +654,7 @@ test("recovers malformed persisted fog per encounter without rewriting metadata"
           name: "Forest",
           file: "maps/forest.png",
           order: 1,
-          fog: [{ type: "hide-rectangle", rect: { x: 0.95, y: 0.1, width: 0.2, height: 0.2 } }]
+          fog: [{ type: "hide-circle", circle: { x: 0.5, y: 0.5, radius: 0 } }]
         },
         {
           id: "cave",

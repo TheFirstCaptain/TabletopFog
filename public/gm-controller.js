@@ -246,6 +246,29 @@ export function createGmController({ api, socket, state, view }) {
     }
   }
 
+  async function commitWorkspaceFogCircle(clientPoint) {
+    const campaign = state.getCurrentCampaign();
+    const selectedEncounterId = state.getSelectedEncounterId();
+    const fogMode = view.getWorkspaceFogMode();
+    const draft = view.getWorkspaceFogCircle(clientPoint);
+    view.cancelWorkspaceFogShape();
+
+    if (!campaign || !selectedEncounterId || !fogMode || !draft || !draft.startInsideMap) {
+      return;
+    }
+
+    try {
+      const payload = await api.appendFogOperation(campaign.id, selectedEncounterId, {
+        type: fogMode,
+        circle: draft.circle
+      });
+      state.setCurrentCampaign(payload.campaign);
+      renderCurrentCampaign();
+    } catch (error) {
+      view.setCampaignMessage(error.message);
+    }
+  }
+
   async function clearWorkspaceFog() {
     const campaign = state.getCurrentCampaign();
     const selectedEncounterId = state.getSelectedEncounterId();
@@ -261,7 +284,7 @@ export function createGmController({ api, socket, state, view }) {
     }
 
     view.setWorkspaceFogMode(null);
-    view.cancelWorkspaceFogRectangle();
+    view.cancelWorkspaceFogShape();
 
     try {
       const payload = await api.clearFogOperations(campaign.id, selectedEncounter.id);
@@ -281,7 +304,7 @@ export function createGmController({ api, socket, state, view }) {
     }
 
     view.setWorkspaceFogMode(null);
-    view.cancelWorkspaceFogRectangle();
+    view.cancelWorkspaceFogShape();
 
     try {
       const payload = await api.undoFogOperation(campaign.id, selectedEncounterId);
@@ -297,12 +320,31 @@ export function createGmController({ api, socket, state, view }) {
     view.cancelWorkspaceFogRectangle();
   }
 
+  function cancelWorkspaceFogShape() {
+    view.cancelWorkspaceFogShape();
+  }
+
   function previewWorkspaceFogRectangle(startClient, endClient) {
     view.previewWorkspaceFogRectangle(startClient, endClient);
   }
 
-  function toggleWorkspaceFogMode(mode) {
-    view.setWorkspaceFogMode(view.getWorkspaceFogMode() === mode ? null : mode);
+  function previewWorkspaceFogCircle(clientPoint) {
+    view.previewWorkspaceFogCircle(clientPoint);
+  }
+
+  function setWorkspaceCircleDiameter(value) {
+    view.setWorkspaceCircleDiameter(value);
+  }
+
+  function setWorkspaceFogShape(shape) {
+    view.setWorkspaceFogShape(shape);
+  }
+
+  function toggleWorkspaceFogAction(action) {
+    const currentMode = view.getWorkspaceFogMode();
+    const currentShape = view.getWorkspaceFogShape();
+    const nextMode = currentMode?.startsWith(`${action}-`) ? null : `${action}-${currentShape}`;
+    view.setWorkspaceFogMode(nextMode);
   }
 
   function backToLibrary() {
@@ -317,23 +359,29 @@ export function createGmController({ api, socket, state, view }) {
       backToEncounters,
       copyPlayerUrl,
       createCampaign,
+      cancelWorkspaceFogShape,
       cancelWorkspaceFogRectangle,
       clearWorkspaceFog,
+      commitWorkspaceFogCircle,
       commitWorkspaceFogRectangle,
       deleteCampaign,
       deleteMap,
+      getWorkspaceFogShape: view.getWorkspaceFogShape,
       fitWorkspaceMap: view.workspaceFitMap,
       moveWorkspaceGrid,
       moveMap,
       openCampaign,
       panWorkspaceMap: view.workspacePanMap,
+      previewWorkspaceFogCircle,
       previewWorkspaceFogRectangle,
       renameMap,
       selectEncounter,
+      setWorkspaceCircleDiameter,
+      setWorkspaceFogShape,
       toggleShownEncounter,
       toggleWorkspaceGrid,
       toggleWorkspaceGridLock,
-      toggleWorkspaceFogMode,
+      toggleWorkspaceFogAction,
       showWorkspaceEncounter,
       undoWorkspaceFog,
       updateCampaignMetadata,

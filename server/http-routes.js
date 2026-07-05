@@ -4,7 +4,7 @@ const path = require("node:path");
 
 const express = require("express");
 
-const { normalizeFogOperation } = require("./campaign-schema");
+const { FOG_OPERATION_TYPES, normalizeFogOperation } = require("./campaign-schema");
 const { MAX_MAP_FILE_BYTES } = require("./map-image");
 const { requireGm } = require("./role-projection");
 
@@ -195,8 +195,8 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
         return;
       }
 
-      if (!["hide-rectangle", "reveal-rectangle"].includes(request.body.type)) {
-        response.status(400).json({ error: "Only hide and reveal rectangles can be added by this tool." });
+      if (!FOG_OPERATION_TYPES.has(request.body.type)) {
+        response.status(400).json({ error: "Only hide and reveal fog shapes can be added by this tool." });
         return;
       }
 

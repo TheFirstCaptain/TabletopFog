@@ -901,7 +901,7 @@ Steps:
 
 1. Show one encounter to players.
 2. Open that shown encounter in the GM workspace.
-3. Turn on `Hide rectangle`.
+3. Choose `Rectangle`, then turn on `Hide`.
 4. Drag a rectangle over the selected encounter map.
 5. Confirm the GM workspace shows semi-transparent fog over that rectangle.
 6. Confirm the Player Display updates live with opaque or near-opaque fog over
@@ -910,11 +910,11 @@ Steps:
 8. Confirm no fog operation is added.
 9. Start another hide drag and press Escape before releasing the pointer.
 10. Confirm the draft rectangle is canceled and no fog operation is added.
-11. Show the 5 ft grid, keep `Hide rectangle` active, and drag another hide
+11. Show the 5 ft grid, keep `Hide` active, and drag another hide
     rectangle.
 12. Confirm the grid remains visible but does not move while Hide mode is
     active.
-13. Turn off `Hide rectangle` and confirm grid movement works again.
+13. Turn off `Hide` and confirm grid movement works again.
 14. Open a different selected/editing encounter without showing it to players.
 15. Zoom the GM workspace map and draw a hide rectangle.
 16. Confirm the Player Display does not change because the edited encounter is
@@ -922,8 +922,8 @@ Steps:
 
 Expected result:
 
-- Rectangle Hide controls live in the Encounter Workspace as a distinct Fog
-  tools group.
+- Rectangle Hide controls live in the Encounter Workspace as the `Hide` action
+  with the `Rectangle` shape selected.
 - A completed valid drag appends one runtime `hide-rectangle` operation using
   normalized map-relative coordinates and, after F-007A, autosaves it to local
   campaign storage.
@@ -935,7 +935,7 @@ Expected result:
   shown to players.
 - Opening or editing an encounter still does not show it to players.
 - No reveal, clear fog, brush, circle, undo, token, dynamic lighting, or
-  VTT-style controls are introduced by F-006C.
+  VTT-style controls were introduced by F-006C.
 - F-006C alone does not add persistence controls. F-007A later persists fog
   operations through the normal GM fog actions.
 
@@ -951,21 +951,21 @@ Steps:
 
 1. Show one encounter to players.
 2. Open that shown encounter in the GM workspace.
-3. Turn on `Hide rectangle` and draw a large hide rectangle.
-4. Turn on `Reveal rectangle` and confirm `Hide rectangle` is no longer active.
+3. Choose `Rectangle`, turn on `Hide`, and draw a large hide rectangle.
+4. Turn on `Reveal` and confirm `Hide` is no longer active.
 5. Drag a smaller reveal rectangle through the hidden area.
 6. Confirm the GM workspace shows the underlying map again in the revealed
    rectangle.
 7. Confirm the Player Display updates live with the same revealed map-relative
    area.
-8. Turn `Hide rectangle` back on and draw another hide rectangle over part of
+8. Turn `Hide` back on and draw another hide rectangle over part of
    the revealed area.
 9. Confirm the later hide operation obscures that area again.
 10. Try a tiny accidental reveal drag smaller than 6 px by 6 px.
 11. Confirm no fog operation is added.
 12. Start another reveal drag and press Escape before releasing the pointer.
 13. Confirm the draft rectangle is canceled and no fog operation is added.
-14. Show the 5 ft grid, keep `Reveal rectangle` active, and drag another reveal
+14. Show the 5 ft grid, keep `Reveal` active, and drag another reveal
     rectangle.
 15. Confirm the grid remains visible but does not move while Reveal mode is
     active.
@@ -976,7 +976,8 @@ Steps:
 
 Expected result:
 
-- Rectangle Reveal controls live in the Encounter Workspace beside Hide.
+- Rectangle Reveal controls live in the Encounter Workspace as the `Reveal`
+  action with the `Rectangle` shape selected.
 - Hide and Reveal are separate explicit buttons with mutually exclusive active
   states.
 - A completed valid Reveal drag appends one runtime `reveal-rectangle`
@@ -992,10 +993,61 @@ Expected result:
   shown to players.
 - Opening or editing an encounter still does not show it to players.
 - No clear fog, brush, circle, undo, token, dynamic lighting, or VTT-style
-  controls are introduced by F-006D.
-- F-006D alone does not add persistence controls. F-007A later persists fog
-  operations through the normal GM fog actions.
+  controls were introduced by F-006D.
 
+### Test: GM Places Circle Hide and Reveal Fog
+
+Prerequisites:
+
+- A campaign exists with at least two encounters/maps.
+- The encounter workspace feature is implemented.
+- F-008D circle fog tools are implemented.
+
+Steps:
+
+1. Show one encounter to players.
+2. Open that shown encounter in the GM workspace.
+3. Choose `Circle` and confirm the Circle diameter controls appear.
+4. Enter a fine-grained diameter value directly, then adjust it with the slider.
+5. Turn on `Hide` and click/tap the map.
+6. Confirm one `hide-circle` operation is added and autosaved.
+7. Confirm the GM workspace shows semi-transparent circular fog and the Player
+   Display updates live with opaque or near-opaque circular fog.
+8. Turn on `Reveal`, set a smaller circle diameter, and click/tap inside the
+   hidden circle.
+9. Confirm one `reveal-circle` operation is added and cuts through the earlier
+   circle fog.
+10. Choose `Rectangle`, turn on `Hide`, and draw a rectangle across part of the
+    revealed circle.
+11. Confirm the later rectangle hide operation obscures that area again.
+12. Drag instead of tapping while Circle is selected.
+13. Confirm the circle preview cancels and no fog operation is added.
+14. Open a different selected/editing encounter without showing it to players.
+15. Place a hide circle on that unshown encounter.
+16. Confirm the Player Display does not change because the edited encounter is
+    not shown to players.
+17. Resize to a narrow viewport and confirm Hide, Reveal, Rectangle, Circle,
+    diameter, Clear Fog, and Undo controls remain reachable without horizontal
+    page overflow.
+
+Expected result:
+
+- Circle tools live in the Encounter Workspace Fog tools group.
+- Hide and Reveal remain the primary mutually exclusive fog actions.
+- Rectangle and Circle are mutually exclusive shape choices.
+- Circle diameter supports typed entry and slider adjustment in one-percent
+  increments.
+- A completed valid Circle click/tap appends one ordered `hide-circle` or
+  `reveal-circle` operation using normalized map-relative center coordinates
+  and shorter-side radius, and autosaves it to local campaign storage.
+- Circle reveal operations cut through earlier hide operations, and later hide
+  operations can cover a revealed area again.
+- Circle operations respect the selected/editing versus `Shown to Players`
+  distinction.
+- Player Display remains read-only and receives live fog updates only for the
+  encounter currently shown to players.
+- No brush, drag-to-size, grid snapping, tokens, dynamic lighting, or VTT-style
+  controls are introduced by F-008D.
 ### Test: GM Clears All Fog From a Selected Encounter
 
 Prerequisites:
@@ -1067,9 +1119,9 @@ Steps:
 2. Open that shown encounter in the GM workspace.
 3. Confirm `Undo` is visible in the Fog tools group and disabled before an
    undoable fog action exists.
-4. Add fog with `Hide rectangle`.
+4. Choose `Rectangle`, then add fog with `Hide`.
 5. Confirm `Undo` becomes enabled and the Player Display updates live.
-6. Add a `Reveal rectangle` operation.
+6. Add a `Reveal` operation with `Rectangle` still selected.
 7. Click `Undo`.
 8. Confirm the reveal operation is undone, the hide operation remains, and the
    Player Display updates live.
@@ -1135,7 +1187,7 @@ Steps:
 8. Confirm the Player Display does not pan, zoom, reload, or otherwise change.
 9. Confirm campaign state, fog operations, grid state, and persisted files are
    unchanged by GM panning.
-10. Turn on `Hide rectangle` or `Reveal rectangle` and drag on the map.
+10. Turn on `Hide` or `Reveal` with `Rectangle` selected and drag on the map.
 11. Confirm the drag draws fog instead of panning while a fog drawing mode is
    active.
 12. Turn off fog drawing, show the unlocked 5 ft grid, and drag the grid.
@@ -1181,7 +1233,8 @@ Steps:
 4. Confirm the Player Display does not change.
 5. Use `Show to Players` for the selected/editing encounter.
 6. Confirm the Player Display shows that encounter with the hidden area obscured.
-7. Use `Reveal rectangle` to reveal part of the fog from the GM workspace.
+7. Choose `Rectangle`, then use `Reveal` to reveal part of the fog from the GM
+   workspace.
 8. Confirm the Player Display updates live because this encounter is now shown
    to players.
 9. Open another encounter in the GM workspace and edit its fog without showing

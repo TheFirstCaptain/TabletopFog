@@ -4,7 +4,7 @@ const CAMPAIGN_EXTRA_FIELDS = Symbol("campaignExtraFields");
 const MAP_EXTRA_FIELDS = Symbol("mapExtraFields");
 const MAX_CAMPAIGN_DESCRIPTION_LENGTH = 160;
 const MAX_CAMPAIGN_ICON_LENGTH = 4;
-const FOG_OPERATION_TYPES = new Set(["hide-rectangle", "reveal-rectangle"]);
+const FOG_OPERATION_TYPES = new Set(["hide-rectangle", "reveal-rectangle", "hide-circle", "reveal-circle"]);
 const campaignFields = new Set(["version", "name", "description", "icon", "activeMapId", "maps"]);
 const mapFields = new Set(["id", "name", "originalFileName", "file", "order", "fog"]);
 const metadataFields = new Set(["description", "icon", "name"]);
@@ -67,23 +67,40 @@ function normalizeFogOperations(operations) {
   }
 
   return operations.map((operation) => {
-    const rect = operation?.rect || {};
     const normalized = {
       ...operation,
-      type: operation?.type,
-      rect: {
+      type: operation?.type
+    };
+
+    if (!FOG_OPERATION_TYPES.has(normalized.type)) {
+      throw new Error("Invalid fog operation.");
+    }
+
+    if (normalized.type.endsWith("-rectangle")) {
+      const rect = operation?.rect || {};
+      normalized.rect = {
         ...rect,
         height: rect.height,
         width: rect.width,
         x: rect.x,
         y: rect.y
+      };
+      if (!isValidRect(normalized.rect)) {
+        throw new Error("Invalid fog operation.");
       }
-    };
-
-    if (!FOG_OPERATION_TYPES.has(normalized.type) || !isValidRect(normalized.rect)) {
-      throw new Error("Invalid fog operation.");
+      return normalized;
     }
 
+    const circle = operation?.circle || {};
+    normalized.circle = {
+      ...circle,
+      radius: circle.radius,
+      x: circle.x,
+      y: circle.y
+    };
+    if (!isValidCircle(normalized.circle)) {
+      throw new Error("Invalid fog operation.");
+    }
     return normalized;
   });
 }
@@ -102,6 +119,19 @@ function isValidRect(rect) {
     rect.height > 0 &&
     rect.x + rect.width <= 1 &&
     rect.y + rect.height <= 1
+  );
+}
+
+function isValidCircle(circle) {
+  const values = [circle.x, circle.y, circle.radius];
+  return (
+    values.every(Number.isFinite) &&
+    circle.x >= 0 &&
+    circle.x <= 1 &&
+    circle.y >= 0 &&
+    circle.y <= 1 &&
+    circle.radius > 0 &&
+    circle.radius <= 0.5
   );
 }
 
@@ -277,6 +307,7 @@ function createUserError(statusCode, message) {
 }
 
 module.exports = {
+  FOG_OPERATION_TYPES,
   MAX_CAMPAIGN_DESCRIPTION_LENGTH,
   createUserError,
   displayNameFromFileName,

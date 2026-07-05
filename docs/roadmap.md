@@ -306,7 +306,7 @@ Acceptance criteria:
 
 - Complete: copied Player Display URL.
 - Complete: fullscreen Player Display.
-- Proposed: [F-008D](./features/F-008D.md), expanded fog shape tools.
+- Complete: [F-008D](./features/F-008D.md), expanded fog shape tools.
 - Complete: [F-008C](./features/F-008C.md), undo fog action.
 - Proposed: clear or reset fog beyond the existing per-encounter Clear Fog
   action if table use shows a gap.

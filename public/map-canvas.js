@@ -94,7 +94,7 @@ export function createMapCanvasRenderer({
     return Array.isArray(operations)
       ? operations.filter((operation) => {
           const rect = operation?.rect || {};
-          return (
+          if (
             (operation.type === "hide-rectangle" || operation.type === "reveal-rectangle") &&
             [rect.x, rect.y, rect.width, rect.height].every(Number.isFinite) &&
             rect.x >= 0 &&
@@ -103,6 +103,20 @@ export function createMapCanvasRenderer({
             rect.height > 0 &&
             rect.x + rect.width <= 1 &&
             rect.y + rect.height <= 1
+          ) {
+            return true;
+          }
+
+          const circle = operation?.circle || {};
+          return (
+            (operation.type === "hide-circle" || operation.type === "reveal-circle") &&
+            [circle.x, circle.y, circle.radius].every(Number.isFinite) &&
+            circle.x >= 0 &&
+            circle.x <= 1 &&
+            circle.y >= 0 &&
+            circle.y <= 1 &&
+            circle.radius > 0 &&
+            circle.radius <= 1
           );
         })
       : [];
@@ -167,12 +181,24 @@ export function createMapCanvasRenderer({
 
     maskContext.fillStyle = "black";
     state.fogOperations.forEach((operation) => {
+      maskContext.globalCompositeOperation = operation.type.startsWith("reveal-") ? "destination-out" : "source-over";
+
+      if (operation.type.endsWith("-circle")) {
+        const circle = operation.circle;
+        const x = metrics.x + metrics.width * circle.x;
+        const y = metrics.y + metrics.height * circle.y;
+        const radius = Math.min(metrics.width, metrics.height) * circle.radius;
+        maskContext.beginPath();
+        maskContext.arc(x, y, radius, 0, Math.PI * 2);
+        maskContext.fill();
+        return;
+      }
+
       const rect = operation.rect;
       const x = metrics.x + metrics.width * rect.x;
       const y = metrics.y + metrics.height * rect.y;
       const width = metrics.width * rect.width;
       const height = metrics.height * rect.height;
-      maskContext.globalCompositeOperation = operation.type === "reveal-rectangle" ? "destination-out" : "source-over";
       maskContext.fillRect(x, y, width, height);
     });
 
@@ -410,6 +436,34 @@ export function createMapCanvasRenderer({
     };
   }
 
+  function getNormalizedCircleFromClientPoint(clientPoint, diameterPercent) {
+    const metrics = getDrawMetrics();
+    if (!metrics || state.status !== "ready") return null;
+
+    const bounds = canvas.getBoundingClientRect();
+    const x = clientPoint.clientX - bounds.left;
+    const y = clientPoint.clientY - bounds.top;
+    const insideMap =
+      x >= metrics.x && x <= metrics.x + metrics.width && y >= metrics.y && y <= metrics.y + metrics.height;
+    const diameter = clamp(Number.isFinite(diameterPercent) ? diameterPercent : 1, 1, 200);
+    const normalizedRadius = diameter / 200;
+    const screenRadius = Math.min(metrics.width, metrics.height) * normalizedRadius;
+
+    return {
+      circle: {
+        radius: normalizedRadius,
+        x: (clamp(x, metrics.x, metrics.x + metrics.width) - metrics.x) / metrics.width,
+        y: (clamp(y, metrics.y, metrics.y + metrics.height) - metrics.y) / metrics.height
+      },
+      screenCircle: {
+        radius: screenRadius,
+        x: clamp(x, metrics.x, metrics.x + metrics.width),
+        y: clamp(y, metrics.y, metrics.y + metrics.height)
+      },
+      startInsideMap: insideMap
+    };
+  }
+
   if (interactive) {
     canvas.style.touchAction = "none";
     canvas.addEventListener("pointerdown", onPointerDown);
@@ -451,6 +505,7 @@ export function createMapCanvasRenderer({
       state.image = null;
     },
     getViewport,
+    getNormalizedCircleFromClientPoint,
     getNormalizedRectFromClientPoints,
     panBy,
     resetViewport,

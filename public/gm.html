@@ -106,6 +106,7 @@
                   ></canvas>
                   <div id="workspace-fog-overlay" class="workspace-fog-overlay" hidden>
                     <div id="workspace-fog-rectangle" class="workspace-fog-rectangle" hidden></div>
+                    <div id="workspace-fog-circle" class="workspace-fog-circle" hidden></div>
                   </div>
                   <div
                     id="workspace-grid-overlay"
@@ -122,10 +123,16 @@
                 <h4 id="workspace-tools-heading">Fog</h4>
                 <div class="workspace-tool-group fog-tool-group" aria-label="Fog tools">
                   <button id="workspace-hide-tool" class="secondary compact-tool-button" type="button" disabled>
-                    Hide rectangle
+                    Hide
                   </button>
                   <button id="workspace-reveal-tool" class="secondary compact-tool-button" type="button" disabled>
-                    Reveal rectangle
+                    Reveal
+                  </button>
+                  <button id="workspace-rectangle-tool" class="secondary compact-tool-button" type="button" disabled>
+                    Rectangle
+                  </button>
+                  <button id="workspace-circle-tool" class="secondary compact-tool-button" type="button" disabled>
+                    Circle
                   </button>
                   <button id="workspace-clear-fog" class="secondary compact-tool-button" type="button" disabled>
                     Clear Fog
@@ -133,6 +140,23 @@
                   <button id="workspace-undo-fog" class="secondary compact-tool-button" type="button" disabled>
                     Undo
                   </button>
+                  <div id="workspace-circle-size-control" class="circle-size-control" hidden>
+                    <label for="workspace-circle-size">Circle diameter</label>
+                    <div class="circle-size-row">
+                      <input id="workspace-circle-size" type="range" min="2" max="100" step="1" value="20" />
+                      <input
+                        id="workspace-circle-size-value"
+                        type="number"
+                        min="2"
+                        max="100"
+                        step="1"
+                        value="20"
+                        inputmode="numeric"
+                        aria-label="Circle diameter as percent of the map's shorter side"
+                      />
+                      <span aria-hidden="true">%</span>
+                    </div>
+                  </div>
                 </div>
                 <h4>Map Alignment</h4>
                 <div class="workspace-tool-group map-zoom-tool-group" aria-label="GM map zoom">

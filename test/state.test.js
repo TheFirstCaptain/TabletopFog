@@ -43,7 +43,7 @@ test("state store keeps normalized fog operations in memory per encounter", () =
   const operations = [
     { type: "hide-rectangle", rect: { x: 0.1, y: 0.2, width: 0.3, height: 0.4 } },
     { type: "reveal-rectangle", rect: { x: 0.2, y: 0.3, width: 0.1, height: 0.1 } },
-    { type: "hide-rectangle", rect: { x: 0.22, y: 0.32, width: 0.04, height: 0.04 } }
+    { type: "hide-circle", circle: { x: 0.22, y: 0.32, radius: 0.04 } }
   ];
 
   const state = store.setFogOperations("The Long Walk", "forest", operations);
@@ -53,16 +53,18 @@ test("state store keeps normalized fog operations in memory per encounter", () =
 
   operations[0].rect.x = 0.9;
   state.campaign.maps[0].fogOperations[1].rect.width = 0.9;
+  state.campaign.maps[0].fogOperations[2].circle.radius = 0.9;
 
   assert.equal(store.getState().campaign.maps[0].fogOperations[0].rect.x, 0.1);
   assert.equal(store.getState().campaign.maps[0].fogOperations[1].rect.width, 0.1);
+  assert.equal(store.getState().campaign.maps[0].fogOperations[2].circle.radius, 0.04);
 });
 
 test("state store hydrates persisted map fog when a campaign is opened", () => {
   const store = createStateStore();
   const persistedFog = [
     { type: "hide-rectangle", rect: { x: 0.1, y: 0.2, width: 0.3, height: 0.4 } },
-    { type: "reveal-rectangle", rect: { x: 0.2, y: 0.3, width: 0.1, height: 0.1 } }
+    { type: "reveal-circle", circle: { x: 0.2, y: 0.3, radius: 0.1 } }
   ];
   const state = store.setCampaign({
     id: "The Long Walk",
@@ -77,10 +79,10 @@ test("state store hydrates persisted map fog when a campaign is opened", () => {
   assert.deepEqual(state.campaign.maps[1].fogOperations, []);
 
   persistedFog[0].rect.x = 0.9;
-  state.campaign.maps[0].fogOperations[1].rect.width = 0.9;
+  state.campaign.maps[0].fogOperations[1].circle.radius = 0.9;
 
   assert.equal(store.getState().campaign.maps[0].fogOperations[0].rect.x, 0.1);
-  assert.equal(store.getState().campaign.maps[0].fogOperations[1].rect.width, 0.1);
+  assert.equal(store.getState().campaign.maps[0].fogOperations[1].circle.radius, 0.1);
 });
 
 test("state store preserves current state when persisted fog hydration fails", () => {
@@ -140,14 +142,14 @@ test("state store appends one fog operation atomically", () => {
     rect: { x: 0.2, y: 0.2, width: 0.08, height: 0.08 }
   });
   const state = store.appendFogOperation("The Long Walk", "forest", {
-    type: "hide-rectangle",
-    rect: { x: 0.4, y: 0.4, width: 0.1, height: 0.1 }
+    type: "hide-circle",
+    circle: { x: 0.4, y: 0.4, radius: 0.1 }
   });
 
   assert.deepEqual(state.campaign.maps[0].fogOperations, [
     { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } },
     { type: "reveal-rectangle", rect: { x: 0.2, y: 0.2, width: 0.08, height: 0.08 } },
-    { type: "hide-rectangle", rect: { x: 0.4, y: 0.4, width: 0.1, height: 0.1 } }
+    { type: "hide-circle", circle: { x: 0.4, y: 0.4, radius: 0.1 } }
   ]);
   assert.deepEqual(state.campaign.maps[1].fogOperations, []);
 });
@@ -168,8 +170,8 @@ test("state store undoes appended fog operations per encounter", () => {
     rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 }
   });
   store.appendFogOperation("The Long Walk", "forest", {
-    type: "reveal-rectangle",
-    rect: { x: 0.14, y: 0.14, width: 0.08, height: 0.08 }
+    type: "reveal-circle",
+    circle: { x: 0.18, y: 0.18, radius: 0.04 }
   });
   store.appendFogOperation("The Long Walk", "cave", {
     type: "hide-rectangle",
@@ -302,6 +304,12 @@ test("state store rejects invalid fog operations without changing state", () => 
 
   const invalidCases = [
     [{ type: "circle", rect: { x: 0, y: 0, width: 0.1, height: 0.1 } }],
+    [{ type: "hide-circle", circle: { x: -0.1, y: 0, radius: 0.1 } }],
+    [{ type: "hide-circle", circle: { x: 0.1, y: 1.1, radius: 0.1 } }],
+    [{ type: "hide-circle", circle: { x: 0.1, y: 0.1, radius: 0 } }],
+    [{ type: "hide-circle", circle: { x: 0.1, y: 0.1, radius: 0.51 } }],
+    [{ type: "reveal-circle", circle: { x: 0.1, y: 0.1, radius: Number.NaN } }],
+    [{ type: "reveal-circle", rect: { x: 0, y: 0, width: 0.1, height: 0.1 } }],
     [{ type: "hide-rectangle", rect: { x: -0.1, y: 0, width: 0.1, height: 0.1 } }],
     [{ type: "hide-rectangle", rect: { x: 0, y: 0, width: 0, height: 0.1 } }],
     [{ type: "hide-rectangle", rect: { x: 0.95, y: 0, width: 0.1, height: 0.1 } }],

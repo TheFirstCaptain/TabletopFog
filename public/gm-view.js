@@ -4,10 +4,10 @@ import { createGmNavigation } from "./gm-navigation.js";
 const DEFAULT_CAMPAIGN_ICON = "🗺️";
 const GRID_CELL_SIZE = 64;
 const MIN_FOG_RECTANGLE_SIZE = 6;
-const FOG_TOOL_LABELS = {
-  "hide-rectangle": "Hide rectangle",
-  "reveal-rectangle": "Reveal rectangle"
-};
+const DEFAULT_CIRCLE_DIAMETER = 20;
+const MIN_CIRCLE_DIAMETER = 2;
+const MAX_CIRCLE_DIAMETER = 100;
+const FOG_SHAPES = new Set(["rectangle", "circle"]);
 
 function createDefaultGridState() {
   return {
@@ -73,20 +73,28 @@ export function createGmView(document) {
     selectedEncounterStatus: document.querySelector("#selected-encounter-status"),
     status: document.querySelector("#connection-status"),
     workspaceFogOverlay: document.querySelector("#workspace-fog-overlay"),
+    workspaceCircleSize: document.querySelector("#workspace-circle-size"),
+    workspaceCircleSizeControl: document.querySelector("#workspace-circle-size-control"),
+    workspaceCircleSizeValue: document.querySelector("#workspace-circle-size-value"),
     workspaceGridLock: document.querySelector("#workspace-grid-lock"),
     workspaceGridOverlay: document.querySelector("#workspace-grid-overlay"),
     workspaceGridToggle: document.querySelector("#workspace-grid-toggle"),
     workspaceGrid: document.querySelector(".workspace-grid"),
     workspaceFogRectangle: document.querySelector("#workspace-fog-rectangle"),
+    workspaceFogCircle: document.querySelector("#workspace-fog-circle"),
     workspaceClearFog: document.querySelector("#workspace-clear-fog"),
+    workspaceCircleTool: document.querySelector("#workspace-circle-tool"),
     workspaceHideTool: document.querySelector("#workspace-hide-tool"),
+    workspaceRectangleTool: document.querySelector("#workspace-rectangle-tool"),
     workspaceRevealTool: document.querySelector("#workspace-reveal-tool"),
     workspaceUndoFog: document.querySelector("#workspace-undo-fog"),
     workspaceShowToPlayers: document.querySelector("#workspace-show-to-players")
   };
   const navigation = createGmNavigation(elements);
   let activeMapReady = false;
-  let workspaceFogMode = null;
+  let workspaceFogAction = null;
+  let workspaceFogShape = "rectangle";
+  let workspaceCircleDiameter = DEFAULT_CIRCLE_DIAMETER;
   let workspaceCanUndoFog = false;
   let workspaceFogOperationCount = 0;
   let workspaceGridState = createDefaultGridState();
@@ -125,26 +133,42 @@ export function createGmView(document) {
   }
 
   function renderWorkspaceFogTools() {
-    if (!activeMapReady) workspaceFogMode = null;
+    if (!activeMapReady) workspaceFogAction = null;
 
     [
-      [elements.workspaceHideTool, "hide-rectangle"],
-      [elements.workspaceRevealTool, "reveal-rectangle"]
-    ].forEach(([button, mode]) => {
-      const active = workspaceFogMode === mode;
+      [elements.workspaceHideTool, "hide"],
+      [elements.workspaceRevealTool, "reveal"]
+    ].forEach(([button, action]) => {
+      const active = workspaceFogAction === action;
       button.disabled = !activeMapReady;
       button.dataset.active = String(active);
       button.setAttribute("aria-pressed", String(active));
-      button.textContent = FOG_TOOL_LABELS[mode];
     });
+    [
+      [elements.workspaceRectangleTool, "rectangle"],
+      [elements.workspaceCircleTool, "circle"]
+    ].forEach(([button, shape]) => {
+      const active = workspaceFogShape === shape;
+      button.disabled = !activeMapReady;
+      button.dataset.active = String(active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+    elements.workspaceCircleSizeControl.hidden = workspaceFogShape !== "circle";
+    elements.workspaceCircleSize.disabled = !activeMapReady || workspaceFogShape !== "circle";
+    elements.workspaceCircleSizeValue.disabled = !activeMapReady || workspaceFogShape !== "circle";
+    elements.workspaceCircleSize.value = String(workspaceCircleDiameter);
+    elements.workspaceCircleSizeValue.value = String(workspaceCircleDiameter);
     elements.workspaceClearFog.disabled = workspaceFogOperationCount === 0;
     elements.workspaceUndoFog.disabled = !activeMapReady || !workspaceCanUndoFog;
     elements.workspaceUndoFog.textContent = "Undo";
-    elements.workspaceFogOverlay.hidden = !workspaceFogMode;
-    elements.workspaceFogOverlay.dataset.active = String(Boolean(workspaceFogMode));
-    elements.workspaceFogOverlay.dataset.mode = workspaceFogMode || "";
-    elements.activeMapCanvas.closest(".gm-map-stage").dataset.fogMode = workspaceFogMode || "";
-    if (!workspaceFogMode) clearWorkspaceFogDraft();
+    elements.workspaceFogOverlay.hidden = !workspaceFogAction;
+    elements.workspaceFogOverlay.dataset.active = String(Boolean(workspaceFogAction));
+    elements.workspaceFogOverlay.dataset.action = workspaceFogAction || "";
+    elements.workspaceFogOverlay.dataset.shape = workspaceFogShape;
+    elements.activeMapCanvas.closest(".gm-map-stage").dataset.fogMode = workspaceFogAction
+      ? `${workspaceFogAction}-${workspaceFogShape}`
+      : "";
+    if (!workspaceFogAction) clearWorkspaceFogDraft();
   }
 
   function clearWorkspaceFogDraft() {
@@ -157,11 +181,20 @@ export function createGmView(document) {
       top: "",
       width: ""
     });
+    elements.workspaceFogCircle.hidden = true;
+    delete elements.workspaceFogCircle.dataset.mode;
+    Object.assign(elements.workspaceFogCircle.style, {
+      height: "",
+      left: "",
+      top: "",
+      width: ""
+    });
   }
 
   function renderWorkspaceFogDraft(screenRect) {
+    elements.workspaceFogCircle.hidden = true;
     elements.workspaceFogRectangle.hidden = false;
-    elements.workspaceFogRectangle.dataset.mode = workspaceFogMode || "";
+    elements.workspaceFogRectangle.dataset.mode = `${workspaceFogAction}-rectangle`;
     elements.workspaceFogRectangle.dataset.tooSmall = String(
       screenRect.width < MIN_FOG_RECTANGLE_SIZE || screenRect.height < MIN_FOG_RECTANGLE_SIZE
     );
@@ -170,6 +203,19 @@ export function createGmView(document) {
       left: `${screenRect.x}px`,
       top: `${screenRect.y}px`,
       width: `${screenRect.width}px`
+    });
+  }
+
+  function renderWorkspaceFogCircleDraft(screenCircle) {
+    elements.workspaceFogRectangle.hidden = true;
+    elements.workspaceFogCircle.hidden = false;
+    elements.workspaceFogCircle.dataset.mode = `${workspaceFogAction}-circle`;
+    const diameter = screenCircle.radius * 2;
+    Object.assign(elements.workspaceFogCircle.style, {
+      height: `${diameter}px`,
+      left: `${screenCircle.x - screenCircle.radius}px`,
+      top: `${screenCircle.y - screenCircle.radius}px`,
+      width: `${diameter}px`
     });
   }
 
@@ -210,7 +256,7 @@ export function createGmView(document) {
       elements.selectedEncounterStatus.textContent = "Choose an encounter card to prep it here.";
       elements.workspaceShowToPlayers.disabled = true;
       activeMapReady = false;
-      workspaceFogMode = null;
+      workspaceFogAction = null;
       workspaceCanUndoFog = false;
       workspaceFogOperationCount = 0;
       activeMapRenderer.setMap(null);
@@ -620,6 +666,15 @@ export function createGmView(document) {
     cancelWorkspaceFogRectangle() {
       clearWorkspaceFogDraft();
     },
+    cancelWorkspaceFogShape() {
+      clearWorkspaceFogDraft();
+    },
+    getWorkspaceCircleDiameter() {
+      return workspaceCircleDiameter;
+    },
+    getWorkspaceFogCircle(clientPoint) {
+      return activeMapRenderer.getNormalizedCircleFromClientPoint(clientPoint, workspaceCircleDiameter);
+    },
     getWorkspaceFogRectangle(startClient, endClient) {
       return activeMapRenderer.getNormalizedRectFromClientPoints(startClient, endClient);
     },
@@ -637,7 +692,19 @@ export function createGmView(document) {
     },
     workspacePanMap: activeMapRenderer.panBy,
     getWorkspaceFogMode() {
-      return workspaceFogMode;
+      return workspaceFogAction ? `${workspaceFogAction}-${workspaceFogShape}` : null;
+    },
+    getWorkspaceFogShape() {
+      return workspaceFogShape;
+    },
+    previewWorkspaceFogCircle(clientPoint) {
+      const draft = activeMapRenderer.getNormalizedCircleFromClientPoint(clientPoint, workspaceCircleDiameter);
+      if (!draft || !draft.startInsideMap) {
+        clearWorkspaceFogDraft();
+        return null;
+      }
+      renderWorkspaceFogCircleDraft(draft.screenCircle);
+      return draft;
     },
     previewWorkspaceFogRectangle(startClient, endClient) {
       const draft = activeMapRenderer.getNormalizedRectFromClientPoints(startClient, endClient);
@@ -648,11 +715,33 @@ export function createGmView(document) {
       renderWorkspaceFogDraft(draft.screenRect);
       return draft;
     },
+    setWorkspaceCircleDiameter(value) {
+      const numeric = Math.round(Number(value));
+      workspaceCircleDiameter = Math.min(
+        MAX_CIRCLE_DIAMETER,
+        Math.max(MIN_CIRCLE_DIAMETER, Number.isFinite(numeric) ? numeric : DEFAULT_CIRCLE_DIAMETER)
+      );
+      renderWorkspaceFogTools();
+      return workspaceCircleDiameter;
+    },
     setWorkspaceFogMode(mode) {
-      workspaceFogMode = mode && activeMapReady ? mode : null;
+      if (!mode || !activeMapReady) {
+        workspaceFogAction = null;
+      } else {
+        const [action, shape] = String(mode).split("-");
+        workspaceFogAction = action === "hide" || action === "reveal" ? action : null;
+        workspaceFogShape = FOG_SHAPES.has(shape) ? shape : workspaceFogShape;
+      }
       renderWorkspaceFogTools();
       renderWorkspaceGridState();
-      return workspaceFogMode;
+      return workspaceFogAction ? `${workspaceFogAction}-${workspaceFogShape}` : null;
+    },
+    setWorkspaceFogShape(shape) {
+      workspaceFogShape = FOG_SHAPES.has(shape) ? shape : workspaceFogShape;
+      clearWorkspaceFogDraft();
+      renderWorkspaceFogTools();
+      renderWorkspaceGridState();
+      return workspaceFogShape;
     },
     workspaceZoomIn() {
       return activeMapRenderer.zoomIn();

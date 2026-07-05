@@ -1,6 +1,6 @@
 export function wireGmEvents(elements, actions) {
   let gridDragPoint = null;
-  let fogDragPoint = null;
+  let fogPointer = null;
 
   elements.campaignForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -27,8 +27,16 @@ export function wireGmEvents(elements, actions) {
   });
   elements.workspaceGridToggle.addEventListener("click", actions.toggleWorkspaceGrid);
   elements.workspaceGridLock.addEventListener("click", actions.toggleWorkspaceGridLock);
-  elements.workspaceHideTool.addEventListener("click", () => actions.toggleWorkspaceFogMode("hide-rectangle"));
-  elements.workspaceRevealTool.addEventListener("click", () => actions.toggleWorkspaceFogMode("reveal-rectangle"));
+  elements.workspaceHideTool.addEventListener("click", () => actions.toggleWorkspaceFogAction("hide"));
+  elements.workspaceRevealTool.addEventListener("click", () => actions.toggleWorkspaceFogAction("reveal"));
+  elements.workspaceRectangleTool.addEventListener("click", () => actions.setWorkspaceFogShape("rectangle"));
+  elements.workspaceCircleTool.addEventListener("click", () => actions.setWorkspaceFogShape("circle"));
+  elements.workspaceCircleSize.addEventListener("input", () =>
+    actions.setWorkspaceCircleDiameter(elements.workspaceCircleSize.value)
+  );
+  elements.workspaceCircleSizeValue.addEventListener("input", () =>
+    actions.setWorkspaceCircleDiameter(elements.workspaceCircleSizeValue.value)
+  );
   elements.workspaceClearFog.addEventListener("click", actions.clearWorkspaceFog);
   elements.workspaceUndoFog.addEventListener("click", actions.undoWorkspaceFog);
 
@@ -69,38 +77,61 @@ export function wireGmEvents(elements, actions) {
     if (elements.workspaceFogOverlay.dataset.active !== "true") return;
     event.preventDefault();
     elements.workspaceFogOverlay.setPointerCapture?.(event.pointerId);
-    fogDragPoint = {
+    fogPointer = {
+      moved: false,
       pointerId: event.pointerId,
       start: { clientX: event.clientX, clientY: event.clientY }
     };
-    actions.previewWorkspaceFogRectangle(fogDragPoint.start, fogDragPoint.start);
+    if (actions.getWorkspaceFogShape() === "circle") {
+      actions.previewWorkspaceFogCircle(fogPointer.start);
+    } else {
+      actions.previewWorkspaceFogRectangle(fogPointer.start, fogPointer.start);
+    }
   });
 
   elements.workspaceFogOverlay.addEventListener("pointermove", (event) => {
-    if (!fogDragPoint || fogDragPoint.pointerId !== event.pointerId) return;
+    if (!fogPointer || fogPointer.pointerId !== event.pointerId) return;
     event.preventDefault();
-    actions.previewWorkspaceFogRectangle(fogDragPoint.start, { clientX: event.clientX, clientY: event.clientY });
+    const nextPoint = { clientX: event.clientX, clientY: event.clientY };
+    const distance = Math.hypot(
+      nextPoint.clientX - fogPointer.start.clientX,
+      nextPoint.clientY - fogPointer.start.clientY
+    );
+    fogPointer.moved = fogPointer.moved || distance > 4;
+    if (actions.getWorkspaceFogShape() === "circle") {
+      actions.previewWorkspaceFogCircle(nextPoint);
+    } else {
+      actions.previewWorkspaceFogRectangle(fogPointer.start, nextPoint);
+    }
   });
 
   elements.workspaceFogOverlay.addEventListener("pointerup", (event) => {
-    if (!fogDragPoint || fogDragPoint.pointerId !== event.pointerId) return;
+    if (!fogPointer || fogPointer.pointerId !== event.pointerId) return;
     event.preventDefault();
-    const start = fogDragPoint.start;
-    fogDragPoint = null;
-    actions.commitWorkspaceFogRectangle(start, { clientX: event.clientX, clientY: event.clientY });
+    const pointer = fogPointer;
+    fogPointer = null;
+    if (actions.getWorkspaceFogShape() === "circle") {
+      if (!pointer.moved) {
+        actions.commitWorkspaceFogCircle({ clientX: event.clientX, clientY: event.clientY });
+      } else {
+        actions.cancelWorkspaceFogShape();
+      }
+    } else {
+      actions.commitWorkspaceFogRectangle(pointer.start, { clientX: event.clientX, clientY: event.clientY });
+    }
   });
 
   elements.workspaceFogOverlay.addEventListener("pointercancel", (event) => {
-    if (fogDragPoint?.pointerId !== event.pointerId) return;
-    fogDragPoint = null;
-    actions.cancelWorkspaceFogRectangle();
+    if (fogPointer?.pointerId !== event.pointerId) return;
+    fogPointer = null;
+    actions.cancelWorkspaceFogShape();
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape" || !fogDragPoint) return;
+    if (event.key !== "Escape" || !fogPointer) return;
     event.preventDefault();
-    fogDragPoint = null;
-    actions.cancelWorkspaceFogRectangle();
+    fogPointer = null;
+    actions.cancelWorkspaceFogShape();
   });
 
   elements.campaignList.addEventListener("click", (event) => {

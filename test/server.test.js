@@ -835,11 +835,19 @@ test("GM API appends fog operations with persistence without exposing unshown fo
         method: "POST"
       }
     );
-    const forestRevealSync = waitForActiveMapFogCount(player, forest.json.map.id, 2);
     const forestReveal = await requestHttps(
       `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(forest.json.map.id)}/fog-operations`,
       {
         body: JSON.stringify({ type: "reveal-rectangle", rect: { x: 0.14, y: 0.14, width: 0.08, height: 0.08 } }),
+        headers: gmHeaders(port, { "content-type": "application/json" }),
+        method: "POST"
+      }
+    );
+    const forestCircleSync = waitForActiveMapFogCount(player, forest.json.map.id, 3);
+    const forestCircle = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(forest.json.map.id)}/fog-operations`,
+      {
+        body: JSON.stringify({ type: "hide-circle", circle: { x: 0.44, y: 0.42, radius: 0.1 } }),
         headers: gmHeaders(port, { "content-type": "application/json" }),
         method: "POST"
       }
@@ -852,11 +860,12 @@ test("GM API appends fog operations with persistence without exposing unshown fo
         method: "POST"
       }
     );
-    const playerState = await forestRevealSync;
+    const playerState = await forestCircleSync;
     const campaignJson = JSON.parse(fs.readFileSync(path.join(dataRoot, "The Long Walk", "campaign.json"), "utf8"));
 
     assert.equal(forestFog.statusCode, 201);
     assert.equal(forestReveal.statusCode, 201);
+    assert.equal(forestCircle.statusCode, 201);
     assert.equal(caveFog.statusCode, 201);
     assert.deepEqual(forestReveal.json.campaign.maps.find((map) => map.id === forest.json.map.id).fogOperations, [
       { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } },
@@ -864,12 +873,13 @@ test("GM API appends fog operations with persistence without exposing unshown fo
     ]);
     assert.deepEqual(playerState.activeMap.fogOperations, [
       { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } },
-      { type: "reveal-rectangle", rect: { x: 0.14, y: 0.14, width: 0.08, height: 0.08 } }
+      { type: "reveal-rectangle", rect: { x: 0.14, y: 0.14, width: 0.08, height: 0.08 } },
+      { type: "hide-circle", circle: { x: 0.44, y: 0.42, radius: 0.1 } }
     ]);
     assert.deepEqual(
       stateStore.getState().campaign.maps.map((map) => [map.id, map.fogOperations.length]),
       [
-        [forest.json.map.id, 2],
+        [forest.json.map.id, 3],
         [cave.json.map.id, 1]
       ]
     );
@@ -878,7 +888,8 @@ test("GM API appends fog operations with persistence without exposing unshown fo
       [
         [
           { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } },
-          { type: "reveal-rectangle", rect: { x: 0.14, y: 0.14, width: 0.08, height: 0.08 } }
+          { type: "reveal-rectangle", rect: { x: 0.14, y: 0.14, width: 0.08, height: 0.08 } },
+          { type: "hide-circle", circle: { x: 0.44, y: 0.42, radius: 0.1 } }
         ],
         [{ type: "hide-rectangle", rect: { x: 0.4, y: 0.4, width: 0.1, height: 0.1 } }]
       ]
@@ -1437,6 +1448,11 @@ test("GM fog operation API rejects invalid requests without mutation", async (t)
       headers: gmHeaders(port, { "content-type": "application/json" }),
       method: "POST"
     });
+    const validCircle = await requestHttps(endpoint, {
+      body: JSON.stringify({ type: "reveal-circle", circle: { x: 0.3, y: 0.3, radius: 0.08 } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
     const campaignPath = path.join(dataRoot, "The Long Walk", "campaign.json");
     const originalMetadata = fs.readFileSync(campaignPath, "utf8");
     const invalidType = await requestHttps(endpoint, {
@@ -1446,6 +1462,21 @@ test("GM fog operation API rejects invalid requests without mutation", async (t)
     });
     const invalidRect = await requestHttps(endpoint, {
       body: JSON.stringify({ type: "hide-rectangle", rect: { x: 0.9, y: 0.1, width: 0.2, height: 0.2 } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const invalidCircle = await requestHttps(endpoint, {
+      body: JSON.stringify({ type: "hide-circle", circle: { x: 0.3, y: 0.3, radius: 0 } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const oversizedCircle = await requestHttps(endpoint, {
+      body: JSON.stringify({ type: "hide-circle", circle: { x: 0.3, y: 0.3, radius: 0.51 } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const missingCircle = await requestHttps(endpoint, {
+      body: JSON.stringify({ type: "hide-circle", rect: { x: 0.3, y: 0.3, width: 0.2, height: 0.2 } }),
       headers: gmHeaders(port, { "content-type": "application/json" }),
       method: "POST"
     });
@@ -1464,12 +1495,17 @@ test("GM fog operation API rejects invalid requests without mutation", async (t)
     });
 
     assert.equal(valid.statusCode, 201);
+    assert.equal(validCircle.statusCode, 201);
     assert.equal(invalidType.statusCode, 400);
     assert.equal(invalidRect.statusCode, 400);
+    assert.equal(invalidCircle.statusCode, 400);
+    assert.equal(oversizedCircle.statusCode, 400);
+    assert.equal(missingCircle.statusCode, 400);
     assert.equal(missingTarget.statusCode, 400);
     assert.equal(playerRequest.statusCode, 403);
     assert.deepEqual(stateStore.getState().campaign.maps[0].fogOperations, [
-      { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+      { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } },
+      { type: "reveal-circle", circle: { x: 0.3, y: 0.3, radius: 0.08 } }
     ]);
     assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
   } finally {
