@@ -464,6 +464,45 @@ export function createMapCanvasRenderer({
     };
   }
 
+  function getNormalizedCircleFromClientPoints(startClient, endClient) {
+    const metrics = getDrawMetrics();
+    if (!metrics || state.status !== "ready") return null;
+
+    const bounds = canvas.getBoundingClientRect();
+    const toStagePoint = (point) => {
+      const x = point.clientX - bounds.left;
+      const y = point.clientY - bounds.top;
+      return {
+        insideMap:
+          x >= metrics.x && x <= metrics.x + metrics.width && y >= metrics.y && y <= metrics.y + metrics.height,
+        rawX: x,
+        rawY: y,
+        x: clamp(x, metrics.x, metrics.x + metrics.width),
+        y: clamp(y, metrics.y, metrics.y + metrics.height)
+      };
+    };
+    const start = toStagePoint(startClient);
+    const end = toStagePoint(endClient);
+    const maxScreenRadius = Math.min(metrics.width, metrics.height) * 0.5;
+    const screenRadius = Math.min(Math.hypot(end.rawX - start.x, end.rawY - start.y), maxScreenRadius);
+
+    if (screenRadius <= 0) return null;
+
+    return {
+      circle: {
+        radius: screenRadius / Math.min(metrics.width, metrics.height),
+        x: (start.x - metrics.x) / metrics.width,
+        y: (start.y - metrics.y) / metrics.height
+      },
+      screenCircle: {
+        radius: screenRadius,
+        x: start.x,
+        y: start.y
+      },
+      startInsideMap: start.insideMap
+    };
+  }
+
   if (interactive) {
     canvas.style.touchAction = "none";
     canvas.addEventListener("pointerdown", onPointerDown);
@@ -506,6 +545,7 @@ export function createMapCanvasRenderer({
     },
     getViewport,
     getNormalizedCircleFromClientPoint,
+    getNormalizedCircleFromClientPoints,
     getNormalizedRectFromClientPoints,
     panBy,
     resetViewport,

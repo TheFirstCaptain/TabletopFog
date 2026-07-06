@@ -1987,6 +1987,7 @@ test("GM brush fog tool paints fixed-size hide and reveal operations", async ({ 
   await expect(page.getByRole("button", { name: "Reveal", exact: true })).toBeEnabled();
   await expect(page.getByRole("button", { name: "Rectangle" })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("button", { name: "Brush" })).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByRole("button", { name: "Circle" })).toHaveAttribute("aria-pressed", "false");
   await expect(page.getByLabel("Brush diameter as percent of the map's shorter side")).toBeHidden();
   await expect(player.locator("input, select, textarea, [contenteditable=true], [data-action]")).toHaveCount(0);
 
@@ -2075,6 +2076,7 @@ test("GM brush fog tool paints fixed-size hide and reveal operations", async ({ 
 
   await page.setViewportSize({ height: 844, width: 390 });
   await expect(page.getByRole("button", { name: "Brush" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Circle" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
@@ -2089,6 +2091,127 @@ test("GM brush fog tool paints fixed-size hide and reveal operations", async ({ 
     .poll(() => player.locator("#player-map").getAttribute("data-fog-operations"))
     .toBe(String(paintedHideCount + 2));
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeUnshownBrush);
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+});
+
+test("GM circle fog tool drags one sized hide or reveal operation", async ({ app, page, context }) => {
+  const player = await context.newPage();
+  let playerAssetRequests = 0;
+  await player.route("**/api/player/active-map/asset*", (route) => {
+    playerAssetRequests += 1;
+    return route.continue();
+  });
+
+  await page.setViewportSize({ height: 768, width: 1366 });
+  await openGm(page, app.baseURL);
+  await createCampaign(page);
+  await uploadMapFile(page, await sizedPngFile(page, "forest.png", 200, 100, "#d9b978", "#704020"));
+  await uploadMapFile(page, await sizedPngFile(page, "cave.png", 200, 100, "#2c2430", "#b08968"));
+
+  const forestCard = page.locator(".encounter-card").filter({ hasText: "forest" });
+  const caveCard = page.locator(".encounter-card").filter({ hasText: "cave" });
+  await forestCard.getByRole("button", { name: "Show to Players", exact: true }).click();
+  await forestCard.getByRole("button", { name: "Open forest for prep" }).click();
+  await player.goto(`${app.baseURL}/player`);
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  await expect(player.locator("input, select, textarea, [contenteditable=true], [data-action]")).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Circle" }).click();
+  await expect(page.getByRole("button", { name: "Circle" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByLabel("Brush diameter as percent of the map's shorter side")).toBeHidden();
+  await page.getByRole("button", { name: "Hide", exact: true }).click();
+
+  await dragMapRectangle(page, "#active-map-canvas", { x: 0.5, y: 0.5 }, { x: 0.505, y: 0.505 });
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("0");
+
+  const playerAssetRequestsBeforeCircle = playerAssetRequests;
+  const playerCenterVisible = await sampleMapPixel(player, "#player-map", { x: 0.5, y: 0.5 });
+  await dragMapRectangle(page, "#active-map-canvas", { x: 0.5, y: 0.5 }, { x: 0.5, y: 0.72 });
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("1");
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("1");
+  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeCircle);
+  const playerCircleHidden = await sampleMapPixel(player, "#player-map", { x: 0.5, y: 0.6 });
+  const playerOutsideCircle = await sampleMapPixel(player, "#player-map", { x: 0.2, y: 0.5 });
+  expect(playerCircleHidden.red).toBeLessThan(playerCenterVisible.red - 40);
+  expect(colorDistance(playerOutsideCircle, playerCircleHidden)).toBeGreaterThan(80);
+
+  await page.getByRole("button", { name: "Reveal", exact: true }).click();
+  await dragMapRectangle(page, "#active-map-canvas", { x: 0.5, y: 0.5 }, { x: 0.5, y: 0.58 });
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("2");
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("2");
+  const playerCircleRevealed = await sampleMapPixel(player, "#player-map", { x: 0.5, y: 0.5 });
+  const playerCircleStillHidden = await sampleMapPixel(player, "#player-map", { x: 0.5, y: 0.62 });
+  expect(colorDistance(playerCenterVisible, playerCircleRevealed)).toBeLessThan(64);
+  expect(colorDistance(playerCircleRevealed, playerCircleStillHidden)).toBeGreaterThan(80);
+
+  await page.getByRole("button", { name: "Hide", exact: true }).click();
+  const edgeCircleDrag = await page.locator("#active-map-canvas").evaluate((canvas) => {
+    const bounds = canvas.getBoundingClientRect();
+    const drawX = Number(canvas.dataset.drawX);
+    const drawY = Number(canvas.dataset.drawY);
+    const drawWidth = Number(canvas.dataset.drawWidth);
+    const drawHeight = Number(canvas.dataset.drawHeight);
+    return {
+      end: {
+        x: bounds.left + drawX + drawWidth + drawHeight,
+        y: bounds.top + drawY + drawHeight * 0.5
+      },
+      start: {
+        x: bounds.left + drawX + drawWidth * 0.95,
+        y: bounds.top + drawY + drawHeight * 0.5
+      }
+    };
+  });
+  await page.mouse.move(edgeCircleDrag.start.x, edgeCircleDrag.start.y);
+  await page.mouse.down();
+  await page.mouse.move(edgeCircleDrag.end.x, edgeCircleDrag.end.y, { steps: 4 });
+  await page.mouse.up();
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("3");
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("3");
+
+  const escapeStart = await mapClientPoint(page, "#active-map-canvas", { x: 0.32, y: 0.45 });
+  const escapeEnd = await mapClientPoint(page, "#active-map-canvas", { x: 0.32, y: 0.62 });
+  await page.mouse.move(escapeStart.x, escapeStart.y);
+  await page.mouse.down();
+  await page.mouse.move(escapeEnd.x, escapeEnd.y);
+  await expect(page.locator("#workspace-fog-circle")).toBeVisible();
+  const previewCircleBox = await page.locator("#workspace-fog-circle").boundingBox();
+  expect(previewCircleBox).not.toBeNull();
+  const previewRadius = Math.hypot(escapeEnd.x - escapeStart.x, escapeEnd.y - escapeStart.y);
+  expect(previewCircleBox.x + previewCircleBox.width / 2).toBeCloseTo(escapeStart.x, 1);
+  expect(previewCircleBox.y + previewCircleBox.height / 2).toBeCloseTo(escapeStart.y, 1);
+  expect(previewCircleBox.width).toBeCloseTo(previewRadius * 2, 1);
+  expect(previewCircleBox.height).toBeCloseTo(previewRadius * 2, 1);
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#workspace-fog-circle")).toBeHidden();
+  await page.mouse.up();
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("3");
+
+  const campaignJson = JSON.parse(fs.readFileSync(path.join(app.dataRoot, "The Long Walk", "campaign.json"), "utf8"));
+  const forestFog = campaignJson.maps.find((map) => map.name === "forest").fog;
+  expect(forestFog).toHaveLength(3);
+  expect(forestFog[0].type).toBe("hide-circle");
+  expect(forestFog[0].circle.x).toBeCloseTo(0.5, 2);
+  expect(forestFog[0].circle.y).toBeCloseTo(0.5, 2);
+  expect(forestFog[0].circle.radius).toBeCloseTo(0.22, 2);
+  expect(forestFog[1].type).toBe("reveal-circle");
+  expect(forestFog[1].circle.x).toBeCloseTo(0.5, 2);
+  expect(forestFog[1].circle.y).toBeCloseTo(0.5, 2);
+  expect(forestFog[1].circle.radius).toBeCloseTo(0.08, 2);
+  expect(forestFog[2].type).toBe("hide-circle");
+  expect(forestFog[2].circle.x).toBeCloseTo(0.95, 2);
+  expect(forestFog[2].circle.y).toBeCloseTo(0.5, 2);
+  expect(forestFog[2].circle.radius).toBeCloseTo(0.5, 2);
+
+  const playerAssetRequestsBeforeUnshownCircle = playerAssetRequests;
+  await page.getByRole("button", { name: "Back to Campaign" }).click();
+  await caveCard.getByRole("button", { name: "Open cave for prep" }).click();
+  await page.getByRole("button", { name: "Circle" }).click();
+  await page.getByRole("button", { name: "Hide", exact: true }).click();
+  await dragMapRectangle(page, "#active-map-canvas", { x: 0.5, y: 0.5 }, { x: 0.5, y: 0.65 });
+  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("1");
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("3");
+  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeUnshownCircle);
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
 });
 

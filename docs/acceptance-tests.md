@@ -1053,9 +1053,63 @@ Expected result:
   distinction.
 - Player Display remains read-only and receives live fog updates only for the
   encounter currently shown to players.
-- A true drag-to-size `Circle` shape is tracked separately as F-008E.
 - No grid snapping, tokens, dynamic lighting, or VTT-style controls are
   introduced by B-011.
+
+### Test: GM Draws Circle Hide and Reveal Fog
+
+Prerequisites:
+
+- A campaign exists with at least two encounters/maps.
+- The encounter workspace feature is implemented.
+- F-008E drag-to-size Circle fog shape is implemented.
+
+Steps:
+
+1. Show one encounter to players.
+2. Open that shown encounter in the GM workspace.
+3. Choose `Circle` and confirm the Brush diameter controls are hidden.
+4. Turn on `Hide`.
+5. Make a tiny Circle drag.
+6. Confirm no fog operation is added.
+7. Start a larger Circle drag and confirm the circular preview grows from the
+   starting point as center.
+8. Press Escape before releasing and confirm the preview cancels with no fog
+   operation added.
+9. Drag a Circle over the shown encounter and release.
+10. Confirm exactly one ordered `hide-circle` operation is added and autosaved.
+11. Confirm the GM workspace shows semi-transparent circular fog and the Player
+    Display updates live with opaque or near-opaque circular fog.
+12. Turn on `Reveal`, then drag a smaller Circle inside the hidden circle.
+13. Confirm exactly one ordered `reveal-circle` operation is added and cuts
+    through the earlier hide circle.
+14. Open a different selected/editing encounter without showing it to players.
+15. Draw a hide Circle on that unshown encounter.
+16. Confirm the Player Display does not change because the edited encounter is
+    not shown to players.
+17. Resize to a narrow viewport and confirm Hide, Reveal, Rectangle, Brush,
+    Circle, Clear Fog, and Undo controls remain reachable without horizontal
+    page overflow.
+
+Expected result:
+
+- Circle lives in the Encounter Workspace Fog tools group as a separate choice
+  from Rectangle and Brush.
+- Hide and Reveal apply to Circle.
+- Circle drag uses the starting point as center and radius to the current
+  pointer, clamped to the existing 100 percent diameter contract.
+- Tiny Circle drags and Escape-canceled drags do not create fog operations.
+- A completed valid Circle drag appends exactly one ordered `hide-circle` or
+  `reveal-circle` operation using normalized map-relative center coordinates
+  and shorter-side radius, and autosaves it to local campaign storage.
+- Circle reveal operations cut through earlier hide operations.
+- Circle operations respect the selected/editing versus `Shown to Players`
+  distinction.
+- Player Display remains read-only and receives live fog updates only for the
+  encounter currently shown to players.
+- No grid snapping, tokens, dynamic lighting, or VTT-style controls are
+  introduced by F-008E.
+
 ### Test: GM Clears All Fog From a Selected Encounter
 
 Prerequisites:

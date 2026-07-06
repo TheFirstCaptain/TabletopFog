@@ -31,7 +31,8 @@ export function wireGmEvents(elements, actions) {
   elements.workspaceHideTool.addEventListener("click", () => actions.toggleWorkspaceFogAction("hide"));
   elements.workspaceRevealTool.addEventListener("click", () => actions.toggleWorkspaceFogAction("reveal"));
   elements.workspaceRectangleTool.addEventListener("click", () => actions.setWorkspaceFogShape("rectangle"));
-  elements.workspaceCircleTool.addEventListener("click", () => actions.setWorkspaceFogShape("brush"));
+  elements.workspaceBrushTool.addEventListener("click", () => actions.setWorkspaceFogShape("brush"));
+  elements.workspaceCircleTool.addEventListener("click", () => actions.setWorkspaceFogShape("circle"));
   elements.workspaceCircleSize.addEventListener("input", () =>
     actions.setWorkspaceCircleDiameter(elements.workspaceCircleSize.value)
   );
@@ -80,12 +81,15 @@ export function wireGmEvents(elements, actions) {
     elements.workspaceFogOverlay.setPointerCapture?.(event.pointerId);
     fogPointer = {
       brushPoints: [],
+      canceled: false,
       pointerId: event.pointerId,
       start: { clientX: event.clientX, clientY: event.clientY }
     };
     if (actions.getWorkspaceFogShape() === "brush") {
       fogPointer.brushPoints.push(fogPointer.start);
       actions.previewWorkspaceFogBrush(fogPointer.start);
+    } else if (actions.getWorkspaceFogShape() === "circle") {
+      actions.previewWorkspaceFogCircle(fogPointer.start, fogPointer.start);
     } else {
       actions.previewWorkspaceFogRectangle(fogPointer.start, fogPointer.start);
     }
@@ -101,6 +105,7 @@ export function wireGmEvents(elements, actions) {
       return;
     }
     if (fogPointer.pointerId !== event.pointerId) return;
+    if (fogPointer.canceled) return;
     if (actions.getWorkspaceFogShape() === "brush") {
       const lastPoint = fogPointer.brushPoints[fogPointer.brushPoints.length - 1] || fogPointer.start;
       const distance = Math.hypot(nextPoint.clientX - lastPoint.clientX, nextPoint.clientY - lastPoint.clientY);
@@ -108,6 +113,8 @@ export function wireGmEvents(elements, actions) {
         fogPointer.brushPoints.push(nextPoint);
       }
       actions.previewWorkspaceFogBrush(nextPoint);
+    } else if (actions.getWorkspaceFogShape() === "circle") {
+      actions.previewWorkspaceFogCircle(fogPointer.start, nextPoint);
     } else {
       actions.previewWorkspaceFogRectangle(fogPointer.start, nextPoint);
     }
@@ -124,6 +131,10 @@ export function wireGmEvents(elements, actions) {
     event.preventDefault();
     const pointer = fogPointer;
     fogPointer = null;
+    if (pointer.canceled) {
+      actions.cancelWorkspaceFogShape();
+      return;
+    }
     if (actions.getWorkspaceFogShape() === "brush") {
       const endPoint = { clientX: event.clientX, clientY: event.clientY };
       const lastPoint = pointer.brushPoints[pointer.brushPoints.length - 1] || pointer.start;
@@ -132,6 +143,8 @@ export function wireGmEvents(elements, actions) {
         pointer.brushPoints.push(endPoint);
       }
       actions.commitWorkspaceFogBrush(pointer.brushPoints);
+    } else if (actions.getWorkspaceFogShape() === "circle") {
+      actions.commitWorkspaceFogCircle(pointer.start, { clientX: event.clientX, clientY: event.clientY });
     } else {
       actions.commitWorkspaceFogRectangle(pointer.start, { clientX: event.clientX, clientY: event.clientY });
     }
@@ -146,7 +159,7 @@ export function wireGmEvents(elements, actions) {
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape" || !fogPointer) return;
     event.preventDefault();
-    fogPointer = null;
+    fogPointer.canceled = true;
     actions.cancelWorkspaceFogShape();
   });
 

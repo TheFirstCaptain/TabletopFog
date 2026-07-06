@@ -7,7 +7,8 @@ const MIN_FOG_RECTANGLE_SIZE = 6;
 const DEFAULT_CIRCLE_DIAMETER = 20;
 const MIN_CIRCLE_DIAMETER = 2;
 const MAX_CIRCLE_DIAMETER = 100;
-const FOG_SHAPES = new Set(["rectangle", "brush"]);
+const MIN_FOG_CIRCLE_RADIUS = 6;
+const FOG_SHAPES = new Set(["rectangle", "brush", "circle"]);
 
 function createDefaultGridState() {
   return {
@@ -82,6 +83,7 @@ export function createGmView(document) {
     workspaceGrid: document.querySelector(".workspace-grid"),
     workspaceFogRectangle: document.querySelector("#workspace-fog-rectangle"),
     workspaceFogCircle: document.querySelector("#workspace-fog-circle"),
+    workspaceBrushTool: document.querySelector("#workspace-brush-tool"),
     workspaceClearFog: document.querySelector("#workspace-clear-fog"),
     workspaceCircleTool: document.querySelector("#workspace-circle-tool"),
     workspaceHideTool: document.querySelector("#workspace-hide-tool"),
@@ -146,7 +148,8 @@ export function createGmView(document) {
     });
     [
       [elements.workspaceRectangleTool, "rectangle"],
-      [elements.workspaceCircleTool, "brush"]
+      [elements.workspaceBrushTool, "brush"],
+      [elements.workspaceCircleTool, "circle"]
     ].forEach(([button, shape]) => {
       const active = workspaceFogShape === shape;
       button.disabled = !activeMapReady;
@@ -183,6 +186,7 @@ export function createGmView(document) {
     });
     elements.workspaceFogCircle.hidden = true;
     delete elements.workspaceFogCircle.dataset.mode;
+    delete elements.workspaceFogCircle.dataset.tooSmall;
     Object.assign(elements.workspaceFogCircle.style, {
       height: "",
       left: "",
@@ -206,10 +210,11 @@ export function createGmView(document) {
     });
   }
 
-  function renderWorkspaceFogCircleDraft(screenCircle) {
+  function renderWorkspaceFogCircleDraft(screenCircle, { tooSmall = false } = {}) {
     elements.workspaceFogRectangle.hidden = true;
     elements.workspaceFogCircle.hidden = false;
     elements.workspaceFogCircle.dataset.mode = `${workspaceFogAction}-circle`;
+    elements.workspaceFogCircle.dataset.tooSmall = String(tooSmall);
     const diameter = screenCircle.radius * 2;
     Object.assign(elements.workspaceFogCircle.style, {
       height: `${diameter}px`,
@@ -675,6 +680,9 @@ export function createGmView(document) {
     getWorkspaceFogCircle(clientPoint) {
       return activeMapRenderer.getNormalizedCircleFromClientPoint(clientPoint, workspaceCircleDiameter);
     },
+    getWorkspaceFogDragCircle(startClient, endClient) {
+      return activeMapRenderer.getNormalizedCircleFromClientPoints(startClient, endClient);
+    },
     getWorkspaceFogRectangle(startClient, endClient) {
       return activeMapRenderer.getNormalizedRectFromClientPoints(startClient, endClient);
     },
@@ -705,6 +713,17 @@ export function createGmView(document) {
         return null;
       }
       renderWorkspaceFogCircleDraft(draft.screenCircle);
+      return draft;
+    },
+    previewWorkspaceFogDragCircle(startClient, endClient) {
+      const draft = activeMapRenderer.getNormalizedCircleFromClientPoints(startClient, endClient);
+      if (!draft || !draft.startInsideMap) {
+        clearWorkspaceFogDraft();
+        return null;
+      }
+      renderWorkspaceFogCircleDraft(draft.screenCircle, {
+        tooSmall: draft.screenCircle.radius < MIN_FOG_CIRCLE_RADIUS
+      });
       return draft;
     },
     previewWorkspaceFogRectangle(startClient, endClient) {

@@ -308,7 +308,7 @@ Acceptance criteria:
 - Complete: fullscreen Player Display.
 - Complete: [F-008D](./features/F-008D.md), expanded fog shape tools.
 - Complete: [F-008C](./features/F-008C.md), undo fog action.
-- Proposed: [F-008E](./features/F-008E.md), drag-to-size Circle fog shape.
+- Complete: [F-008E](./features/F-008E.md), drag-to-size Circle fog shape.
 - Proposed: clear or reset fog beyond the existing per-encounter Clear Fog
   action if table use shows a gap.
 - Deferred: QR code generation.

@@ -10,7 +10,7 @@ TabletopFog has completed the first local connectivity spike, campaign/map
 library, fantasy visual theme, active-map display polish, campaign landing page
 polish, encounter gallery entry, and encounter workspace shell, including
 Chromebook-host and iPad-player validation through F-005, with automated
-quality validation through F-008D. The HTTPS app serves
+quality validation through F-008E. The HTTPS app serves
 separate GM View and Player Display pages, stores local campaign folders, lets
 the GM manage map-backed encounter cards, and syncs only the current encounter
 shown to players to the read-only Player Display over Socket.IO.
@@ -70,11 +70,13 @@ renders fog through the shared canvas:
 semi-transparent in the GM workspace and opaque or near-opaque on the Player
 Display for only the encounter currently `Shown to Players`. The GM Encounter
 Workspace includes explicit `Hide` and `Reveal` fog actions with `Rectangle`
-and `Brush` tool choices. Rectangles use drag-to-draw behavior; Brush uses a
-slider and typed diameter measured as a percent of the map's shorter side, then
-click/tap or drag-to-paint with circular stamps. Fog tools keep Escape cancel where drawing applies,
-tiny-drag filtering, zoom-aware map-relative geometry, ordered hide/reveal
-replay, and explicit input arbitration with the 5 ft grid.
+`Brush`, and `Circle` tool choices. Rectangles use drag-to-draw behavior; Brush
+uses a slider and typed diameter measured as a percent of the map's shorter
+side, then click/tap or drag-to-paint with circular stamps; Circle uses
+drag-to-size behavior from the start point as center. Fog tools keep Escape
+cancel where drawing applies, tiny-drag filtering, zoom-aware map-relative
+geometry, ordered hide/reveal replay, and explicit input arbitration with the
+5 ft grid.
 The Fog tools also include an always-visible `Clear Fog` action that is enabled
 only when the selected encounter has fog, asks for confirmation, clears only
 that selected encounter's fog, autosaves the empty fog state, and updates the

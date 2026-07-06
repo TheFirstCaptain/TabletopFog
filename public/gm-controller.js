@@ -281,6 +281,36 @@ export function createGmController({ api, socket, state, view }) {
     }
   }
 
+  async function commitWorkspaceFogCircle(startClient, endClient) {
+    const campaign = state.getCurrentCampaign();
+    const selectedEncounterId = state.getSelectedEncounterId();
+    const fogMode = view.getWorkspaceFogMode();
+    const draft = view.getWorkspaceFogDragCircle(startClient, endClient);
+    view.cancelWorkspaceFogShape();
+
+    if (
+      !campaign ||
+      !selectedEncounterId ||
+      !fogMode ||
+      !draft ||
+      !draft.startInsideMap ||
+      draft.screenCircle.radius < 6
+    ) {
+      return;
+    }
+
+    try {
+      const payload = await api.appendFogOperation(campaign.id, selectedEncounterId, {
+        type: fogMode,
+        circle: draft.circle
+      });
+      state.setCurrentCampaign(payload.campaign);
+      renderCurrentCampaign();
+    } catch (error) {
+      view.setCampaignMessage(error.message);
+    }
+  }
+
   async function clearWorkspaceFog() {
     const campaign = state.getCurrentCampaign();
     const selectedEncounterId = state.getSelectedEncounterId();
@@ -344,6 +374,10 @@ export function createGmController({ api, socket, state, view }) {
     view.previewWorkspaceFogCircle(clientPoint);
   }
 
+  function previewWorkspaceFogCircle(startClient, endClient) {
+    view.previewWorkspaceFogDragCircle(startClient, endClient);
+  }
+
   function setWorkspaceCircleDiameter(value) {
     view.setWorkspaceCircleDiameter(value);
   }
@@ -375,6 +409,7 @@ export function createGmController({ api, socket, state, view }) {
       cancelWorkspaceFogRectangle,
       clearWorkspaceFog,
       commitWorkspaceFogBrush,
+      commitWorkspaceFogCircle,
       commitWorkspaceFogRectangle,
       deleteCampaign,
       deleteMap,
@@ -385,6 +420,7 @@ export function createGmController({ api, socket, state, view }) {
       openCampaign,
       panWorkspaceMap: view.workspacePanMap,
       previewWorkspaceFogBrush,
+      previewWorkspaceFogCircle,
       previewWorkspaceFogRectangle,
       renameMap,
       selectEncounter,
