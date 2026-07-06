@@ -774,8 +774,10 @@ h4 {
 }
 
 .circle-size-control {
-  flex: 1 0 100%;
-  min-width: 14rem;
+  flex: 0 1 13.35rem;
+  width: 13.35rem;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .circle-size-control label {
@@ -788,9 +790,14 @@ h4 {
 
 .circle-size-row {
   display: grid;
-  grid-template-columns: minmax(7rem, 1fr) 4.5rem auto;
+  grid-template-columns: 4.5rem auto;
   align-items: center;
   gap: 0.35rem;
+}
+
+.circle-size-row input[type="range"] {
+  grid-column: 1 / -1;
+  width: 100%;
 }
 
 .circle-size-row input[type="number"] {
@@ -884,6 +891,8 @@ h4 {
 
 .gm-map-stage[data-fog-mode="hide-rectangle"] .workspace-grid-overlay,
 .gm-map-stage[data-fog-mode="reveal-rectangle"] .workspace-grid-overlay,
+.gm-map-stage[data-fog-mode="hide-brush"] .workspace-grid-overlay,
+.gm-map-stage[data-fog-mode="reveal-brush"] .workspace-grid-overlay,
 .gm-map-stage[data-fog-mode="hide-circle"] .workspace-grid-overlay,
 .gm-map-stage[data-fog-mode="reveal-circle"] .workspace-grid-overlay {
   pointer-events: none;
@@ -1114,7 +1123,7 @@ h4 {
   }
 
   .circle-size-row {
-    grid-template-columns: minmax(5rem, 1fr) 4rem auto;
+    grid-template-columns: 4rem auto;
     gap: 0.25rem;
   }
 

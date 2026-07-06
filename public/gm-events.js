@@ -1,6 +1,7 @@
 export function wireGmEvents(elements, actions) {
   let gridDragPoint = null;
   let fogPointer = null;
+  const MIN_BRUSH_POINT_SPACING = 12;
 
   elements.campaignForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -30,7 +31,7 @@ export function wireGmEvents(elements, actions) {
   elements.workspaceHideTool.addEventListener("click", () => actions.toggleWorkspaceFogAction("hide"));
   elements.workspaceRevealTool.addEventListener("click", () => actions.toggleWorkspaceFogAction("reveal"));
   elements.workspaceRectangleTool.addEventListener("click", () => actions.setWorkspaceFogShape("rectangle"));
-  elements.workspaceCircleTool.addEventListener("click", () => actions.setWorkspaceFogShape("circle"));
+  elements.workspaceCircleTool.addEventListener("click", () => actions.setWorkspaceFogShape("brush"));
   elements.workspaceCircleSize.addEventListener("input", () =>
     actions.setWorkspaceCircleDiameter(elements.workspaceCircleSize.value)
   );
@@ -78,30 +79,43 @@ export function wireGmEvents(elements, actions) {
     event.preventDefault();
     elements.workspaceFogOverlay.setPointerCapture?.(event.pointerId);
     fogPointer = {
-      moved: false,
+      brushPoints: [],
       pointerId: event.pointerId,
       start: { clientX: event.clientX, clientY: event.clientY }
     };
-    if (actions.getWorkspaceFogShape() === "circle") {
-      actions.previewWorkspaceFogCircle(fogPointer.start);
+    if (actions.getWorkspaceFogShape() === "brush") {
+      fogPointer.brushPoints.push(fogPointer.start);
+      actions.previewWorkspaceFogBrush(fogPointer.start);
     } else {
       actions.previewWorkspaceFogRectangle(fogPointer.start, fogPointer.start);
     }
   });
 
   elements.workspaceFogOverlay.addEventListener("pointermove", (event) => {
-    if (!fogPointer || fogPointer.pointerId !== event.pointerId) return;
     event.preventDefault();
     const nextPoint = { clientX: event.clientX, clientY: event.clientY };
-    const distance = Math.hypot(
-      nextPoint.clientX - fogPointer.start.clientX,
-      nextPoint.clientY - fogPointer.start.clientY
-    );
-    fogPointer.moved = fogPointer.moved || distance > 4;
-    if (actions.getWorkspaceFogShape() === "circle") {
-      actions.previewWorkspaceFogCircle(nextPoint);
+    if (!fogPointer) {
+      if (actions.getWorkspaceFogShape() === "brush") {
+        actions.previewWorkspaceFogBrush(nextPoint);
+      }
+      return;
+    }
+    if (fogPointer.pointerId !== event.pointerId) return;
+    if (actions.getWorkspaceFogShape() === "brush") {
+      const lastPoint = fogPointer.brushPoints[fogPointer.brushPoints.length - 1] || fogPointer.start;
+      const distance = Math.hypot(nextPoint.clientX - lastPoint.clientX, nextPoint.clientY - lastPoint.clientY);
+      if (distance >= MIN_BRUSH_POINT_SPACING) {
+        fogPointer.brushPoints.push(nextPoint);
+      }
+      actions.previewWorkspaceFogBrush(nextPoint);
     } else {
       actions.previewWorkspaceFogRectangle(fogPointer.start, nextPoint);
+    }
+  });
+
+  elements.workspaceFogOverlay.addEventListener("pointerleave", () => {
+    if (!fogPointer && actions.getWorkspaceFogShape() === "brush") {
+      actions.cancelWorkspaceFogShape();
     }
   });
 
@@ -110,12 +124,14 @@ export function wireGmEvents(elements, actions) {
     event.preventDefault();
     const pointer = fogPointer;
     fogPointer = null;
-    if (actions.getWorkspaceFogShape() === "circle") {
-      if (!pointer.moved) {
-        actions.commitWorkspaceFogCircle({ clientX: event.clientX, clientY: event.clientY });
-      } else {
-        actions.cancelWorkspaceFogShape();
+    if (actions.getWorkspaceFogShape() === "brush") {
+      const endPoint = { clientX: event.clientX, clientY: event.clientY };
+      const lastPoint = pointer.brushPoints[pointer.brushPoints.length - 1] || pointer.start;
+      const distance = Math.hypot(endPoint.clientX - lastPoint.clientX, endPoint.clientY - lastPoint.clientY);
+      if (distance >= MIN_BRUSH_POINT_SPACING / 2) {
+        pointer.brushPoints.push(endPoint);
       }
+      actions.commitWorkspaceFogBrush(pointer.brushPoints);
     } else {
       actions.commitWorkspaceFogRectangle(pointer.start, { clientX: event.clientX, clientY: event.clientY });
     }

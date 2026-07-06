@@ -1062,9 +1062,10 @@ test("GM workspace shell previews selected encounter without changing the player
   await expect(page.getByRole("button", { name: "Show grid" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Hide", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Reveal", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Brush" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Clear Fog" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Clear Fog" })).toBeDisabled();
-  await expect(page.getByRole("button", { name: /brush|token/i })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /token/i })).toHaveCount(0);
   const zoomControlLayout = await page.evaluate(() => {
     const zoomOut = document.querySelector("#gm-zoom-out").getBoundingClientRect();
     const zoomIn = document.querySelector("#gm-zoom-in").getBoundingClientRect();
@@ -1512,9 +1513,10 @@ test("seeded fog renders by role before drawing controls are used", async ({ app
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Hide", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Reveal", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Brush" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Clear Fog" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Clear Fog" })).toBeDisabled();
-  await expect(page.getByRole("button", { name: /brush|token/i })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /token/i })).toHaveCount(0);
   await expect(player.locator("input, select, textarea, [contenteditable=true], [data-action]")).toHaveCount(0);
 
   const forestMapId = await page.locator(".encounter-card").filter({ hasText: "forest" }).getAttribute("data-map-id");
@@ -1960,7 +1962,7 @@ test("GM rectangle Hide tool draws shown fog and isolates unshown prep fog", asy
   expect(colorDistance(caveRevealedAfterFit, caveStillHiddenAfterFit)).toBeGreaterThan(60);
 });
 
-test("GM circle fog tool places sized hide and reveal operations", async ({ app, page, context }) => {
+test("GM brush fog tool paints fixed-size hide and reveal operations", async ({ app, page, context }) => {
   const player = await context.newPage();
   let playerAssetRequests = 0;
   await player.route("**/api/player/active-map/asset*", (route) => {
@@ -1984,76 +1986,109 @@ test("GM circle fog tool places sized hide and reveal operations", async ({ app,
   await expect(page.getByRole("button", { name: "Hide", exact: true })).toBeEnabled();
   await expect(page.getByRole("button", { name: "Reveal", exact: true })).toBeEnabled();
   await expect(page.getByRole("button", { name: "Rectangle" })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("button", { name: "Circle" })).toHaveAttribute("aria-pressed", "false");
-  await expect(page.getByLabel("Circle diameter as percent of the map's shorter side")).toBeHidden();
+  await expect(page.getByRole("button", { name: "Brush" })).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByLabel("Brush diameter as percent of the map's shorter side")).toBeHidden();
   await expect(player.locator("input, select, textarea, [contenteditable=true], [data-action]")).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Circle" }).click();
-  await expect(page.getByRole("button", { name: "Circle" })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByLabel("Circle diameter as percent of the map's shorter side")).toBeVisible();
-  await page.getByLabel("Circle diameter as percent of the map's shorter side").fill("21");
+  await page.getByRole("button", { name: "Brush" }).click();
+  await expect(page.getByRole("button", { name: "Brush" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByLabel("Brush diameter as percent of the map's shorter side")).toBeVisible();
+  await page.getByLabel("Brush diameter as percent of the map's shorter side").fill("21");
   await expect(page.locator("#workspace-circle-size")).toHaveValue("21");
   await page.locator("#workspace-circle-size").fill("22");
-  await expect(page.getByLabel("Circle diameter as percent of the map's shorter side")).toHaveValue("22");
+  await expect(page.getByLabel("Brush diameter as percent of the map's shorter side")).toHaveValue("22");
+  const brushSizeLayout = await page.evaluate(() => {
+    const slider = document.querySelector("#workspace-circle-size").getBoundingClientRect();
+    const tools = document.querySelector(".workspace-tools-panel").getBoundingClientRect();
+    const value = document.querySelector("#workspace-circle-size-value").getBoundingClientRect();
+    return {
+      sliderRight: slider.right,
+      sliderBottom: slider.bottom,
+      toolsRight: tools.right,
+      valueTop: value.top
+    };
+  });
+  expect(brushSizeLayout.valueTop).toBeGreaterThan(brushSizeLayout.sliderBottom);
+  expect(brushSizeLayout.sliderRight).toBeLessThanOrEqual(brushSizeLayout.toolsRight);
 
-  const playerAssetRequestsBeforeCircle = playerAssetRequests;
+  const playerAssetRequestsBeforeBrush = playerAssetRequests;
   const gmVisible = await sampleMapPixel(page, "#active-map-canvas", { x: 0.2, y: 0.5 });
   const playerCenterVisible = await sampleMapPixel(player, "#player-map", { x: 0.5, y: 0.5 });
   await page.getByRole("button", { name: "Hide", exact: true }).click();
-  await dragMapRectangle(page, "#active-map-canvas", { x: 0.44, y: 0.44 }, { x: 0.5, y: 0.5 });
+  const brushHoverPoint = await mapClientPoint(page, "#active-map-canvas", { x: 0.5, y: 0.5 });
+  await page.mouse.move(brushHoverPoint.x, brushHoverPoint.y);
+  await expect(page.locator("#workspace-fog-circle")).toBeVisible();
   await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("0");
-  await clickMapPoint(page, "#active-map-canvas", { x: 0.5, y: 0.5 });
-  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("1");
-  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("1");
-  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeCircle);
+  await dragMapRectangle(page, "#active-map-canvas", { x: 0.4, y: 0.5 }, { x: 0.6, y: 0.5 });
+  await expect
+    .poll(async () => Number(await page.locator("#active-map-canvas").getAttribute("data-fog-operations")))
+    .toBeGreaterThan(1);
+  const paintedHideCount = Number(await page.locator("#active-map-canvas").getAttribute("data-fog-operations"));
+  await expect
+    .poll(() => player.locator("#player-map").getAttribute("data-fog-operations"))
+    .toBe(String(paintedHideCount));
+  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeBrush);
   await expect(page.getByRole("button", { name: "Hide", exact: true })).toHaveAttribute("aria-pressed", "true");
 
-  const gmCircleHidden = await sampleMapPixel(page, "#active-map-canvas", { x: 0.5, y: 0.5 });
-  const playerCircleHidden = await sampleMapPixel(player, "#player-map", { x: 0.5, y: 0.5 });
-  const playerOutsideCircle = await sampleMapPixel(player, "#player-map", { x: 0.2, y: 0.5 });
-  expect(colorDistance(gmVisible, gmCircleHidden)).toBeGreaterThan(80);
-  expect(playerCircleHidden.red).toBeLessThan(gmCircleHidden.red);
-  expect(colorDistance(playerOutsideCircle, playerCircleHidden)).toBeGreaterThan(80);
+  const gmBrushHidden = await sampleMapPixel(page, "#active-map-canvas", { x: 0.5, y: 0.5 });
+  const playerBrushHidden = await sampleMapPixel(player, "#player-map", { x: 0.5, y: 0.5 });
+  const playerOutsideBrush = await sampleMapPixel(player, "#player-map", { x: 0.2, y: 0.5 });
+  expect(colorDistance(gmVisible, gmBrushHidden)).toBeGreaterThan(80);
+  expect(playerBrushHidden.red).toBeLessThan(gmBrushHidden.red);
+  expect(colorDistance(playerOutsideBrush, playerBrushHidden)).toBeGreaterThan(80);
 
   await page.getByRole("button", { name: "Reveal", exact: true }).click();
-  await page.getByLabel("Circle diameter as percent of the map's shorter side").fill("9");
+  await page.getByLabel("Brush diameter as percent of the map's shorter side").fill("9");
   await clickMapPoint(page, "#active-map-canvas", { x: 0.5, y: 0.5 });
-  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("2");
-  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("2");
-  const playerCircleRevealed = await sampleMapPixel(player, "#player-map", { x: 0.5, y: 0.5 });
-  const playerCircleStillHidden = await sampleMapPixel(player, "#player-map", { x: 0.55, y: 0.5 });
-  expect(colorDistance(playerCenterVisible, playerCircleRevealed)).toBeLessThan(64);
-  expect(colorDistance(playerCircleRevealed, playerCircleStillHidden)).toBeGreaterThan(80);
+  await expect
+    .poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations"))
+    .toBe(String(paintedHideCount + 1));
+  await expect
+    .poll(() => player.locator("#player-map").getAttribute("data-fog-operations"))
+    .toBe(String(paintedHideCount + 1));
+  const playerBrushRevealed = await sampleMapPixel(player, "#player-map", { x: 0.5, y: 0.5 });
+  const playerBrushStillHidden = await sampleMapPixel(player, "#player-map", { x: 0.56, y: 0.5 });
+  expect(colorDistance(playerCenterVisible, playerBrushRevealed)).toBeLessThan(64);
+  expect(colorDistance(playerBrushRevealed, playerBrushStillHidden)).toBeGreaterThan(80);
 
   await page.getByRole("button", { name: "Rectangle" }).click();
   await page.getByRole("button", { name: "Hide", exact: true }).click();
   await dragMapRectangle(page, "#active-map-canvas", { x: 0.48, y: 0.46 }, { x: 0.52, y: 0.54 });
-  await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("3");
+  await expect
+    .poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations"))
+    .toBe(String(paintedHideCount + 2));
   const playerRehiddenByRectangle = await sampleMapPixel(player, "#player-map", { x: 0.5, y: 0.5 });
-  expect(playerRehiddenByRectangle.red).toBeLessThan(playerCircleRevealed.red - 40);
+  expect(playerRehiddenByRectangle.red).toBeLessThan(playerBrushRevealed.red - 40);
 
   const campaignJson = JSON.parse(fs.readFileSync(path.join(app.dataRoot, "The Long Walk", "campaign.json"), "utf8"));
   const forestFog = campaignJson.maps.find((map) => map.name === "forest").fog;
-  expect(forestFog).toMatchObject([
-    { type: "hide-circle", circle: { x: expect.any(Number), y: expect.any(Number), radius: 0.11 } },
-    { type: "reveal-circle", circle: { x: expect.any(Number), y: expect.any(Number), radius: 0.045 } },
-    { type: "hide-rectangle" }
-  ]);
+  expect(forestFog.slice(0, paintedHideCount)).toEqual(
+    expect.arrayContaining([
+      { type: "hide-circle", circle: { x: expect.any(Number), y: expect.any(Number), radius: 0.11 } }
+    ])
+  );
+  expect(forestFog.at(-2)).toMatchObject({
+    type: "reveal-circle",
+    circle: { x: expect.any(Number), y: expect.any(Number), radius: 0.045 }
+  });
+  expect(forestFog.at(-1)).toMatchObject({ type: "hide-rectangle" });
 
   await page.setViewportSize({ height: 844, width: 390 });
-  await expect(page.getByRole("button", { name: "Circle" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Brush" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
-  const playerAssetRequestsBeforeUnshownCircle = playerAssetRequests;
+  const playerAssetRequestsBeforeUnshownBrush = playerAssetRequests;
   await page.getByRole("button", { name: "Back to Campaign" }).click();
   await caveCard.getByRole("button", { name: "Open cave for prep" }).click();
-  await page.getByRole("button", { name: "Circle" }).click();
+  await page.getByRole("button", { name: "Brush" }).click();
   await page.getByRole("button", { name: "Hide", exact: true }).click();
   await clickMapPoint(page, "#active-map-canvas", { x: 0.5, y: 0.5 });
   await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("1");
-  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("3");
-  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeUnshownCircle);
+  await expect
+    .poll(() => player.locator("#player-map").getAttribute("data-fog-operations"))
+    .toBe(String(paintedHideCount + 2));
+  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeUnshownBrush);
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
 });
 

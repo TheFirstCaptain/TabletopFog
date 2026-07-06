@@ -70,9 +70,9 @@ renders fog through the shared canvas:
 semi-transparent in the GM workspace and opaque or near-opaque on the Player
 Display for only the encounter currently `Shown to Players`. The GM Encounter
 Workspace includes explicit `Hide` and `Reveal` fog actions with `Rectangle`
-and `Circle` shape choices. Rectangles use drag-to-draw behavior; circles use a
+and `Brush` tool choices. Rectangles use drag-to-draw behavior; Brush uses a
 slider and typed diameter measured as a percent of the map's shorter side, then
-click/tap-to-place. Fog tools keep Escape cancel where drawing applies,
+click/tap or drag-to-paint with circular stamps. Fog tools keep Escape cancel where drawing applies,
 tiny-drag filtering, zoom-aware map-relative geometry, ordered hide/reveal
 replay, and explicit input arbitration with the 5 ft grid.
 The Fog tools also include an always-visible `Clear Fog` action that is enabled

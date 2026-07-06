@@ -7,7 +7,7 @@ const MIN_FOG_RECTANGLE_SIZE = 6;
 const DEFAULT_CIRCLE_DIAMETER = 20;
 const MIN_CIRCLE_DIAMETER = 2;
 const MAX_CIRCLE_DIAMETER = 100;
-const FOG_SHAPES = new Set(["rectangle", "circle"]);
+const FOG_SHAPES = new Set(["rectangle", "brush"]);
 
 function createDefaultGridState() {
   return {
@@ -146,16 +146,16 @@ export function createGmView(document) {
     });
     [
       [elements.workspaceRectangleTool, "rectangle"],
-      [elements.workspaceCircleTool, "circle"]
+      [elements.workspaceCircleTool, "brush"]
     ].forEach(([button, shape]) => {
       const active = workspaceFogShape === shape;
       button.disabled = !activeMapReady;
       button.dataset.active = String(active);
       button.setAttribute("aria-pressed", String(active));
     });
-    elements.workspaceCircleSizeControl.hidden = workspaceFogShape !== "circle";
-    elements.workspaceCircleSize.disabled = !activeMapReady || workspaceFogShape !== "circle";
-    elements.workspaceCircleSizeValue.disabled = !activeMapReady || workspaceFogShape !== "circle";
+    elements.workspaceCircleSizeControl.hidden = workspaceFogShape !== "brush";
+    elements.workspaceCircleSize.disabled = !activeMapReady || workspaceFogShape !== "brush";
+    elements.workspaceCircleSizeValue.disabled = !activeMapReady || workspaceFogShape !== "brush";
     elements.workspaceCircleSize.value = String(workspaceCircleDiameter);
     elements.workspaceCircleSizeValue.value = String(workspaceCircleDiameter);
     elements.workspaceClearFog.disabled = workspaceFogOperationCount === 0;
@@ -692,7 +692,8 @@ export function createGmView(document) {
     },
     workspacePanMap: activeMapRenderer.panBy,
     getWorkspaceFogMode() {
-      return workspaceFogAction ? `${workspaceFogAction}-${workspaceFogShape}` : null;
+      const operationShape = workspaceFogShape === "brush" ? "circle" : workspaceFogShape;
+      return workspaceFogAction ? `${workspaceFogAction}-${operationShape}` : null;
     },
     getWorkspaceFogShape() {
       return workspaceFogShape;

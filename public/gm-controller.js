@@ -246,25 +246,37 @@ export function createGmController({ api, socket, state, view }) {
     }
   }
 
-  async function commitWorkspaceFogCircle(clientPoint) {
+  async function commitWorkspaceFogBrush(clientPoints) {
     const campaign = state.getCurrentCampaign();
     const selectedEncounterId = state.getSelectedEncounterId();
     const fogMode = view.getWorkspaceFogMode();
-    const draft = view.getWorkspaceFogCircle(clientPoint);
+    const drafts = clientPoints.map((clientPoint) => view.getWorkspaceFogCircle(clientPoint)).filter(Boolean);
     view.cancelWorkspaceFogShape();
 
-    if (!campaign || !selectedEncounterId || !fogMode || !draft || !draft.startInsideMap) {
+    const operations = drafts
+      .filter((draft) => draft.startInsideMap)
+      .map((draft) => ({
+        type: fogMode,
+        circle: draft.circle
+      }));
+
+    if (!campaign || !selectedEncounterId || !fogMode || operations.length === 0) {
       return;
     }
 
+    let latestCampaign = null;
     try {
-      const payload = await api.appendFogOperation(campaign.id, selectedEncounterId, {
-        type: fogMode,
-        circle: draft.circle
-      });
-      state.setCurrentCampaign(payload.campaign);
+      for (const operation of operations) {
+        const payload = await api.appendFogOperation(campaign.id, selectedEncounterId, operation);
+        latestCampaign = payload.campaign;
+      }
+      state.setCurrentCampaign(latestCampaign);
       renderCurrentCampaign();
     } catch (error) {
+      if (latestCampaign) {
+        state.setCurrentCampaign(latestCampaign);
+        renderCurrentCampaign();
+      }
       view.setCampaignMessage(error.message);
     }
   }
@@ -328,7 +340,7 @@ export function createGmController({ api, socket, state, view }) {
     view.previewWorkspaceFogRectangle(startClient, endClient);
   }
 
-  function previewWorkspaceFogCircle(clientPoint) {
+  function previewWorkspaceFogBrush(clientPoint) {
     view.previewWorkspaceFogCircle(clientPoint);
   }
 
@@ -362,7 +374,7 @@ export function createGmController({ api, socket, state, view }) {
       cancelWorkspaceFogShape,
       cancelWorkspaceFogRectangle,
       clearWorkspaceFog,
-      commitWorkspaceFogCircle,
+      commitWorkspaceFogBrush,
       commitWorkspaceFogRectangle,
       deleteCampaign,
       deleteMap,
@@ -372,7 +384,7 @@ export function createGmController({ api, socket, state, view }) {
       moveMap,
       openCampaign,
       panWorkspaceMap: view.workspacePanMap,
-      previewWorkspaceFogCircle,
+      previewWorkspaceFogBrush,
       previewWorkspaceFogRectangle,
       renameMap,
       selectEncounter,

@@ -995,59 +995,67 @@ Expected result:
 - No clear fog, brush, circle, undo, token, dynamic lighting, or VTT-style
   controls were introduced by F-006D.
 
-### Test: GM Places Circle Hide and Reveal Fog
+### Test: GM Paints Brush Hide and Reveal Fog
 
 Prerequisites:
 
 - A campaign exists with at least two encounters/maps.
 - The encounter workspace feature is implemented.
-- F-008D circle fog tools are implemented.
+- B-011 Brush fog correction is implemented.
 
 Steps:
 
 1. Show one encounter to players.
 2. Open that shown encounter in the GM workspace.
-3. Choose `Circle` and confirm the Circle diameter controls appear.
+3. Choose `Brush` and confirm the Brush diameter controls appear.
 4. Enter a fine-grained diameter value directly, then adjust it with the slider.
-5. Turn on `Hide` and click/tap the map.
-6. Confirm one `hide-circle` operation is added and autosaved.
-7. Confirm the GM workspace shows semi-transparent circular fog and the Player
-   Display updates live with opaque or near-opaque circular fog.
-8. Turn on `Reveal`, set a smaller circle diameter, and click/tap inside the
-   hidden circle.
-9. Confirm one `reveal-circle` operation is added and cuts through the earlier
-   circle fog.
-10. Choose `Rectangle`, turn on `Hide`, and draw a rectangle across part of the
-    revealed circle.
-11. Confirm the later rectangle hide operation obscures that area again.
-12. Drag instead of tapping while Circle is selected.
-13. Confirm the circle preview cancels and no fog operation is added.
-14. Open a different selected/editing encounter without showing it to players.
-15. Place a hide circle on that unshown encounter.
-16. Confirm the Player Display does not change because the edited encounter is
+5. Confirm the numeric diameter value and percent sign sit below the slider,
+   not beside it.
+6. Turn on `Hide` and move the pointer over the map without pressing.
+7. Confirm the GM workspace shows the circular brush outline at the pointer and
+   no fog operation is added.
+8. Drag across the map.
+9. Confirm multiple ordered `hide-circle` brush-stamp operations are added and
+   autosaved.
+10. Confirm the GM workspace shows semi-transparent painted fog and the Player
+   Display updates live with opaque or near-opaque painted fog.
+11. Turn on `Reveal`, set a smaller Brush diameter, and click/tap or drag inside
+   the hidden area.
+12. Confirm ordered `reveal-circle` brush-stamp operations are added and cut
+   through the earlier fog.
+13. Choose `Rectangle`, turn on `Hide`, and draw a rectangle across part of the
+    revealed area.
+14. Confirm the later rectangle hide operation obscures that area again.
+15. Open a different selected/editing encounter without showing it to players.
+16. Paint hide fog on that unshown encounter.
+17. Confirm the Player Display does not change because the edited encounter is
     not shown to players.
-17. Resize to a narrow viewport and confirm Hide, Reveal, Rectangle, Circle,
+18. Resize to a narrow viewport and confirm Hide, Reveal, Rectangle, Brush,
     diameter, Clear Fog, and Undo controls remain reachable without horizontal
     page overflow.
 
 Expected result:
 
-- Circle tools live in the Encounter Workspace Fog tools group.
+- Brush tools live in the Encounter Workspace Fog tools group.
 - Hide and Reveal remain the primary mutually exclusive fog actions.
-- Rectangle and Circle are mutually exclusive shape choices.
-- Circle diameter supports typed entry and slider adjustment in one-percent
-  increments.
-- A completed valid Circle click/tap appends one ordered `hide-circle` or
-  `reveal-circle` operation using normalized map-relative center coordinates
-  and shorter-side radius, and autosaves it to local campaign storage.
-- Circle reveal operations cut through earlier hide operations, and later hide
+- Rectangle and Brush are mutually exclusive tool choices.
+- Brush diameter supports typed entry and slider adjustment in one-percent
+  increments, with the numeric value below the slider.
+- Brush hover previews the circular footprint before painting and does not
+  mutate fog state.
+- A valid Brush click/tap appends one ordered `hide-circle` or `reveal-circle`
+  operation using normalized map-relative center coordinates and shorter-side
+  radius; a valid Brush drag appends multiple ordered operations along the drag
+  path. Successful brush actions autosave to local campaign storage.
+- Brush reveal operations cut through earlier hide operations, and later hide
   operations can cover a revealed area again.
-- Circle operations respect the selected/editing versus `Shown to Players`
+- Brush operations respect the selected/editing versus `Shown to Players`
   distinction.
 - Player Display remains read-only and receives live fog updates only for the
   encounter currently shown to players.
-- No brush, drag-to-size, grid snapping, tokens, dynamic lighting, or VTT-style
-  controls are introduced by F-008D.
+- A true drag-to-size `Circle` shape is tracked separately as F-008E.
+- No grid snapping, tokens, dynamic lighting, or VTT-style controls are
+  introduced by B-011.
 ### Test: GM Clears All Fog From a Selected Encounter
 
 Prerequisites:
