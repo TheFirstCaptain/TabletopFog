@@ -154,6 +154,74 @@ test("state store appends one fog operation atomically", () => {
   assert.deepEqual(state.campaign.maps[1].fogOperations, []);
 });
 
+test("state store appends fog operation batches as one undoable action", () => {
+  const store = createStateStore();
+  store.setCampaign({
+    id: "The Long Walk",
+    activeMapId: "forest",
+    maps: [
+      { id: "forest", name: "Forest" },
+      { id: "cave", name: "Cave" }
+    ]
+  });
+  store.appendFogOperation("The Long Walk", "forest", {
+    type: "hide-rectangle",
+    rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 }
+  });
+
+  const batched = store.appendFogOperations("The Long Walk", "forest", [
+    { type: "hide-circle", circle: { x: 0.3, y: 0.3, radius: 0.05 } },
+    { type: "hide-circle", circle: { x: 0.4, y: 0.4, radius: 0.05 } },
+    { type: "reveal-circle", circle: { x: 0.35, y: 0.35, radius: 0.02 } }
+  ]);
+
+  assert.equal(batched.campaign.maps[0].canUndoFogOperation, true);
+  assert.deepEqual(batched.campaign.maps[0].fogOperations, [
+    { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } },
+    { type: "hide-circle", circle: { x: 0.3, y: 0.3, radius: 0.05 } },
+    { type: "hide-circle", circle: { x: 0.4, y: 0.4, radius: 0.05 } },
+    { type: "reveal-circle", circle: { x: 0.35, y: 0.35, radius: 0.02 } }
+  ]);
+
+  const undoneBatch = store.undoFogOperation("The Long Walk", "forest");
+  assert.equal(undoneBatch.campaign.maps[0].canUndoFogOperation, true);
+  assert.deepEqual(undoneBatch.campaign.maps[0].fogOperations, [
+    { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+  ]);
+
+  const undoneInitial = store.undoFogOperation("The Long Walk", "forest");
+  assert.equal(undoneInitial.campaign.maps[0].canUndoFogOperation, false);
+  assert.deepEqual(undoneInitial.campaign.maps[0].fogOperations, []);
+});
+
+test("state store rejects invalid fog operation batches without changing state", () => {
+  const store = createStateStore();
+  store.setCampaign({
+    id: "The Long Walk",
+    activeMapId: "forest",
+    maps: [{ id: "forest", name: "Forest" }]
+  });
+  store.appendFogOperation("The Long Walk", "forest", {
+    type: "hide-rectangle",
+    rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 }
+  });
+  const before = store.getState();
+
+  assert.throws(
+    () =>
+      store.appendFogOperations("The Long Walk", "forest", [
+        { type: "hide-circle", circle: { x: 0.3, y: 0.3, radius: 0.05 } },
+        { type: "hide-circle", circle: { x: 1.3, y: 0.3, radius: 0.05 } }
+      ]),
+    /Invalid fog operation/
+  );
+  assert.deepEqual(store.getState(), before);
+
+  const undoneInitial = store.undoFogOperation("The Long Walk", "forest");
+  assert.deepEqual(undoneInitial.campaign.maps[0].fogOperations, []);
+  assert.equal(undoneInitial.campaign.maps[0].canUndoFogOperation, false);
+});
+
 test("state store undoes appended fog operations per encounter", () => {
   const store = createStateStore();
   store.setCampaign({

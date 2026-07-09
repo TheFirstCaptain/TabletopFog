@@ -900,6 +900,154 @@ test("GM API appends fog operations with persistence without exposing unshown fo
   }
 });
 
+test("GM API appends fog operation batches atomically with one undo step", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const { server, io, stateStore } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+  const clientOptions = {
+    forceNew: true,
+    rejectUnauthorized: false,
+    reconnection: false,
+    transports: ["websocket"]
+  };
+  const player = createClient(url, {
+    ...clientOptions,
+    extraHeaders: {
+      referer: `${url}/player`
+    }
+  });
+
+  try {
+    await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: "The Long Walk" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const forest = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "forest.png"
+      }),
+      method: "POST"
+    });
+    const cave = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "cave.png"
+      }),
+      method: "POST"
+    });
+    const active = waitForActiveMap(player, forest.json.map.id);
+    await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/active-map`, {
+      body: JSON.stringify({ mapId: forest.json.map.id }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+    await active;
+
+    const forestEndpoint = `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(forest.json.map.id)}/fog-operations`;
+    const forestBatchEndpoint = `${forestEndpoint}/batch`;
+    const forestUndoEndpoint = `${forestEndpoint}/undo`;
+    const caveBatchEndpoint = `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps/${encodeURIComponent(cave.json.map.id)}/fog-operations/batch`;
+
+    await requestHttps(forestEndpoint, {
+      body: JSON.stringify({ type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const batchSync = waitForActiveMapFogCount(player, forest.json.map.id, 3);
+    const batch = await requestHttps(forestBatchEndpoint, {
+      body: JSON.stringify({
+        operations: [
+          { type: "hide-circle", circle: { x: 0.3, y: 0.3, radius: 0.05 } },
+          { type: "reveal-circle", circle: { x: 0.32, y: 0.32, radius: 0.02 } }
+        ]
+      }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const batchPlayerState = await batchSync;
+    const storageBeforeInvalid = fs.readFileSync(path.join(dataRoot, "The Long Walk", "campaign.json"), "utf8");
+    const stateBeforeInvalid = stateStore.getState();
+
+    const invalid = await requestHttps(forestBatchEndpoint, {
+      body: JSON.stringify({
+        operations: [
+          { type: "hide-circle", circle: { x: 0.4, y: 0.4, radius: 0.05 } },
+          { type: "hide-circle", circle: { x: 1.4, y: 0.4, radius: 0.05 } }
+        ]
+      }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const emptyBatch = await requestHttps(forestBatchEndpoint, {
+      body: JSON.stringify({ operations: [] }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    assert.equal(fs.readFileSync(path.join(dataRoot, "The Long Walk", "campaign.json"), "utf8"), storageBeforeInvalid);
+    assert.deepEqual(stateStore.getState(), stateBeforeInvalid);
+
+    const caveBatch = await requestHttps(caveBatchEndpoint, {
+      body: JSON.stringify({
+        operations: [{ type: "hide-circle", circle: { x: 0.5, y: 0.5, radius: 0.1 } }]
+      }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const undoBatchSync = waitForActiveMapFogCount(player, forest.json.map.id, 1);
+    const undoBatch = await requestHttps(forestUndoEndpoint, {
+      headers: gmHeaders(port),
+      method: "POST"
+    });
+    const undoBatchPlayerState = await undoBatchSync;
+    const campaignJson = JSON.parse(fs.readFileSync(path.join(dataRoot, "The Long Walk", "campaign.json"), "utf8"));
+
+    assert.equal(batch.statusCode, 201);
+    assert.equal(invalid.statusCode, 400);
+    assert.equal(emptyBatch.statusCode, 400);
+    assert.equal(caveBatch.statusCode, 201);
+    assert.deepEqual(batch.json.campaign.maps.find((map) => map.id === forest.json.map.id).fogOperations, [
+      { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } },
+      { type: "hide-circle", circle: { x: 0.3, y: 0.3, radius: 0.05 } },
+      { type: "reveal-circle", circle: { x: 0.32, y: 0.32, radius: 0.02 } }
+    ]);
+    assert.deepEqual(batchPlayerState.activeMap.fogOperations, [
+      { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } },
+      { type: "hide-circle", circle: { x: 0.3, y: 0.3, radius: 0.05 } },
+      { type: "reveal-circle", circle: { x: 0.32, y: 0.32, radius: 0.02 } }
+    ]);
+    assert.equal(undoBatch.statusCode, 200);
+    assert.deepEqual(undoBatch.json.campaign.maps.find((map) => map.id === forest.json.map.id).fogOperations, [
+      { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+    ]);
+    assert.deepEqual(undoBatchPlayerState.activeMap.fogOperations, [
+      { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+    ]);
+    assert.deepEqual(
+      campaignJson.maps.map((map) => map.fog),
+      [
+        [{ type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }],
+        [{ type: "hide-circle", circle: { x: 0.5, y: 0.5, radius: 0.1 } }]
+      ]
+    );
+    assert.deepEqual(projectStateForRole(stateStore.getState(), "player").activeMap.fogOperations, [
+      { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+    ]);
+  } finally {
+    player.close();
+    await close(server, io);
+  }
+});
+
 test("GM API clears persisted fog without changing the shown encounter", async (t) => {
   const dataRoot = createTempRoot(t);
   const { server, io, stateStore } = createTabletopFogServer({

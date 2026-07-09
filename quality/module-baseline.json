@@ -3,11 +3,11 @@
   "roots": ["server", "public", "scripts"],
   "modules": {
     "public/gm-api.js": {
-      "baselineLines": 104,
-      "responsibility": "Send GM campaign, campaign deletion, campaign-card metadata, map, and fog-operation append, clear, and undo API requests and convert failed responses into client errors."
+      "baselineLines": 114,
+      "responsibility": "Send GM campaign, campaign deletion, campaign-card metadata, map, single and batched fog-operation append, clear, and undo API requests and convert failed responses into client errors."
     },
     "public/gm-controller.js": {
-      "baselineLines": 451,
+      "baselineLines": 443,
       "responsibility": "Coordinate GM campaign library, Player Display URL copy, campaign deletion, campaign-card metadata, encounter gallery, encounter workspace, GM-local map alignment and panning, rectangle, brush, and circle Hide and Reveal fog editing, Clear Fog, Undo fog, map, view, and Socket.IO workflows."
     },
     "public/gm-events.js": {
@@ -31,8 +31,8 @@
       "responsibility": "Compose and start the browser-native GM client modules."
     },
     "public/map-canvas.js": {
-      "baselineLines": 568,
-      "responsibility": "Render active maps and ordered rectangle and circle fog operations on a DPR-aware canvas with contain geometry, reusable fog mask composition, normalized map-rectangle, fixed-size map-circle, and drag-sized map-circle conversion, local zoom and pan, guarded image loading, pointer input, and deterministic cleanup."
+      "baselineLines": 612,
+      "responsibility": "Render active maps and ordered rectangle and circle fog operations on a DPR-aware canvas with contain geometry, reusable map-relative fog mask composition, normalized map-rectangle, fixed-size map-circle, and drag-sized map-circle conversion, local zoom and pan, guarded image loading, pointer input, diagnostics, and deterministic cleanup."
     },
     "public/player.js": {
       "baselineLines": 121,
@@ -87,8 +87,8 @@
       "responsibility": "Resolve and load HTTPS certificate credentials."
     },
     "server/http-routes.js": {
-      "baselineLines": 327,
-      "responsibility": "Register Express middleware, GM and Player Display pages, campaign, map, shown-to-players, persisted fog operation append, clear, undo, asset, static-file, and error routes while preserving GM-only mutation guards."
+      "baselineLines": 366,
+      "responsibility": "Register Express middleware, GM and Player Display pages, campaign, map, shown-to-players, persisted single and batched fog operation append, clear, undo, asset, static-file, and error routes while preserving GM-only mutation guards."
     },
     "server/index.js": {
       "baselineLines": 85,
@@ -107,8 +107,8 @@
       "responsibility": "Coordinate Socket.IO connection role assignment, initial state sync, and role-projected state broadcasts."
     },
     "server/state.js": {
-      "baselineLines": 189,
-      "responsibility": "Maintain snapshot-safe active campaign state and encounter-scoped fog operation state, including persisted fog hydration, runtime-only undo history, target validation, atomic fog append, clear, undo, and pruning for removed encounters."
+      "baselineLines": 203,
+      "responsibility": "Maintain snapshot-safe active campaign state and encounter-scoped fog operation state, including persisted fog hydration, runtime-only undo history, target validation, atomic single and batched fog append, clear, undo, and pruning for removed encounters."
     }
   }
 }

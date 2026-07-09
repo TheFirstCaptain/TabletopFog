@@ -264,19 +264,11 @@ export function createGmController({ api, socket, state, view }) {
       return;
     }
 
-    let latestCampaign = null;
     try {
-      for (const operation of operations) {
-        const payload = await api.appendFogOperation(campaign.id, selectedEncounterId, operation);
-        latestCampaign = payload.campaign;
-      }
-      state.setCurrentCampaign(latestCampaign);
+      const payload = await api.appendFogOperations(campaign.id, selectedEncounterId, operations);
+      state.setCurrentCampaign(payload.campaign);
       renderCurrentCampaign();
     } catch (error) {
-      if (latestCampaign) {
-        state.setCurrentCampaign(latestCampaign);
-        renderCurrentCampaign();
-      }
       view.setCampaignMessage(error.message);
     }
   }

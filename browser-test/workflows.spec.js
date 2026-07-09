@@ -176,6 +176,7 @@ async function canvasViewport(page, selector) {
     drawWidth: Number(canvas.dataset.drawWidth),
     drawX: Number(canvas.dataset.drawX),
     drawY: Number(canvas.dataset.drawY),
+    fogMaskBuilds: Number(canvas.dataset.fogMaskBuilds),
     fogOperations: Number(canvas.dataset.fogOperations),
     panX: Number(canvas.dataset.panX),
     panY: Number(canvas.dataset.panY),
@@ -1530,6 +1531,8 @@ test("seeded fog renders by role before drawing controls are used", async ({ app
 
   await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("3");
   await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("3");
+  await expect.poll(async () => (await canvasViewport(page, "#active-map-canvas")).fogMaskBuilds).toBeGreaterThan(0);
+  await expect.poll(async () => (await canvasViewport(player, "#player-map")).fogMaskBuilds).toBeGreaterThan(0);
 
   const gmVisible = await sampleMapPixel(page, "#active-map-canvas", { x: 0.05, y: 0.15 });
   const gmHidden = await sampleMapPixel(page, "#active-map-canvas", { x: 0.14, y: 0.18 });
@@ -1550,21 +1553,27 @@ test("seeded fog renders by role before drawing controls are used", async ({ app
   expect(colorDistance(gmHidden, gmRehidden)).toBeLessThan(8);
 
   const hiddenBeforeZoom = await sampleMapPixel(page, "#active-map-canvas", { x: 0.4, y: 0.2 });
+  const gmMaskBuildsBeforeZoom = (await canvasViewport(page, "#active-map-canvas")).fogMaskBuilds;
   await page.getByRole("button", { name: "Zoom in" }).click();
   await page.getByRole("button", { name: "Zoom in" }).click();
   await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-zoom")).toBe("1.5");
   await waitForCanvasFrame(page, "#active-map-canvas");
+  expect((await canvasViewport(page, "#active-map-canvas")).fogMaskBuilds).toBe(gmMaskBuildsBeforeZoom);
   const hiddenAfterZoom = await sampleMapPixel(page, "#active-map-canvas", { x: 0.4, y: 0.2 });
   expect(colorDistance(hiddenBeforeZoom, hiddenAfterZoom)).toBeLessThan(8);
 
   const playerHiddenBeforeResize = await sampleMapPixel(player, "#player-map", { x: 0.4, y: 0.2 });
+  const playerMaskBuildsBeforeZoom = (await canvasViewport(player, "#player-map")).fogMaskBuilds;
   await player.getByRole("button", { name: "Zoom in" }).click();
   await expect.poll(() => player.locator("#player-map").getAttribute("data-zoom")).toBe("1.25");
   await waitForCanvasFrame(player, "#player-map");
+  expect((await canvasViewport(player, "#player-map")).fogMaskBuilds).toBe(playerMaskBuildsBeforeZoom);
   const playerHiddenAfterZoom = await sampleMapPixel(player, "#player-map", { x: 0.4, y: 0.2 });
   expect(colorDistance(playerHiddenBeforeResize, playerHiddenAfterZoom)).toBeLessThan(8);
+  const playerMaskBuildsBeforeResize = (await canvasViewport(player, "#player-map")).fogMaskBuilds;
   await player.setViewportSize({ height: 844, width: 390 });
   await waitForCanvasFrame(player, "#player-map");
+  expect((await canvasViewport(player, "#player-map")).fogMaskBuilds).toBe(playerMaskBuildsBeforeResize);
   const playerHiddenAfterResize = await sampleMapPixel(player, "#player-map", { x: 0.4, y: 0.2 });
   const playerRevealedAfterResize = await sampleMapPixel(player, "#player-map", { x: 0.22, y: 0.28 });
   const playerRehiddenAfterResize = await sampleMapPixel(player, "#player-map", { x: 0.25, y: 0.32 });
@@ -1965,9 +1974,20 @@ test("GM rectangle Hide tool draws shown fog and isolates unshown prep fog", asy
 test("GM brush fog tool paints fixed-size hide and reveal operations", async ({ app, page, context }) => {
   const player = await context.newPage();
   let playerAssetRequests = 0;
+  let brushBatchRequests = 0;
+  let singleFogAppendRequests = 0;
   await player.route("**/api/player/active-map/asset*", (route) => {
     playerAssetRequests += 1;
     return route.continue();
+  });
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    if (request.method() !== "POST") return;
+    if (url.pathname.endsWith("/fog-operations/batch")) {
+      brushBatchRequests += 1;
+    } else if (url.pathname.endsWith("/fog-operations")) {
+      singleFogAppendRequests += 1;
+    }
   });
 
   await page.setViewportSize({ height: 768, width: 1366 });
@@ -2020,10 +2040,14 @@ test("GM brush fog tool paints fixed-size hide and reveal operations", async ({ 
   await page.mouse.move(brushHoverPoint.x, brushHoverPoint.y);
   await expect(page.locator("#workspace-fog-circle")).toBeVisible();
   await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("0");
+  const brushBatchRequestsBeforeHide = brushBatchRequests;
+  const singleFogAppendRequestsBeforeHide = singleFogAppendRequests;
   await dragMapRectangle(page, "#active-map-canvas", { x: 0.4, y: 0.5 }, { x: 0.6, y: 0.5 });
   await expect
     .poll(async () => Number(await page.locator("#active-map-canvas").getAttribute("data-fog-operations")))
     .toBeGreaterThan(1);
+  expect(brushBatchRequests - brushBatchRequestsBeforeHide).toBe(1);
+  expect(singleFogAppendRequests - singleFogAppendRequestsBeforeHide).toBe(0);
   const paintedHideCount = Number(await page.locator("#active-map-canvas").getAttribute("data-fog-operations"));
   await expect
     .poll(() => player.locator("#player-map").getAttribute("data-fog-operations"))

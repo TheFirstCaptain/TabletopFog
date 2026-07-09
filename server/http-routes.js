@@ -222,6 +222,45 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
     }
   });
 
+  app.post("/api/campaigns/:campaignId/maps/:mapId/fog-operations/batch", requireGm, (request, response, next) => {
+    try {
+      if (!request.body || typeof request.body !== "object" || Array.isArray(request.body)) {
+        response.status(400).json({ error: "Fog operation batch must be a JSON object." });
+        return;
+      }
+
+      if (!Array.isArray(request.body.operations) || request.body.operations.length === 0) {
+        response.status(400).json({ error: "At least one fog operation is required." });
+        return;
+      }
+
+      const operations = request.body.operations.map((operation) => {
+        if (!FOG_OPERATION_TYPES.has(operation?.type)) {
+          throw new Error("Only hide and reveal fog shapes can be added by this tool.");
+        }
+        return normalizeFogOperation(operation);
+      });
+      const target = getCurrentMapState(stateStore, request.params.campaignId, request.params.mapId);
+      const campaign = withAssetUrls(
+        campaignStorage,
+        campaignStorage.setMapFog(request.params.campaignId, request.params.mapId, [
+          ...(target.fogOperations || []),
+          ...operations
+        ])
+      );
+      stateStore.appendFogOperations(request.params.campaignId, request.params.mapId, operations);
+      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
+      onStateChange(state);
+      response.status(201).json({ campaign: state.campaign });
+    } catch (error) {
+      if (/Invalid fog operation|Map not found|At least one fog operation|Only hide and reveal/.test(error.message)) {
+        response.status(400).json({ error: error.message });
+        return;
+      }
+      next(error);
+    }
+  });
+
   app.delete("/api/campaigns/:campaignId/maps/:mapId/fog-operations", requireGm, (request, response, next) => {
     try {
       getCurrentMapState(stateStore, request.params.campaignId, request.params.mapId);

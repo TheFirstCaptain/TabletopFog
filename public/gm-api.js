@@ -74,6 +74,16 @@ export function createGmApi(fetchRequest) {
         }
       );
     },
+    appendFogOperations(campaignId, mapId, operations) {
+      return request(
+        `/api/campaigns/${encodeURIComponent(campaignId)}/maps/${encodeURIComponent(mapId)}/fog-operations/batch`,
+        {
+          body: JSON.stringify({ operations }),
+          headers: { "content-type": "application/json" },
+          method: "POST"
+        }
+      );
+    },
     clearFogOperations(campaignId, mapId) {
       return request(
         `/api/campaigns/${encodeURIComponent(campaignId)}/maps/${encodeURIComponent(mapId)}/fog-operations`,

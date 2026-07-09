@@ -160,6 +160,20 @@ function createStateStore() {
 
       return updateCampaign(state.campaign);
     },
+    appendFogOperations(campaignId, mapId, operations) {
+      validateFogTarget(campaignId, mapId);
+      if (!Array.isArray(operations) || operations.length === 0) {
+        throw new Error("At least one fog operation is required.");
+      }
+
+      const normalized = operations.map(normalizeFogOperation);
+      const key = fogKey(campaignId, mapId);
+      const previousOperations = getFogOperations(campaignId, mapId);
+      fogUndoHistoryByEncounter.set(key, [...(fogUndoHistoryByEncounter.get(key) || []), previousOperations]);
+      fogOperationsByEncounter.set(key, [...previousOperations, ...normalized]);
+
+      return updateCampaign(state.campaign);
+    },
     clearFogOperations(campaignId, mapId) {
       validateFogTarget(campaignId, mapId);
 

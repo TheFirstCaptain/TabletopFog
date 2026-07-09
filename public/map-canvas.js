@@ -44,6 +44,9 @@ export function createMapCanvasRenderer({
   const state = {
     destroyed: false,
     drawFrame: null,
+    fogMaskBuilds: 0,
+    fogMaskDirty: true,
+    fogOperationsSignature: "[]",
     generation: 0,
     image: null,
     fogOperations: [],
@@ -122,6 +125,14 @@ export function createMapCanvasRenderer({
       : [];
   }
 
+  function markFogMaskDirty() {
+    state.fogMaskDirty = true;
+  }
+
+  function getFogOperationsSignature(operations) {
+    return JSON.stringify(operations);
+  }
+
   function getDrawMetrics() {
     if (!state.image || !state.stageWidth || !state.stageHeight) return null;
 
@@ -162,6 +173,7 @@ export function createMapCanvasRenderer({
       delete canvas.dataset.drawX;
       delete canvas.dataset.drawY;
       delete canvas.dataset.fogOperations;
+      delete canvas.dataset.fogMaskBuilds;
       delete canvas.dataset.panX;
       delete canvas.dataset.panY;
       return;
@@ -173,11 +185,28 @@ export function createMapCanvasRenderer({
 
   function drawFog(metrics) {
     if (!state.fogOperations.length || fogOpacity <= 0 || !state.maskContext) return;
+    if (!ensureFogMask()) return;
 
-    state.maskCanvas.width = state.stageWidth;
-    state.maskCanvas.height = state.stageHeight;
+    context.save();
+    context.globalAlpha = fogOpacity;
+    context.drawImage(state.maskCanvas, metrics.x, metrics.y, metrics.width, metrics.height);
+    context.restore();
+  }
+
+  function ensureFogMask() {
+    const imageWidth = state.image?.naturalWidth || state.image?.width;
+    const imageHeight = state.image?.naturalHeight || state.image?.height;
+    if (!imageWidth || !imageHeight || !state.maskContext) return false;
+
+    if (!state.fogMaskDirty && state.maskCanvas.width === imageWidth && state.maskCanvas.height === imageHeight) {
+      return true;
+    }
+
+    state.maskCanvas.width = imageWidth;
+    state.maskCanvas.height = imageHeight;
     const maskContext = state.maskContext;
-    maskContext.clearRect(0, 0, state.stageWidth, state.stageHeight);
+    maskContext.globalCompositeOperation = "source-over";
+    maskContext.clearRect(0, 0, imageWidth, imageHeight);
 
     maskContext.fillStyle = "black";
     state.fogOperations.forEach((operation) => {
@@ -185,9 +214,9 @@ export function createMapCanvasRenderer({
 
       if (operation.type.endsWith("-circle")) {
         const circle = operation.circle;
-        const x = metrics.x + metrics.width * circle.x;
-        const y = metrics.y + metrics.height * circle.y;
-        const radius = Math.min(metrics.width, metrics.height) * circle.radius;
+        const x = imageWidth * circle.x;
+        const y = imageHeight * circle.y;
+        const radius = Math.min(imageWidth, imageHeight) * circle.radius;
         maskContext.beginPath();
         maskContext.arc(x, y, radius, 0, Math.PI * 2);
         maskContext.fill();
@@ -195,17 +224,18 @@ export function createMapCanvasRenderer({
       }
 
       const rect = operation.rect;
-      const x = metrics.x + metrics.width * rect.x;
-      const y = metrics.y + metrics.height * rect.y;
-      const width = metrics.width * rect.width;
-      const height = metrics.height * rect.height;
+      const x = imageWidth * rect.x;
+      const y = imageHeight * rect.y;
+      const width = imageWidth * rect.width;
+      const height = imageHeight * rect.height;
       maskContext.fillRect(x, y, width, height);
     });
 
-    context.save();
-    context.globalAlpha = fogOpacity;
-    context.drawImage(state.maskCanvas, 0, 0);
-    context.restore();
+    state.fogMaskBuilds += 1;
+    state.fogMaskDirty = false;
+    maskContext.globalCompositeOperation = "source-over";
+    canvas.dataset.fogMaskBuilds = String(state.fogMaskBuilds);
+    return true;
   }
 
   function scheduleDraw() {
@@ -266,7 +296,8 @@ export function createMapCanvasRenderer({
   function setMap(map) {
     if (state.destroyed) return;
     const nextMap = map && map.id && map.assetUrl ? { ...map } : null;
-    state.fogOperations = normalizeFogOperations(nextMap?.fogOperations);
+    const nextFogOperations = normalizeFogOperations(nextMap?.fogOperations);
+    const nextFogOperationsSignature = getFogOperationsSignature(nextFogOperations);
     const sameMap = Boolean(
       nextMap &&
       state.map &&
@@ -275,7 +306,13 @@ export function createMapCanvasRenderer({
     );
     const nextSource = nextMap ? addCacheKey(nextMap.assetUrl, nextMap) : null;
     const currentSource = state.map ? addCacheKey(state.map.assetUrl, state.map) : null;
+    const sourceChanged = nextSource !== currentSource;
 
+    if (nextFogOperationsSignature !== state.fogOperationsSignature || sourceChanged || !sameMap) {
+      markFogMaskDirty();
+    }
+    state.fogOperations = nextFogOperations;
+    state.fogOperationsSignature = nextFogOperationsSignature;
     state.map = nextMap;
     if (!sameMap) resetViewport();
 
@@ -287,6 +324,7 @@ export function createMapCanvasRenderer({
         state.pendingImage = null;
       }
       state.image = null;
+      markFogMaskDirty();
       canvas.hidden = true;
       canvas.removeAttribute("aria-label");
       reportStatus("empty");
@@ -311,6 +349,7 @@ export function createMapCanvasRenderer({
     const image = imageFactory();
     state.pendingImage = image;
     state.image = null;
+    markFogMaskDirty();
     canvas.hidden = true;
     reportStatus("loading");
 
@@ -323,6 +362,7 @@ export function createMapCanvasRenderer({
 
       state.pendingImage = null;
       state.image = image;
+      markFogMaskDirty();
       canvas.hidden = false;
       reportStatus("ready");
       resize();
@@ -332,6 +372,7 @@ export function createMapCanvasRenderer({
       if (state.destroyed || generation !== state.generation) return;
       state.pendingImage = null;
       state.image = null;
+      markFogMaskDirty();
       canvas.hidden = true;
       reportStatus("error", { error });
       scheduleDraw();
@@ -542,6 +583,7 @@ export function createMapCanvasRenderer({
       state.pointers.clear();
       delete canvas.dataset.panning;
       state.image = null;
+      markFogMaskDirty();
     },
     getViewport,
     getNormalizedCircleFromClientPoint,
@@ -553,6 +595,8 @@ export function createMapCanvasRenderer({
     setMap,
     setFogOperations(operations) {
       state.fogOperations = normalizeFogOperations(operations);
+      state.fogOperationsSignature = getFogOperationsSignature(state.fogOperations);
+      markFogMaskDirty();
       scheduleDraw();
     },
     setZoom(zoom) {
