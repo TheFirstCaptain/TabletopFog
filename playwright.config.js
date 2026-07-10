@@ -4,7 +4,7 @@ const { defineConfig, devices } = require("@playwright/test");
 
 module.exports = defineConfig({
   forbidOnly: Boolean(process.env.CI),
-  fullyParallel: false,
+  fullyParallel: true,
   outputDir: "test-results",
   projects: [
     {
@@ -21,5 +21,5 @@ module.exports = defineConfig({
     screenshot: "only-on-failure",
     trace: "retain-on-failure"
   },
-  workers: 1
+  workers: 4
 });
