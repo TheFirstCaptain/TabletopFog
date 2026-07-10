@@ -5,6 +5,20 @@ Feature-level planning and status tracking lives in
 `docs/ui-terminology.md`; design principles are defined in
 `docs/design-language.md`.
 
+## V1.0 Status
+
+TabletopFog's V1.0 scope is complete pending final release checks. Milestones 0
+through 6 are complete for V1: the app can run locally over HTTPS, manage local
+campaigns and encounters, show one encounter to the read-only Player Display,
+support GM-local map alignment and manual fog, persist and recover campaign
+state, and provide the approved table quality-of-life controls.
+
+Deferred or future ideas are intentionally outside V1.0 unless table use shows
+a concrete need. This includes QR code generation, extra reset polish beyond
+the existing per-encounter Clear Fog action, further GM map controls,
+persistence status beyond existing recovery diagnostics, and the broader future
+ideas listed at the end of this roadmap.
+
 ## Milestone 0: Harness and Repo Structure
 
 Goal: Create the documentation and validation harness for future AI-assisted development.
@@ -309,10 +323,13 @@ Acceptance criteria:
 - Complete: [F-008D](./features/F-008D.md), expanded fog shape tools.
 - Complete: [F-008C](./features/F-008C.md), undo fog action.
 - Complete: [F-008E](./features/F-008E.md), drag-to-size Circle fog shape.
-- Proposed: clear or reset fog beyond the existing per-encounter Clear Fog
-  action if table use shows a gap.
-- Deferred: QR code generation.
-- Better GM map controls if needed.
+- Complete for V1: the existing per-encounter Clear Fog action covers current
+  reset needs.
+- Deferred beyond V1: QR code generation.
+- Deferred beyond V1: additional reset polish or GM map controls if table use
+  shows a concrete need.
+
+Status: complete for V1.
 
 Implementation notes:
 

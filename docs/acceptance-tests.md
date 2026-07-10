@@ -1,6 +1,54 @@
 # Acceptance Tests
 
-These are human-readable acceptance tests for the early project. They are not necessarily automated yet. Future implementation work should convert stable checks into automated tests where useful.
+These are human-readable acceptance tests for TabletopFog V1 and future work.
+They are not necessarily automated yet. Future implementation work should
+convert stable checks into automated tests where useful.
+
+## V1.0 Readiness
+
+### Test: Core Local Table Workflow Is Ready For V1.0
+
+Prerequisites:
+
+- Dependencies, Chromium, Node.js, npm, and OpenSSL are installed.
+- The GM host and Player Display device are on the same Wi-Fi network for
+  physical validation.
+- Representative valid and invalid map image files are available.
+
+Steps:
+
+1. Run `npm run quality`.
+2. Start the app with `npm run local`.
+3. Open the GM View and create or open a local campaign.
+4. Add at least two encounter maps, rename or reorder one, and show one
+   encounter to players.
+5. Open the Player Display from the printed player URL on the intended table
+   device.
+6. Open a different encounter for prep and confirm the Player Display does not
+   change.
+7. Use Hide, Reveal, Brush, Circle, Clear Fog, and Undo on shown and unshown
+   encounters.
+8. Restart or reload the app, reopen the campaign, and confirm the previously
+   shown encounter and persisted fog restore safely.
+9. Exercise Player Display zoom, pan, fullscreen, reconnect, and image-error
+   recovery where practical.
+10. Confirm no tokens, initiative, notes, dice, dynamic lighting, cloud login,
+    or other full-VTT controls appear.
+
+Expected result:
+
+- The quality gate passes.
+- The GM can run the app locally over HTTPS without cloud hosting or accounts.
+- The Player Display can connect on the same Wi-Fi, remains read-only, and
+  updates only from explicit GM actions.
+- Campaigns, encounters, map assets, shown-to-players state, and fog persist in
+  local inspectable files.
+- Opening or editing an encounter remains GM-local until `Show to Players` is
+  used.
+- Manual fog tools behave consistently for shown and unshown encounters.
+- Deferred ideas such as QR code generation, extra reset polish, additional GM
+  map controls, tokens, notes, initiative, dynamic lighting, and cloud features
+  are not part of V1.0.
 
 ## Milestone 0: Harness and Repo Structure
 

@@ -6,17 +6,22 @@ This project is intentionally not a full virtual tabletop. V1 includes local cam
 
 ## Current Status
 
-TabletopFog has completed the first local connectivity spike, campaign/map
-library, fantasy visual theme, active-map display polish, campaign landing page
-polish, encounter gallery entry, and encounter workspace shell, including
-Chromebook-host and iPad-player validation through F-005, with automated
-quality validation through F-008E. The HTTPS app serves
-separate GM View and Player Display pages, stores local campaign folders, lets
-the GM manage map-backed encounter cards, and syncs only the current encounter
-shown to players to the read-only Player Display over Socket.IO.
+TabletopFog's V1.0 scope is feature-complete pending final release checks. The
+app has completed local connectivity, campaign and encounter management,
+Player Display rendering, manual fog of war, save/load recovery, table
+quality-of-life controls, and engineering cleanup. Chromebook-host and
+iPad-player validation has been completed for the core local-network workflow,
+and automated quality validation covers the current GM/player Chromium
+workflows.
+
+The HTTPS app serves separate GM View and Player Display pages, stores local
+campaign folders, lets the GM manage map-backed encounter cards, and syncs only
+the current encounter shown to players to the read-only Player Display over
+Socket.IO.
 
 The quality gate runs Chromium characterization for current GM/player workflows
-and theme behavior.
+and theme behavior, plus linting, formatting, module baselines, harness policy,
+Node coverage, and high-severity dependency audit.
 
 GM and player headings use a locally bundled EB Garamond display face. The GM
 workspace and player status chrome use a parchment-inspired theme while the
@@ -110,10 +115,10 @@ Completed local-connectivity work proved:
 - Trigger a GM state change.
 - Update the read-only Player Display live.
 
-Completed F-004 work adds local campaign and map library support. Campaigns are
-long-lived local folders, encounters are the primary prep units, maps are assets
-inside encounters, and maps start visible by default. Fog is added later to hide
-areas and then removed to reveal them during play.
+Completed campaign and encounter work adds local campaign and map library
+support. Campaigns are long-lived local folders, encounters are the primary
+prep units, maps are assets inside encounters, and maps start visible by
+default. Fog can be added to hide areas and removed to reveal them during play.
 
 Map upload accepts PNG, JPEG, GIF, and WebP files up to 100 MB and rejects data
 whose image signature, filename extension, and content type do not agree.
