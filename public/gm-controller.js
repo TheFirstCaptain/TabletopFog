@@ -1,4 +1,39 @@
 export function createGmController({ api, socket, state, view }) {
+  function omitSelectedEncounterFogFields(map) {
+    const galleryFields = { ...map };
+    delete galleryFields.canUndoFogOperation;
+    delete galleryFields.fog;
+    delete galleryFields.fogOperations;
+    return galleryFields;
+  }
+
+  function isSelectedWorkspaceFogOnlyChange(previousCampaign, nextCampaign, selectedEncounterId, screen) {
+    if (screen !== "workspace" || !previousCampaign || !nextCampaign || !selectedEncounterId) {
+      return false;
+    }
+    if (previousCampaign.id !== nextCampaign.id || previousCampaign.maps.length !== nextCampaign.maps.length) {
+      return false;
+    }
+
+    const { maps: previousMaps, ...previousCampaignFields } = previousCampaign;
+    const { maps: nextMaps, ...nextCampaignFields } = nextCampaign;
+    if (JSON.stringify(previousCampaignFields) !== JSON.stringify(nextCampaignFields)) {
+      return false;
+    }
+
+    return previousMaps.every((previousMap, index) => {
+      const nextMap = nextMaps[index];
+      if (!nextMap || previousMap.id !== nextMap.id) return false;
+      if (previousMap.id !== selectedEncounterId) {
+        return JSON.stringify(previousMap) === JSON.stringify(nextMap);
+      }
+      return (
+        JSON.stringify(omitSelectedEncounterFogFields(previousMap)) ===
+        JSON.stringify(omitSelectedEncounterFogFields(nextMap))
+      );
+    });
+  }
+
   function renderCurrentCampaign() {
     view.renderCampaign(
       state.getCurrentCampaign(),
@@ -6,6 +41,28 @@ export function createGmController({ api, socket, state, view }) {
       state.getScreen(),
       state.getSelectedEncounterGridState()
     );
+  }
+
+  function renderCampaignChange(previousCampaign) {
+    const currentCampaign = state.getCurrentCampaign();
+    if (
+      isSelectedWorkspaceFogOnlyChange(
+        previousCampaign,
+        currentCampaign,
+        state.getSelectedEncounterId(),
+        state.getScreen()
+      )
+    ) {
+      view.renderSelectedWorkspace(
+        currentCampaign,
+        state.getSelectedEncounterId(),
+        state.getScreen(),
+        state.getSelectedEncounterGridState()
+      );
+      return;
+    }
+
+    renderCurrentCampaign();
   }
 
   async function loadCampaigns() {
@@ -235,12 +292,13 @@ export function createGmController({ api, socket, state, view }) {
     }
 
     try {
+      const previousCampaign = state.getCurrentCampaign();
       const payload = await api.appendFogOperation(campaign.id, selectedEncounterId, {
         type: fogMode,
         rect: draft.rect
       });
       state.setCurrentCampaign(payload.campaign);
-      renderCurrentCampaign();
+      renderCampaignChange(previousCampaign);
     } catch (error) {
       view.setCampaignMessage(error.message);
     }
@@ -265,9 +323,10 @@ export function createGmController({ api, socket, state, view }) {
     }
 
     try {
+      const previousCampaign = state.getCurrentCampaign();
       const payload = await api.appendFogOperations(campaign.id, selectedEncounterId, operations);
       state.setCurrentCampaign(payload.campaign);
-      renderCurrentCampaign();
+      renderCampaignChange(previousCampaign);
     } catch (error) {
       view.setCampaignMessage(error.message);
     }
@@ -292,12 +351,13 @@ export function createGmController({ api, socket, state, view }) {
     }
 
     try {
+      const previousCampaign = state.getCurrentCampaign();
       const payload = await api.appendFogOperation(campaign.id, selectedEncounterId, {
         type: fogMode,
         circle: draft.circle
       });
       state.setCurrentCampaign(payload.campaign);
-      renderCurrentCampaign();
+      renderCampaignChange(previousCampaign);
     } catch (error) {
       view.setCampaignMessage(error.message);
     }
@@ -321,9 +381,10 @@ export function createGmController({ api, socket, state, view }) {
     view.cancelWorkspaceFogShape();
 
     try {
+      const previousCampaign = state.getCurrentCampaign();
       const payload = await api.clearFogOperations(campaign.id, selectedEncounter.id);
       state.setCurrentCampaign(payload.campaign);
-      renderCurrentCampaign();
+      renderCampaignChange(previousCampaign);
     } catch (error) {
       view.setCampaignMessage(error.message);
     }
@@ -341,9 +402,10 @@ export function createGmController({ api, socket, state, view }) {
     view.cancelWorkspaceFogShape();
 
     try {
+      const previousCampaign = state.getCurrentCampaign();
       const payload = await api.undoFogOperation(campaign.id, selectedEncounterId);
       state.setCurrentCampaign(payload.campaign);
-      renderCurrentCampaign();
+      renderCampaignChange(previousCampaign);
       view.setCampaignMessage("Fog undone.");
     } catch (_error) {
       view.setCampaignMessage("Could not undo fog. Nothing changed.");
@@ -433,8 +495,9 @@ export function createGmController({ api, socket, state, view }) {
       socket.on("connect", () => view.setStatus("Live", "live"));
       socket.on("disconnect", () => view.setStatus("Reconnecting...", "offline"));
       socket.on("state:sync", (serverState) => {
+        const previousCampaign = state.getCurrentCampaign();
         if (state.synchronize(serverState)) {
-          renderCurrentCampaign();
+          renderCampaignChange(previousCampaign);
         }
       });
       loadCampaigns();

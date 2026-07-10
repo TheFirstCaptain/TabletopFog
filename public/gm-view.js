@@ -481,6 +481,17 @@ export function createGmView(document) {
       renderMaps(campaign, selectedEncounterId);
       renderSelectedEncounter(campaign, selectedEncounterId, screen, gridState);
     },
+    renderSelectedWorkspace(campaign, selectedEncounterId, screen = "workspace", gridState = createDefaultGridState()) {
+      if (!campaign) {
+        navigation.showLibrary();
+        return;
+      }
+
+      elements.campaignHeading.textContent = campaign.name;
+      elements.campaignMessage.textContent =
+        recoveryMessage(campaign) || (campaign.maps.length === 0 ? "Add an encounter map to begin." : "");
+      renderSelectedEncounter(campaign, selectedEncounterId, screen, gridState);
+    },
     renderLibrary({ campaigns, diagnostics }) {
       elements.campaignList.replaceChildren();
       elements.libraryDiagnostics.replaceChildren();

@@ -184,6 +184,25 @@ async function canvasViewport(page, selector) {
   }));
 }
 
+async function markEncounterGalleryNodes(page) {
+  await page.evaluate(() => {
+    window.__tabletopFogMarkedEncounterCards = Array.from(document.querySelectorAll(".encounter-card"));
+  });
+}
+
+async function expectEncounterGalleryNodesUnchanged(page) {
+  await page.waitForTimeout(100);
+  expect(
+    await page.evaluate(() => {
+      const currentCards = Array.from(document.querySelectorAll(".encounter-card"));
+      const markedCards = window.__tabletopFogMarkedEncounterCards || [];
+      return (
+        currentCards.length === markedCards.length && currentCards.every((card, index) => card === markedCards[index])
+      );
+    })
+  ).toBe(true);
+}
+
 function colorDistance(left, right) {
   return Math.abs(left.red - right.red) + Math.abs(left.green - right.green) + Math.abs(left.blue - right.blue);
 }
@@ -1705,9 +1724,11 @@ test("GM Clear Fog is confirmed and scoped to the selected encounter", async ({ 
   page.once("dialog", async (dialog) => {
     await dialog.accept();
   });
+  await markEncounterGalleryNodes(page);
   await clearFog.click();
   await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("0");
   await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("0");
+  await expectEncounterGalleryNodesUnchanged(page);
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   await expect(clearFog).toBeDisabled();
 
@@ -1732,9 +1753,11 @@ test("GM Clear Fog is confirmed and scoped to the selected encounter", async ({ 
     expect(dialog.message()).toContain("You can use Undo until this campaign is reloaded.");
     await dialog.accept();
   });
+  await markEncounterGalleryNodes(page);
   await clearFog.click();
   await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("0");
   await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("1");
+  await expectEncounterGalleryNodesUnchanged(page);
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeUnshownClear);
   await expect(player.locator("input, select, textarea, [contenteditable=true], [data-action]")).toHaveCount(0);
@@ -1793,10 +1816,12 @@ test("GM Undo fog action walks back shown and unshown fog changes", async ({ app
   await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("2");
   await page.unroute("**/fog-operations/undo", rejectUndo);
 
+  await markEncounterGalleryNodes(page);
   await undo.click();
   await expect(page.locator("#campaign-message")).toHaveText("Fog undone.");
   await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("1");
   await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("1");
+  await expectEncounterGalleryNodesUnchanged(page);
   await expect(undo).toBeEnabled();
 
   page.once("dialog", async (dialog) => {
@@ -1809,13 +1834,17 @@ test("GM Undo fog action walks back shown and unshown fog changes", async ({ app
   await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("0");
   await expect(undo).toBeEnabled();
 
+  await markEncounterGalleryNodes(page);
   await undo.click();
   await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("1");
   await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("1");
+  await expectEncounterGalleryNodesUnchanged(page);
 
+  await markEncounterGalleryNodes(page);
   await undo.click();
   await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("0");
   await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("0");
+  await expectEncounterGalleryNodesUnchanged(page);
   await expect(undo).toBeDisabled();
 
   await page.getByRole("button", { name: "Hide", exact: true }).click();
@@ -1831,9 +1860,11 @@ test("GM Undo fog action walks back shown and unshown fog changes", async ({ app
   await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("1");
   await expect(undo).toBeEnabled();
 
+  await markEncounterGalleryNodes(page);
   await undo.click();
   await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("0");
   await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("1");
+  await expectEncounterGalleryNodesUnchanged(page);
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeUnshownUndo);
   await expect(player.locator("input, select, textarea, [contenteditable=true], [data-action]")).toHaveCount(0);
@@ -1898,9 +1929,11 @@ test("GM rectangle Hide tool draws shown fog and isolates unshown prep fog", asy
 
   const playerAssetRequestsBeforeFog = playerAssetRequests;
   const gmVisibleBefore = await sampleMapPixel(page, "#active-map-canvas", { x: 0.05, y: 0.15 });
+  await markEncounterGalleryNodes(page);
   await dragMapRectangle(page, "#active-map-canvas", { x: 0.5, y: 0.7 }, { x: 0.1, y: 0.2 });
   await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("1");
   await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("1");
+  await expectEncounterGalleryNodesUnchanged(page);
   const gmHidden = await sampleMapPixel(page, "#active-map-canvas", { x: 0.2, y: 0.3 });
   const playerHidden = await sampleMapPixel(player, "#player-map", { x: 0.2, y: 0.3 });
   expect(colorDistance(gmVisibleBefore, gmHidden)).toBeGreaterThan(80);
@@ -1958,12 +1991,16 @@ test("GM rectangle Hide tool draws shown fog and isolates unshown prep fog", asy
   await page.getByRole("button", { name: "Zoom in" }).click();
   await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-zoom")).toBe("1.5");
   await page.getByRole("button", { name: "Hide", exact: true }).click();
+  await markEncounterGalleryNodes(page);
   await dragMapRectangle(page, "#active-map-canvas", { x: 0.4, y: 0.2 }, { x: 0.6, y: 0.6 });
   await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("1");
+  await expectEncounterGalleryNodesUnchanged(page);
   await page.getByRole("button", { name: "Reveal", exact: true }).click();
+  await markEncounterGalleryNodes(page);
   await dragMapRectangle(page, "#active-map-canvas", { x: 0.46, y: 0.28 }, { x: 0.54, y: 0.42 });
   await expect.poll(() => page.locator("#active-map-canvas").getAttribute("data-fog-operations")).toBe("2");
   await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("4");
+  await expectEncounterGalleryNodesUnchanged(page);
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeUnshownFog);
   await page.getByRole("button", { name: "Fit map" }).click();
   const caveRevealedAfterFit = await sampleMapPixel(page, "#active-map-canvas", { x: 0.5, y: 0.35 });
