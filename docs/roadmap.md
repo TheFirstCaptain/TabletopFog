@@ -19,6 +19,32 @@ the existing per-encounter Clear Fog action, further GM map controls,
 persistence status beyond existing recovery diagnostics, and the broader future
 ideas listed at the end of this roadmap.
 
+## Post-V1: Campaign Image Handouts
+
+Goal: Let the GM show campaign-wide image handouts to players without turning
+the handout into an encounter map.
+
+Tracked as [F-010](./features/F-010.md). Planned child features:
+
+- Proposed: [F-010A](./features/F-010A.md), campaign handout library.
+- Proposed: [F-010B](./features/F-010B.md), show handout to players.
+- Proposed: [F-010C](./features/F-010C.md), GM-controlled handout rotation.
+- Proposed: [F-010D](./features/F-010D.md), handout display polish and
+  validation.
+
+Initial acceptance direction:
+
+- Handouts are campaign-wide image files, not encounter-specific notes.
+- Showing a handout is an explicit `Show to Players` action.
+- Showing a handout replaces the currently shown encounter or map on the Player
+  Display.
+- Showing an encounter again replaces the handout.
+- The Player Display remains read-only and can use its existing fullscreen
+  behavior while a handout is shown.
+- The GM can rotate the shown handout in 90-degree increments.
+- No PDFs, text notes, overlay mode, slideshow mode, player-side rotation,
+  cloud hosting, authentication, or full-VTT features are introduced.
+
 ## Milestone 0: Harness and Repo Structure
 
 Goal: Create the documentation and validation harness for future AI-assisted development.

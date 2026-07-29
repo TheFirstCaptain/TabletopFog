@@ -50,6 +50,44 @@ Expected result:
   map controls, tokens, notes, initiative, dynamic lighting, and cloud features
   are not part of V1.0.
 
+## Post-V1: Campaign Image Handouts
+
+### Test: GM Can Show A Campaign Handout To Players
+
+Prerequisites:
+
+- The local HTTPS server is running.
+- The GM View and Player Display are open.
+- A campaign exists with at least one encounter and at least two representative
+  image handout files.
+
+Steps:
+
+1. Open the campaign in the GM View.
+2. Add campaign-wide image handouts.
+3. Show an encounter to players and confirm the Player Display shows the
+   encounter map and fog state.
+4. Click `Show to Players` for a handout.
+5. Confirm the Player Display replaces the encounter with the handout image.
+6. Enter fullscreen on the Player Display while the handout is shown.
+7. Rotate the shown handout from the GM View in 90-degree increments.
+8. Confirm the Player Display updates to the GM-selected orientation.
+9. Show an encounter to players again.
+10. Confirm the Player Display replaces the handout with the encounter map and
+    preserves expected encounter fog behavior.
+
+Expected result:
+
+- Handouts are campaign-wide image assets separate from encounter maps.
+- The Player Display changes only after explicit GM `Show to Players` actions
+  or GM-controlled rotation of the currently shown handout.
+- Showing a handout replaces the currently shown encounter.
+- Showing an encounter replaces the currently shown handout.
+- The Player Display remains read-only and fullscreen-capable.
+- No PDFs, notes, slideshow controls, overlay mode, player-side rotation,
+  tokens, initiative, dice, dynamic lighting, cloud login, or other full-VTT
+  controls appear.
+
 ## Milestone 0: Harness and Repo Structure
 
 ### Test: Documentation Scaffold Exists
