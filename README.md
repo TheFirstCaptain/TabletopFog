@@ -19,6 +19,11 @@ campaign folders, lets the GM manage map-backed encounter cards, and syncs only
 the current encounter shown to players to the read-only Player Display over
 Socket.IO.
 
+Post-V1 handout work has started with a campaign-wide image handout library.
+The GM can add and browse image handouts stored in the campaign's local
+`handouts/` folder. Handouts do not show on the Player Display yet; that remains
+tracked as later F-010 work.
+
 The quality gate runs Chromium characterization for current GM/player workflows
 and theme behavior, plus linting, formatting, module baselines, harness policy,
 Node coverage, and high-severity dependency audit.
@@ -50,9 +55,10 @@ waiting state and returns the action to `Show to Players`. Rename, reorder,
 upload, and confirmed permanent delete stay directly available on the Campaign
 page without a separate Manage Mode; delete is blocked only for encounters
 currently `Shown to Players`. Campaign Library cards also support confirmed
-permanent deletion for campaigns with no encounters; campaigns that still
-contain encounters show a disabled delete action with guidance to remove
-encounters first. The GM app header now keeps `TABLETOPFOG`, breadcrumb context,
+permanent deletion for campaigns with no encounters or handouts; campaigns that
+still contain encounters or handouts show a disabled delete action with
+guidance to remove that content first. The GM app header now keeps
+`TABLETOPFOG`, breadcrumb context,
 and connection state in one compact row. Opening an encounter for prep enters a
 focused GM workspace shell with a compact label/status/action strip, the
 selected map as the dominant first-viewport surface, selected-versus-shown
@@ -122,6 +128,7 @@ default. Fog can be added to hide areas and removed to reveal them during play.
 
 Map upload accepts PNG, JPEG, GIF, and WebP files up to 100 MB and rejects data
 whose image signature, filename extension, and content type do not agree.
+Handout upload follows the same image validation rules.
 The campaign library keeps valid campaigns available when another campaign has
 invalid metadata and shows non-destructive recovery guidance for the skipped
 folder.

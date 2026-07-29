@@ -37,6 +37,7 @@ acceptance tests unless there is a specific reason to do otherwise.
 | Campaign | A local collection of prepared encounters for an adventure or game. |
 | Encounter | A prepared table moment inside a campaign. An encounter currently has one map and later owns fog and other encounter-specific tools. |
 | Map | The image asset shown inside an encounter. Maps remain visually prominent, but they are not the primary workflow unit. |
+| Handout | A campaign-wide image asset the GM can prepare outside the encounter workflow. In F-010A, handouts are add-and-browse only and do not appear on the Player Display yet. |
 | Encounter Workspace | The GM prep and running surface for one selected encounter. Opening it must not change the Player Display. |
 | Player Display | The read-only player-facing browser view, usually on an iPad mirrored to a TV. |
 | GM View | The GM-facing browser view that owns preparation and show controls. |

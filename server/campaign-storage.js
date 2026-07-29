@@ -20,7 +20,7 @@ const {
   splitFileName,
   validateCampaignMetadataPatch
 } = require("./campaign-schema");
-const { validateMapImage } = require("./map-image");
+const { validateHandoutImage, validateMapImage } = require("./map-image");
 
 function createCampaignStorage(options = {}) {
   const campaignFiles = createCampaignFiles(options);
@@ -33,6 +33,10 @@ function createCampaignStorage(options = {}) {
   }
 
   function saveCampaign(campaign) {
+    campaign.handouts = (campaign.handouts || []).map((handout, index) => ({
+      ...handout,
+      order: index + 1
+    }));
     campaign.maps = campaign.maps.map((map, index) => ({
       ...map,
       order: index + 1,
@@ -59,6 +63,10 @@ function createCampaignStorage(options = {}) {
   function addAssetUrls(campaign) {
     return {
       ...campaign,
+      handouts: (campaign.handouts || []).map((handout) => ({
+        ...handout,
+        assetUrl: `/api/campaigns/${encodeURIComponent(campaign.id)}/handouts/${encodeURIComponent(handout.id)}/asset`
+      })),
       maps: campaign.maps.map((map) => ({
         ...map,
         assetUrl: `/api/campaigns/${encodeURIComponent(campaign.id)}/maps/${encodeURIComponent(map.id)}/asset`
@@ -68,7 +76,23 @@ function createCampaignStorage(options = {}) {
 
   function recoverCampaignAssets(campaignId, campaign) {
     const recoveryDiagnostics = [...(campaign.recoveryDiagnostics || [])];
+    const availabilityByHandoutId = new Map();
     const availabilityByMapId = new Map();
+
+    (campaign.handouts || []).forEach((handout) => {
+      try {
+        campaignFiles.getContainedHandoutAssetPath(campaignId, handout);
+        availabilityByHandoutId.set(handout.id, true);
+      } catch (_error) {
+        availabilityByHandoutId.set(handout.id, false);
+        recoveryDiagnostics.push({
+          code: "missing-handout-asset",
+          handoutId: handout.id,
+          message: "This handout image could not be found.",
+          severity: "warning"
+        });
+      }
+    });
 
     campaign.maps.forEach((map) => {
       try {
@@ -87,6 +111,10 @@ function createCampaignStorage(options = {}) {
 
     const recovered = {
       ...campaign,
+      handouts: (campaign.handouts || []).map((handout) => ({
+        ...handout,
+        assetAvailable: availabilityByHandoutId.get(handout.id) !== false
+      })),
       maps: campaign.maps.map((map) => ({
         ...map,
         assetAvailable: availabilityByMapId.get(map.id) !== false
@@ -126,6 +154,16 @@ function createCampaignStorage(options = {}) {
     return map;
   }
 
+  function findHandout(campaign, handoutId) {
+    const handout = (campaign.handouts || []).find((candidate) => candidate.id === handoutId);
+
+    if (!handout) {
+      throw createUserError(404, "Handout not found.");
+    }
+
+    return handout;
+  }
+
   function getCampaignLibrary() {
     campaignFiles.ensureDataRoot();
     const campaigns = [];
@@ -144,6 +182,7 @@ function createCampaignStorage(options = {}) {
             ...(campaign.description ? { description: campaign.description } : {}),
             ...(campaign.icon ? { icon: campaign.icon } : {}),
             activeMapName: activeMap ? activeMap.name : null,
+            handoutCount: campaign.handouts?.length || 0,
             mapCount: campaign.maps.length
           });
           (campaign.recoveryDiagnostics || []).forEach((diagnostic) => {
@@ -212,6 +251,51 @@ function createCampaignStorage(options = {}) {
 
       return map;
     },
+    addHandout(campaignId, handoutInput) {
+      const campaign = readCampaign(campaignId);
+      const originalFileName = String(handoutInput.originalFileName || "").trim();
+      const safeFileName = normalizeFileName(originalFileName);
+
+      if (!safeFileName) {
+        throw createUserError(400, "A valid handout file name is required.");
+      }
+
+      const content = Buffer.isBuffer(handoutInput.content)
+        ? handoutInput.content
+        : Buffer.from(handoutInput.content || "");
+
+      validateHandoutImage(content, handoutInput.contentType, safeFileName);
+
+      fs.mkdirSync(campaignFiles.handoutsDir(campaignId), { recursive: true });
+      const storedFileName = uniqueName(
+        safeFileName,
+        campaignFiles.existingNames(campaignFiles.handoutsDir(campaignId))
+      );
+      const storedPath = path.join(campaignFiles.handoutsDir(campaignId), storedFileName);
+      const handoutId = uniqueName(
+        splitFileName(storedFileName).name,
+        new Set((campaign.handouts || []).map((handout) => handout.id.toLowerCase()))
+      );
+      const handout = {
+        id: handoutId,
+        name: displayNameFromFileName(originalFileName),
+        originalFileName,
+        file: path.posix.join("handouts", storedFileName),
+        order: (campaign.handouts || []).length + 1
+      };
+
+      fs.writeFileSync(storedPath, content);
+      campaign.handouts = [...(campaign.handouts || []), handout];
+
+      try {
+        saveCampaign(campaign);
+      } catch (error) {
+        fs.rmSync(storedPath, { force: true });
+        throw error;
+      }
+
+      return handout;
+    },
     createCampaign(name) {
       campaignFiles.ensureDataRoot();
       const safeName = normalizePathSegment(name);
@@ -229,12 +313,14 @@ function createCampaignStorage(options = {}) {
       const dir = campaignFiles.campaignDir(safeName);
 
       try {
+        fs.mkdirSync(path.join(dir, "handouts"), { recursive: true });
         fs.mkdirSync(path.join(dir, "maps"), { recursive: true });
         const campaign = {
           version: 1,
           id: safeName,
           name: String(name).trim(),
           activeMapId: null,
+          handouts: [],
           maps: []
         };
         campaignFiles.writeJsonAtomic(campaignFiles.campaignJsonPath(safeName), serializeCampaign(campaign));
@@ -247,8 +333,8 @@ function createCampaignStorage(options = {}) {
     deleteCampaign(campaignId) {
       const campaign = readCampaign(campaignId);
 
-      if (campaign.maps.length > 0) {
-        throw createUserError(409, "Delete this campaign's encounters before deleting the campaign.");
+      if (campaign.maps.length > 0 || (campaign.handouts || []).length > 0) {
+        throw createUserError(409, "Delete this campaign's encounters and handouts before deleting the campaign.");
       }
 
       fs.rmSync(campaignFiles.campaignDir(campaignId), { recursive: true, force: true });
@@ -264,6 +350,15 @@ function createCampaignStorage(options = {}) {
       return {
         filePath: campaignFiles.getContainedMapAssetPath(campaignId, map),
         map
+      };
+    },
+    getHandoutAsset(campaignId, handoutId) {
+      const campaign = readCampaign(campaignId);
+      const handout = findHandout(campaign, handoutId);
+
+      return {
+        filePath: campaignFiles.getContainedHandoutAssetPath(campaignId, handout),
+        handout
       };
     },
     listCampaigns() {

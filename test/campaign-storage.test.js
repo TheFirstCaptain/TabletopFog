@@ -6,7 +6,8 @@ const path = require("node:path");
 const test = require("node:test");
 
 const { createCampaignStorage, normalizeFileName, normalizePathSegment } = require("../server/campaign-storage");
-const { PNG_BYTES } = require("../test-support/fixtures");
+const { MAX_MAP_FILE_BYTES } = require("../server/map-image");
+const { createOversizedMapBytes, PNG_BYTES, VALID_MAP_IMAGES } = require("../test-support/fixtures");
 const { createTemporaryDirectory } = require("../test-support/temp-directory");
 
 function createTempRoot(t) {
@@ -76,10 +77,28 @@ test("rejects campaign deletes when maps remain", (t) => {
   const campaignPath = path.join(root, campaign.id, "campaign.json");
   const originalMetadata = fs.readFileSync(campaignPath, "utf8");
 
-  assert.throws(() => storage.deleteCampaign(campaign.id), /encounters before deleting the campaign/);
+  assert.throws(() => storage.deleteCampaign(campaign.id), /encounters and handouts before deleting the campaign/);
   assert.equal(fs.existsSync(path.join(root, campaign.id)), true);
   assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
   assert.equal(fs.existsSync(path.join(root, campaign.id, map.file)), true);
+});
+
+test("rejects campaign deletes when handouts remain", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const handout = storage.addHandout(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "portrait.png"
+  });
+  const campaignPath = path.join(root, campaign.id, "campaign.json");
+  const originalMetadata = fs.readFileSync(campaignPath, "utf8");
+
+  assert.throws(() => storage.deleteCampaign(campaign.id), /encounters and handouts before deleting the campaign/);
+  assert.equal(fs.existsSync(path.join(root, campaign.id)), true);
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+  assert.equal(fs.existsSync(path.join(root, campaign.id, handout.file)), true);
 });
 
 test("lists only folders with valid campaign metadata", (t) => {
@@ -94,6 +113,7 @@ test("lists only folders with valid campaign metadata", (t) => {
       id: "The Long Walk",
       name: "The Long Walk",
       activeMapName: null,
+      handoutCount: 0,
       mapCount: 0
     }
   ]);
@@ -115,6 +135,7 @@ test("campaign library reports invalid folders without modifying them", (t) => {
         id: "The Long Walk",
         name: "The Long Walk",
         activeMapName: null,
+        handoutCount: 0,
         mapCount: 0
       }
     ],
@@ -154,6 +175,61 @@ test("adds maps with original filenames, safe collisions, and default names", (t
   assert.equal(second.order, 2);
   assert.ok(fs.existsSync(path.join(root, "The Long Walk", "maps", "Goblin Cave-2.png")));
   assert.ok(fs.existsSync(path.join(root, "The Long Walk", "maps", "Goblin Cave-2-2.png")));
+});
+
+test("adds campaign handouts with original filenames, safe collisions, and default names", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+
+  const first = storage.addHandout(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "NPC Portrait #2.png"
+  });
+  const second = storage.addHandout(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "NPC Portrait #2.png"
+  });
+
+  assert.equal(first.name, "NPC Portrait #2");
+  assert.equal(first.originalFileName, "NPC Portrait #2.png");
+  assert.equal(first.file, "handouts/NPC Portrait-2.png");
+  assert.equal(first.order, 1);
+  assert.equal(second.file, "handouts/NPC Portrait-2-2.png");
+  assert.equal(second.order, 2);
+  assert.deepEqual(
+    storage.getCampaign(campaign.id).handouts.map((handout) => [handout.id, handout.name, handout.file, handout.order]),
+    [
+      [first.id, "NPC Portrait #2", "handouts/NPC Portrait-2.png", 1],
+      [second.id, "NPC Portrait #2", "handouts/NPC Portrait-2-2.png", 2]
+    ]
+  );
+  assert.ok(fs.existsSync(path.join(root, "The Long Walk", "handouts", "NPC Portrait-2.png")));
+  assert.ok(fs.existsSync(path.join(root, "The Long Walk", "handouts", "NPC Portrait-2-2.png")));
+});
+
+test("adds campaign handouts for every supported image type", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+
+  VALID_MAP_IMAGES.forEach((fixture) => {
+    const handout = storage.addHandout(campaign.id, {
+      content: fixture.bytes,
+      contentType: `${fixture.contentType}; charset=binary`,
+      originalFileName: fixture.fileName.replace("map", `handout-${fixture.type.toLowerCase()}`)
+    });
+
+    assert.match(handout.file, /^handouts\//);
+    assert.ok(fs.existsSync(path.join(root, campaign.id, handout.file)), fixture.type);
+  });
+
+  assert.deepEqual(
+    storage.getCampaign(campaign.id).handouts.map((handout) => handout.order),
+    [1, 2, 3, 4]
+  );
 });
 
 test("renames maps without changing stored file paths", (t) => {
@@ -474,6 +550,116 @@ test("rejects map image metadata that does not match the image data", (t) => {
   assert.deepEqual(storage.getCampaign(campaign.id).maps, []);
 });
 
+test("rejects invalid handout image data without changing campaign storage", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const campaignPath = path.join(root, campaign.id, "campaign.json");
+  const originalMetadata = fs.readFileSync(campaignPath, "utf8");
+
+  assert.throws(
+    () =>
+      storage.addHandout(campaign.id, {
+        content: Buffer.from("not-an-image"),
+        contentType: "image/png",
+        originalFileName: "portrait.png"
+      }),
+    /supported handout image/
+  );
+
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+  assert.deepEqual(storage.getCampaign(campaign.id).handouts, []);
+  assert.deepEqual(fs.readdirSync(path.join(root, campaign.id, "handouts")), []);
+
+  assert.throws(
+    () =>
+      storage.addHandout(campaign.id, {
+        content: PNG_BYTES,
+        contentType: "image/jpeg",
+        originalFileName: "portrait.jpg"
+      }),
+    /must match its image data/
+  );
+
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+  assert.deepEqual(storage.getCampaign(campaign.id).handouts, []);
+  assert.deepEqual(fs.readdirSync(path.join(root, campaign.id, "handouts")), []);
+
+  assert.throws(
+    () =>
+      storage.addHandout(campaign.id, {
+        content: Buffer.alloc(0),
+        contentType: "image/png",
+        originalFileName: "empty.png"
+      }),
+    /empty/
+  );
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+
+  assert.throws(
+    () =>
+      storage.addHandout(campaign.id, {
+        content: createOversizedMapBytes(MAX_MAP_FILE_BYTES),
+        contentType: "image/png",
+        originalFileName: "oversized.png"
+      }),
+    /100 MB limit/
+  );
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+
+  assert.throws(
+    () =>
+      storage.addHandout(campaign.id, {
+        content: PNG_BYTES,
+        contentType: "image/png",
+        originalFileName: "???"
+      }),
+    /valid handout file name/
+  );
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+});
+
+test("failed handout metadata persistence removes the new asset and preserves existing storage", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const existing = storage.addHandout(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "existing.png"
+  });
+  const campaignPath = path.join(root, campaign.id, "campaign.json");
+  const originalMetadata = fs.readFileSync(campaignPath, "utf8");
+  const originalRenameSync = fs.renameSync;
+  t.after(() => {
+    fs.renameSync = originalRenameSync;
+  });
+  fs.renameSync = (source, destination) => {
+    if (destination === campaignPath) {
+      throw new Error("Injected metadata write failure.");
+    }
+    return originalRenameSync(source, destination);
+  };
+
+  assert.throws(
+    () =>
+      storage.addHandout(campaign.id, {
+        content: PNG_BYTES,
+        contentType: "image/png",
+        originalFileName: "new.png"
+      }),
+    /Injected metadata write failure/
+  );
+
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+  assert.equal(fs.existsSync(path.join(root, campaign.id, existing.file)), true);
+  assert.equal(fs.existsSync(path.join(root, campaign.id, "handouts", "new.png")), false);
+  assert.deepEqual(
+    storage.getCampaign(campaign.id).handouts.map((handout) => handout.file),
+    [existing.file]
+  );
+});
+
 test("persists active map and reloads campaign state", (t) => {
   const root = createTempRoot(t);
   const storage = createCampaignStorage({ dataRoot: root });
@@ -777,6 +963,7 @@ test("reports missing map assets and clears missing shown encounter only in memo
       id: "The Long Walk",
       name: "The Long Walk",
       activeMapName: null,
+      handoutCount: 0,
       mapCount: 2
     }
   ]);
@@ -793,6 +980,92 @@ test("reports missing map assets and clears missing shown encounter only in memo
     }
   ]);
   assert.equal(fs.readFileSync(campaignPath, "utf8"), originalJson);
+});
+
+test("reports missing handout assets without rewriting metadata", (t) => {
+  const root = createTempRoot(t);
+  const campaignDir = path.join(root, "The Long Walk");
+  const campaignPath = path.join(campaignDir, "campaign.json");
+  fs.mkdirSync(path.join(campaignDir, "handouts"), { recursive: true });
+  const originalJson = `${JSON.stringify(
+    {
+      version: 1,
+      name: "The Long Walk",
+      activeMapId: null,
+      handouts: [{ id: "portrait", name: "Portrait", file: "handouts/portrait.png", order: 1 }],
+      maps: []
+    },
+    null,
+    2
+  )}\n`;
+  fs.writeFileSync(campaignPath, originalJson);
+  const storage = createCampaignStorage({ dataRoot: root });
+
+  const campaign = storage.getCampaign("The Long Walk");
+  const library = storage.getCampaignLibrary();
+
+  assert.equal(campaign.handouts[0].assetAvailable, false);
+  assert.deepEqual(campaign.recoveryDiagnostics, [
+    {
+      code: "missing-handout-asset",
+      handoutId: "portrait",
+      message: "This handout image could not be found.",
+      severity: "warning"
+    }
+  ]);
+  assert.equal(library.campaigns[0].handoutCount, 1);
+  assert.deepEqual(library.diagnostics, [
+    {
+      campaignId: "The Long Walk",
+      message: "This handout image could not be found.",
+      type: "recovered"
+    }
+  ]);
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalJson);
+});
+
+test("rejects handout asset paths outside the handouts folder", (t) => {
+  const root = createTempRoot(t);
+  const campaignDir = path.join(root, "The Long Walk");
+  fs.mkdirSync(path.join(campaignDir, "maps"), { recursive: true });
+  fs.mkdirSync(path.join(campaignDir, "handouts"), { recursive: true });
+  fs.writeFileSync(path.join(campaignDir, "maps", "portrait.png"), PNG_BYTES);
+  fs.writeFileSync(
+    path.join(campaignDir, "campaign.json"),
+    `${JSON.stringify({
+      version: 1,
+      name: "The Long Walk",
+      activeMapId: null,
+      handouts: [{ id: "portrait", name: "Portrait", file: "maps/portrait.png", order: 1 }],
+      maps: []
+    })}\n`
+  );
+  const storage = createCampaignStorage({ dataRoot: root });
+
+  assert.throws(() => storage.getHandoutAsset("The Long Walk", "portrait"), /Invalid handout asset path/);
+});
+
+test("rejects symlinked handout assets that escape the handouts folder", (t) => {
+  const root = createTempRoot(t);
+  const campaignDir = path.join(root, "The Long Walk");
+  fs.mkdirSync(path.join(campaignDir, "handouts"), { recursive: true });
+  const outsideAsset = path.join(root, "outside.png");
+  fs.writeFileSync(outsideAsset, PNG_BYTES);
+  fs.symlinkSync(outsideAsset, path.join(campaignDir, "handouts", "portrait.png"));
+  fs.writeFileSync(
+    path.join(campaignDir, "campaign.json"),
+    `${JSON.stringify({
+      version: 1,
+      name: "The Long Walk",
+      activeMapId: null,
+      handouts: [{ id: "portrait", name: "Portrait", file: "handouts/portrait.png", order: 1 }],
+      maps: []
+    })}\n`
+  );
+  const storage = createCampaignStorage({ dataRoot: root });
+
+  assert.throws(() => storage.getHandoutAsset("The Long Walk", "portrait"), /Invalid handout asset path/);
+  assert.equal(storage.getCampaign("The Long Walk").handouts[0].assetAvailable, false);
 });
 
 test("rejects showing encounters with missing map assets without rewriting metadata", (t) => {

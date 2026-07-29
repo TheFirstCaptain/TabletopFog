@@ -109,6 +109,16 @@ export function createGmApi(fetchRequest) {
         },
         method: "POST"
       });
+    },
+    async uploadHandout(campaignId, file) {
+      return request(`/api/campaigns/${encodeURIComponent(campaignId)}/handouts`, {
+        body: await file.arrayBuffer(),
+        headers: {
+          "content-type": file.type || "application/octet-stream",
+          "x-file-name": file.name
+        },
+        method: "POST"
+      });
     }
   };
 }

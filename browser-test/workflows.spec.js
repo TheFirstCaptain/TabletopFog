@@ -91,6 +91,13 @@ async function addMap(page, name) {
   await uploadMapFile(page, pngFile(name));
 }
 
+async function uploadHandoutFile(page, file, expectedName = file.name.replace(/\.png$/, "")) {
+  await expect(page.locator("#handout-form")).toBeVisible();
+  await page.getByLabel("Handout image").setInputFiles(file);
+  await page.getByRole("button", { name: "Add handout" }).click();
+  await expect(page.getByRole("heading", { level: 4, name: expectedName })).toBeVisible();
+}
+
 function writeCampaignRecord(dataRoot, folderName, campaign) {
   const campaignDirectory = path.join(dataRoot, folderName);
   fs.mkdirSync(campaignDirectory, { recursive: true });
@@ -250,6 +257,84 @@ test("GM creates, reopens, uploads, renames, and reorders campaign maps", async 
   await expect(page.getByRole("button", { name: "Move Forest Ambush down" })).toBeDisabled();
 });
 
+test("GM adds campaign handouts without changing the Player Display", async ({ app, page, context }) => {
+  const player = await context.newPage();
+  let playerAssetRequests = 0;
+  let playerHandoutAssetRequests = 0;
+  await player.route("**/api/player/active-map/asset*", (route) => {
+    playerAssetRequests += 1;
+    return route.continue();
+  });
+  await player.route("**/handouts/**", (route) => {
+    playerHandoutAssetRequests += 1;
+    return route.continue();
+  });
+
+  await openGm(page, app.baseURL);
+  await createCampaign(page);
+  await expect(page.getByRole("button", { name: "Encounters" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("#handout-library")).toBeHidden();
+  await page.getByRole("button", { name: "Handouts" }).click();
+  await expect(page.getByRole("button", { name: "Handouts" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("#encounter-gallery")).toBeHidden();
+  await expect(page.getByText("No handouts yet. Add an image handout when this campaign needs one.")).toBeVisible();
+  await page.getByRole("button", { name: "Encounters" }).click();
+  await addMap(page, "forest.png");
+  await page.getByRole("button", { name: "Show to Players", exact: true }).click();
+  await player.goto(`${app.baseURL}/player`);
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  const playerAssetRequestsBeforeHandout = playerAssetRequests;
+  await page.getByRole("button", { name: "Handouts" }).click();
+
+  await page.getByLabel("Handout image").setInputFiles({
+    buffer: Buffer.from("not-an-image"),
+    mimeType: "image/png",
+    name: "invalid.png"
+  });
+  await page.getByRole("button", { name: "Add handout" }).click();
+  await expect(page.getByText(/supported handout image/i)).toBeVisible();
+  await expect(page.getByRole("heading", { level: 4, name: "invalid" })).toHaveCount(0);
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeHandout);
+
+  await uploadHandoutFile(page, pngFile("NPC Portrait.png"), "NPC Portrait");
+  await expect(page.locator(".handout-card").filter({ hasText: "NPC Portrait" }).getByRole("img")).toBeVisible();
+  await expect(page.getByLabel("Handouts").getByText("1 handout", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Show handout|Rotate|Delete handout/i })).toHaveCount(0);
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeHandout);
+  expect(playerHandoutAssetRequests).toBe(0);
+
+  const handoutPresentation = await page.locator(".handout-card").evaluate((card) => {
+    const list = card.closest(".handout-list");
+    const thumbnail = card.querySelector(".handout-thumbnail");
+    return {
+      display: getComputedStyle(list).display,
+      fit: getComputedStyle(thumbnail).objectFit
+    };
+  });
+  expect(handoutPresentation).toEqual({ display: "grid", fit: "contain" });
+
+  await page.reload();
+  await expectGmHeader(page, "Campaign Library");
+  await page.getByRole("button", { name: "Open" }).click();
+  await page.getByRole("button", { name: "Handouts" }).click();
+  await expect(page.getByRole("heading", { level: 4, name: "NPC Portrait" })).toBeVisible();
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+
+  await page.setViewportSize({ height: 844, width: 390 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  const handoutFormLayout = await page.locator("#handout-form").evaluate((form) => {
+    const input = form.querySelector("input").getBoundingClientRect();
+    const button = form.querySelector("button").getBoundingClientRect();
+    return {
+      buttonBelowInput: button.top >= input.bottom,
+      formWithinViewport: form.getBoundingClientRect().right <= document.documentElement.clientWidth + 1
+    };
+  });
+  expect(handoutFormLayout).toEqual({ buttonBelowInput: true, formWithinViewport: true });
+});
+
 test("GM can view and copy the Player Display URL", async ({ app, page, context }) => {
   await page.addInitScript(() => {
     window.__copiedPlayerUrls = [];
@@ -373,6 +458,10 @@ test("GM deletes only empty campaigns after confirmation", async ({ app, page, c
   await openGm(page, app.baseURL);
   await createCampaign(page, "Empty Campaign");
   await page.getByRole("button", { name: "Back to Campaign Library" }).click();
+  await createCampaign(page, "Campaign With Handouts");
+  await page.getByRole("button", { name: "Handouts" }).click();
+  await uploadHandoutFile(page, pngFile("portrait.png"), "portrait");
+  await page.getByRole("button", { name: "Back to Campaign Library" }).click();
   await createCampaign(page, "Campaign With Maps");
   await addMap(page, "forest.png");
   await page.getByRole("button", { name: "Show to Players", exact: true }).click();
@@ -382,11 +471,19 @@ test("GM deletes only empty campaigns after confirmation", async ({ app, page, c
   await page.getByRole("button", { name: "Back to Campaign Library" }).click();
 
   const emptyCard = page.locator(".campaign-card").filter({ hasText: "Empty Campaign" });
+  const handoutCard = page.locator(".campaign-card").filter({ hasText: "Campaign With Handouts" });
   const filledCard = page.locator(".campaign-card").filter({ hasText: "Campaign With Maps" });
 
   await expect(emptyCard.getByRole("button", { name: "Delete Empty Campaign" })).toBeEnabled();
+  await expect(handoutCard.getByText("1 handout")).toBeVisible();
+  await expect(handoutCard.getByRole("button", { name: "Delete Campaign With Handouts" })).toBeDisabled();
+  await expect(
+    handoutCard.getByText("Delete this campaign's encounters and handouts before deleting the campaign.")
+  ).toBeVisible();
   await expect(filledCard.getByRole("button", { name: "Delete Campaign With Maps" })).toBeDisabled();
-  await expect(filledCard.getByText("Delete this campaign's encounters before deleting the campaign.")).toBeVisible();
+  await expect(
+    filledCard.getByText("Delete this campaign's encounters and handouts before deleting the campaign.")
+  ).toBeVisible();
 
   page.once("dialog", async (dialog) => {
     expect(dialog.message()).toContain('This permanently deletes "Empty Campaign".');

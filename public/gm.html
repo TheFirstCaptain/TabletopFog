@@ -54,6 +54,11 @@
 
         <p id="campaign-message" class="muted" aria-live="polite"></p>
 
+        <div class="campaign-content-switch" role="group" aria-label="Campaign content">
+          <button id="show-encounters" class="secondary" type="button">Encounters</button>
+          <button id="show-handouts" class="secondary" type="button">Handouts</button>
+        </div>
+
         <div class="workspace-grid">
           <div id="encounter-gallery" class="encounter-gallery">
             <div class="encounter-gallery-heading">
@@ -69,6 +74,22 @@
             </div>
             <div id="map-list" class="map-list"></div>
           </div>
+
+          <section id="handout-library" class="handout-library" aria-labelledby="handout-library-heading">
+            <div class="handout-library-heading">
+              <div>
+                <h3 id="handout-library-heading">Handouts</h3>
+                <p class="muted">Browse campaign-wide images prepared for players.</p>
+              </div>
+              <form id="handout-form" class="add-handout-form" aria-label="Add Campaign Handout">
+                <label for="handout-file" class="visually-hidden">Handout image</label>
+                <input id="handout-file" name="handout-file" type="file" accept="image/*" required />
+                <button type="submit">Add handout</button>
+              </form>
+            </div>
+            <p id="handout-count" class="muted handout-count"></p>
+            <div id="handout-list" class="handout-list"></div>
+          </section>
 
           <section
             id="encounter-workspace"

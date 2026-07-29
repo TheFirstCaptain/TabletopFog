@@ -83,11 +83,16 @@ Use `TABLETOPFOG_DATA_DIR` to point development or smoke tests at a temporary da
 TABLETOPFOG_DATA_DIR=/private/tmp/tabletopfog-data npm run local
 ```
 
-Campaign folders contain `campaign.json` and a `maps/` folder with copied map assets. These files are intended to be inspectable outside the app.
+Campaign folders contain `campaign.json`, a `maps/` folder with copied map
+assets, and a `handouts/` folder with copied campaign handout image assets.
+These files are intended to be inspectable outside the app.
 
 Map upload supports PNG, JPEG, GIF, and WebP files up to 100 MB. The server
 checks image signatures, filename extensions, and content types before writing a
 map file or changing campaign metadata.
+
+Handout upload uses the same supported image types, 100 MB limit, signature
+checks, extension checks, and content-type checks as map upload.
 
 ### Campaign Storage Format
 
@@ -97,6 +102,8 @@ The current local storage format is intentionally simple and inspectable:
 <data-root>/
   <Campaign Folder>/
     campaign.json
+    handouts/
+      <copied handout image assets>
     maps/
       <copied map assets>
 ```
@@ -104,9 +111,11 @@ The current local storage format is intentionally simple and inspectable:
 `campaign.json` currently uses `version: 1`, a display `name`, optional
 campaign card metadata such as `description` and `icon`, an `activeMapId`
 implementation field for the encounter currently `Shown to Players`, and a
-`maps` array. Each `maps` entry represents an encounter map asset with `id`,
-display `name`, optional `originalFileName`, relative `file`, display `order`,
-and ordered `fog` operations.
+`maps` array, and `handouts` array. Each `maps` entry represents an encounter
+map asset with `id`, display `name`, optional `originalFileName`, relative
+`file`, display `order`, and ordered `fog` operations. Each `handouts` entry
+represents a campaign-wide handout image asset with `id`, display `name`,
+optional `originalFileName`, relative `file`, and display `order`.
 
 Fog operations are stored as normalized rectangles in map-relative coordinates:
 
@@ -130,13 +139,16 @@ fog. When the saved `Shown to Players` encounter's map asset is missing or
 invalid, the server restores a safe empty Player Display state and reports the
 problem to the GM.
 
+Missing handout assets are reported to the GM as recovery diagnostics and do
+not change the Player Display.
+
 Recovery reads do not rewrite `campaign.json`, delete assets, or strip unknown
 metadata. A later successful explicit GM mutation, such as rename, reorder,
-show, fog edit, or clear, writes the current supported storage shape back to
-disk and preserves unknown campaign and map metadata where the compatibility
-policy supports it. Treat broader field renames, storage migrations, or moving
-from JSON files to another datastore as reviewed future work, not automatic
-repair.
+show, fog edit, clear, or handout upload, writes the current supported storage
+shape back to disk and preserves unknown campaign, map, and handout metadata
+where the compatibility policy supports it. Treat broader field renames,
+storage migrations, or moving from JSON files to another datastore as reviewed
+future work, not automatic repair.
 
 ## Validation Commands
 

@@ -2,16 +2,20 @@ export function createGmNavigation(elements) {
   function showCampaignScreen() {
     elements.workspaceGrid.dataset.screen = "campaign";
     elements.campaignSectionHeading.hidden = false;
+    elements.campaignContentSwitch.hidden = false;
     elements.encounterWorkspace.hidden = true;
     elements.encounterGallery.hidden = false;
+    elements.handoutLibrary.hidden = false;
     elements.campaignMessage.hidden = false;
   }
 
   function showWorkspaceScreen() {
     elements.workspaceGrid.dataset.screen = "workspace";
     elements.campaignSectionHeading.hidden = true;
+    elements.campaignContentSwitch.hidden = true;
     elements.encounterWorkspace.hidden = false;
     elements.encounterGallery.hidden = true;
+    elements.handoutLibrary.hidden = true;
     elements.campaignMessage.hidden = true;
   }
 

@@ -53,6 +53,7 @@ export function createGmView(document) {
     campaignMessage: document.querySelector("#campaign-message"),
     campaignName: document.querySelector("#campaign-name"),
     campaignPanel: document.querySelector("#campaign-panel"),
+    campaignContentSwitch: document.querySelector(".campaign-content-switch"),
     campaignSectionHeading: document.querySelector("#campaign-panel > .section-heading"),
     breadcrumb: document.querySelector("#breadcrumb"),
     encounterGallery: document.querySelector("#encounter-gallery"),
@@ -61,6 +62,11 @@ export function createGmView(document) {
     gmZoomIn: document.querySelector("#gm-zoom-in"),
     gmZoomLevel: document.querySelector("#gm-zoom-level"),
     gmZoomOut: document.querySelector("#gm-zoom-out"),
+    handoutCount: document.querySelector("#handout-count"),
+    handoutFile: document.querySelector("#handout-file"),
+    handoutForm: document.querySelector("#handout-form"),
+    handoutLibrary: document.querySelector("#handout-library"),
+    handoutList: document.querySelector("#handout-list"),
     libraryPanel: document.querySelector("#library-panel"),
     libraryDiagnostics: document.querySelector("#library-diagnostics"),
     libraryMessage: document.querySelector("#library-message"),
@@ -72,6 +78,8 @@ export function createGmView(document) {
     playerUrlMessage: document.querySelector("#player-url-message"),
     selectedEncounterHeading: document.querySelector("#selected-encounter-heading"),
     selectedEncounterStatus: document.querySelector("#selected-encounter-status"),
+    showEncounters: document.querySelector("#show-encounters"),
+    showHandouts: document.querySelector("#show-handouts"),
     status: document.querySelector("#connection-status"),
     workspaceFogOverlay: document.querySelector("#workspace-fog-overlay"),
     workspaceCircleSize: document.querySelector("#workspace-circle-size"),
@@ -100,6 +108,7 @@ export function createGmView(document) {
   let workspaceCanUndoFog = false;
   let workspaceFogOperationCount = 0;
   let workspaceGridState = createDefaultGridState();
+  let campaignContentView = "encounters";
   elements.playerUrl.value = new URL("/player", document.defaultView.location.origin).href;
 
   let activeMapRenderer;
@@ -290,6 +299,17 @@ export function createGmView(document) {
     activeMapRenderer.setMap({ ...selectedEncounter, campaignId: campaign.id });
   }
 
+  function renderCampaignContentView(screen = "campaign") {
+    const showHandouts = screen === "campaign" && campaignContentView === "handouts";
+    const showEncounters = screen === "campaign" && campaignContentView === "encounters";
+    elements.encounterGallery.hidden = !showEncounters;
+    elements.handoutLibrary.hidden = !showHandouts;
+    elements.showEncounters.dataset.active = String(showEncounters);
+    elements.showHandouts.dataset.active = String(showHandouts);
+    elements.showEncounters.setAttribute("aria-pressed", String(showEncounters));
+    elements.showHandouts.setAttribute("aria-pressed", String(showHandouts));
+  }
+
   function renderMaps(campaign, selectedEncounterId) {
     elements.mapList.replaceChildren();
     elements.mapForm.hidden = false;
@@ -423,6 +443,39 @@ export function createGmView(document) {
     });
   }
 
+  function renderHandouts(campaign) {
+    const handouts = campaign.handouts || [];
+    elements.handoutList.replaceChildren();
+    elements.handoutForm.hidden = false;
+    elements.handoutCount.textContent = `${handouts.length} handout${handouts.length === 1 ? "" : "s"}`;
+
+    if (handouts.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "muted handout-empty";
+      empty.textContent = "No handouts yet. Add an image handout when this campaign needs one.";
+      elements.handoutList.append(empty);
+      return;
+    }
+
+    handouts.forEach((handout) => {
+      const item = document.createElement("article");
+      item.className = "handout-card";
+      item.dataset.handoutId = handout.id;
+
+      const thumbnail = document.createElement("img");
+      thumbnail.className = "handout-thumbnail";
+      thumbnail.src = handout.assetUrl;
+      thumbnail.alt = `Handout thumbnail for ${handout.name}`;
+
+      const title = document.createElement("h4");
+      title.className = "handout-name";
+      title.textContent = handout.name;
+
+      item.append(thumbnail, title);
+      elements.handoutList.append(item);
+    });
+  }
+
   return {
     elements,
     destroy() {
@@ -449,6 +502,9 @@ export function createGmView(document) {
     },
     clearMapFile() {
       elements.mapFile.value = "";
+    },
+    clearHandoutFile() {
+      elements.handoutFile.value = "";
     },
     hideCampaign() {
       navigation.showLibrary();
@@ -479,7 +535,9 @@ export function createGmView(document) {
       elements.campaignMessage.textContent =
         recoveryMessage(campaign) || (campaign.maps.length === 0 ? "Add an encounter map to begin." : "");
       renderMaps(campaign, selectedEncounterId);
+      renderHandouts(campaign);
       renderSelectedEncounter(campaign, selectedEncounterId, screen, gridState);
+      renderCampaignContentView(screen);
     },
     renderSelectedWorkspace(campaign, selectedEncounterId, screen = "workspace", gridState = createDefaultGridState()) {
       if (!campaign) {
@@ -540,6 +598,13 @@ export function createGmView(document) {
         mapCount.textContent = `${campaign.mapCount} map${campaign.mapCount === 1 ? "" : "s"}`;
         meta.append(mapCount);
 
+        if (campaign.handoutCount) {
+          const handoutCount = document.createElement("span");
+          handoutCount.className = "campaign-card-handout-count";
+          handoutCount.textContent = `${campaign.handoutCount} handout${campaign.handoutCount === 1 ? "" : "s"}`;
+          meta.append(handoutCount);
+        }
+
         if (campaign.activeMapName) {
           const shown = document.createElement("span");
           shown.className = "campaign-card-shown";
@@ -566,7 +631,9 @@ export function createGmView(document) {
         edit.setAttribute("aria-label", "Edit campaign details");
 
         const deleteBlockedReason =
-          campaign.mapCount > 0 ? "Delete this campaign's encounters before deleting the campaign." : "";
+          campaign.mapCount > 0 || campaign.handoutCount > 0
+            ? "Delete this campaign's encounters and handouts before deleting the campaign."
+            : "";
         const deleteReasonId = `delete-campaign-reason-${index}`;
         const deleteButton = createButton(document, {
           action: "delete-campaign",
@@ -671,6 +738,10 @@ export function createGmView(document) {
     },
     setPlayerUrlMessage(message) {
       elements.playerUrlMessage.textContent = message;
+    },
+    setCampaignContentView(view) {
+      campaignContentView = view === "handouts" ? "handouts" : "encounters";
+      renderCampaignContentView();
     },
     setStatus(message, state) {
       elements.status.textContent = message;

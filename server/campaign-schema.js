@@ -2,11 +2,13 @@
 
 const CAMPAIGN_EXTRA_FIELDS = Symbol("campaignExtraFields");
 const MAP_EXTRA_FIELDS = Symbol("mapExtraFields");
+const HANDOUT_EXTRA_FIELDS = Symbol("handoutExtraFields");
 const MAX_CAMPAIGN_DESCRIPTION_LENGTH = 160;
 const MAX_CAMPAIGN_ICON_LENGTH = 4;
 const FOG_OPERATION_TYPES = new Set(["hide-rectangle", "reveal-rectangle", "hide-circle", "reveal-circle"]);
-const campaignFields = new Set(["version", "name", "description", "icon", "activeMapId", "maps"]);
+const campaignFields = new Set(["version", "name", "description", "icon", "activeMapId", "maps", "handouts"]);
 const mapFields = new Set(["id", "name", "originalFileName", "file", "order", "fog"]);
+const handoutFields = new Set(["id", "name", "originalFileName", "file", "order"]);
 const metadataFields = new Set(["description", "icon", "name"]);
 
 function normalizePathSegment(value) {
@@ -195,6 +197,36 @@ function normalizeCampaignWithOptions(campaignId, rawCampaign, options = {}) {
     });
     return normalizedMap;
   });
+  const sourceHandouts = Array.isArray(rawCampaign.handouts) ? rawCampaign.handouts : [];
+  const decoratedHandouts = sourceHandouts.map((handout, index) => ({
+    handout,
+    index,
+    order: Number.isInteger(handout.order) && handout.order > 0 ? handout.order : index + 1
+  }));
+
+  decoratedHandouts.sort((left, right) => {
+    if (left.order !== right.order) {
+      return left.order - right.order;
+    }
+
+    return left.index - right.index;
+  });
+
+  const handouts = decoratedHandouts.map(({ handout }, index) => {
+    const normalizedHandout = {
+      id: String(handout.id || normalizePathSegment(handout.name || `handout-${index + 1}`)),
+      name: String(handout.name || handout.originalFileName || `Handout ${index + 1}`),
+      originalFileName: handout.originalFileName ? String(handout.originalFileName) : undefined,
+      file: String(handout.file || ""),
+      order: index + 1
+    };
+
+    Object.defineProperty(normalizedHandout, HANDOUT_EXTRA_FIELDS, {
+      enumerable: true,
+      value: collectExtraFields(handout, handoutFields)
+    });
+    return normalizedHandout;
+  });
 
   const campaign = {
     version: Number.isInteger(rawCampaign.version) ? rawCampaign.version : 1,
@@ -203,6 +235,7 @@ function normalizeCampaignWithOptions(campaignId, rawCampaign, options = {}) {
     description: typeof rawCampaign.description === "string" ? rawCampaign.description : "",
     icon: typeof rawCampaign.icon === "string" ? rawCampaign.icon : "",
     activeMapId: rawCampaign.activeMapId || null,
+    handouts,
     maps
   };
 
@@ -230,6 +263,14 @@ function serializeCampaign(campaign) {
     ...(campaign.description ? { description: campaign.description } : {}),
     ...(campaign.icon ? { icon: campaign.icon } : {}),
     activeMapId: campaign.activeMapId || null,
+    handouts: (campaign.handouts || []).map((handout) => ({
+      ...(handout[HANDOUT_EXTRA_FIELDS] || {}),
+      id: handout.id,
+      name: handout.name,
+      ...(handout.originalFileName ? { originalFileName: handout.originalFileName } : {}),
+      file: handout.file,
+      order: handout.order
+    })),
     maps: campaign.maps.map((map) => ({
       ...(map[MAP_EXTRA_FIELDS] || {}),
       id: map.id,

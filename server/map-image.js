@@ -57,19 +57,19 @@ function createMapImageError(statusCode, message) {
   return error;
 }
 
-function validateMapImage(content, contentType, fileName) {
+function validateImage(content, contentType, fileName, label = "Map") {
   if (content.length === 0) {
-    throw createMapImageError(400, "Map file is empty.");
+    throw createMapImageError(400, `${label} file is empty.`);
   }
 
   if (content.length > MAX_MAP_FILE_BYTES) {
-    throw createMapImageError(413, "Map file exceeds the 100 MB limit.");
+    throw createMapImageError(413, `${label} file exceeds the 100 MB limit.`);
   }
 
   const imageType = detectMapImageType(content);
 
   if (!imageType) {
-    throw createMapImageError(400, "A supported map image is required (PNG, JPEG, GIF, or WebP).");
+    throw createMapImageError(400, `A supported ${label.toLowerCase()} image is required (PNG, JPEG, GIF, or WebP).`);
   }
 
   const format = mapImageFormats[imageType];
@@ -80,12 +80,21 @@ function validateMapImage(content, contentType, fileName) {
     .toLowerCase();
 
   if (!format.extensions.includes(extension) || normalizedContentType !== format.mimeType) {
-    throw createMapImageError(400, "Map file extension and content type must match its image data.");
+    throw createMapImageError(400, `${label} file extension and content type must match its image data.`);
   }
+}
+
+function validateMapImage(content, contentType, fileName) {
+  validateImage(content, contentType, fileName, "Map");
+}
+
+function validateHandoutImage(content, contentType, fileName) {
+  validateImage(content, contentType, fileName, "Handout");
 }
 
 module.exports = {
   MAX_MAP_FILE_BYTES,
   detectMapImageType,
+  validateHandoutImage,
   validateMapImage
 };

@@ -10,8 +10,9 @@ const test = require("node:test");
 const { io: createClient } = require("socket.io-client");
 const { createTabletopFogServer, getRoleFromReferer, projectStateForRole } = require("../server");
 const { createCampaignStorage } = require("../server/campaign-storage");
+const { MAX_MAP_FILE_BYTES } = require("../server/map-image");
 const { createTestCertificate } = require("../test-support/certificate");
-const { PNG_BYTES } = require("../test-support/fixtures");
+const { createOversizedMapBytes, PNG_BYTES } = require("../test-support/fixtures");
 const { createTemporaryDirectory } = require("../test-support/temp-directory");
 
 const EB_GARAMOND_LATIN_RANGE =
@@ -284,6 +285,7 @@ test("creates campaigns through GM API and lists them", async (t) => {
         id: "The Long Walk",
         name: "The Long Walk",
         activeMapName: null,
+        handoutCount: 0,
         mapCount: 0
       }
     ]);
@@ -336,7 +338,7 @@ test("deletes empty campaigns through GM API only", async (t) => {
     });
 
     assert.equal(rejectedFilled.statusCode, 409);
-    assert.match(rejectedFilled.json.error, /encounters before deleting the campaign/);
+    assert.match(rejectedFilled.json.error, /encounters and handouts before deleting the campaign/);
     assert.equal(playerRejected.statusCode, 403);
     assert.equal(deleted.statusCode, 200);
     assert.deepEqual(
@@ -702,6 +704,212 @@ test("manages maps and broadcasts active map state", async (t) => {
     assert.equal(stateStore.getState().campaign.activeMapId, null);
   } finally {
     player.close();
+    await close(server, io);
+  }
+});
+
+test("adds campaign handouts through GM API without changing player projection", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const { server, io, stateStore } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+  const clientOptions = {
+    forceNew: true,
+    rejectUnauthorized: false,
+    reconnection: false,
+    transports: ["websocket"]
+  };
+  const player = createClient(url, {
+    ...clientOptions,
+    extraHeaders: {
+      referer: `${url}/player`
+    }
+  });
+
+  try {
+    await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: "The Long Walk" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const map = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "forest.png"
+      }),
+      method: "POST"
+    });
+    const active = waitForActiveMap(player, map.json.map.id);
+    await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/active-map`, {
+      body: JSON.stringify({ mapId: map.json.map.id }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+    const playerBeforeHandout = await active;
+    const handout = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/handouts`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "NPC Portrait.png"
+      }),
+      method: "POST"
+    });
+    const playerAsset = await getHttps(`${url}${handout.json.handout.assetUrl}`, {
+      headers: playerHeaders(port),
+      label: "player handout asset"
+    });
+    const gmAsset = await getHttps(`${url}${handout.json.handout.assetUrl}`, {
+      headers: gmHeaders(port),
+      label: "gm handout asset"
+    });
+    const playerRejected = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/handouts`, {
+      body: PNG_BYTES,
+      headers: playerHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "Secret.png"
+      }),
+      method: "POST"
+    });
+    const invalid = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/handouts`, {
+      body: Buffer.from("not-an-image"),
+      headers: gmHeaders(port, {
+        "content-length": "12",
+        "content-type": "image/png",
+        "x-file-name": "bad.png"
+      }),
+      method: "POST"
+    });
+    const missingFileName = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/handouts`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png"
+      }),
+      method: "POST"
+    });
+    const oversized = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/handouts`, {
+      body: createOversizedMapBytes(MAX_MAP_FILE_BYTES),
+      headers: gmHeaders(port, {
+        "content-length": String(MAX_MAP_FILE_BYTES + 1),
+        "content-type": "image/png",
+        "x-file-name": "oversized.png"
+      }),
+      method: "POST"
+    });
+
+    assert.equal(handout.statusCode, 201);
+    assert.equal(handout.json.handout.name, "NPC Portrait");
+    assert.equal(handout.json.handout.file, "handouts/NPC Portrait.png");
+    assert.equal(handout.json.campaign.activeMapId, map.json.map.id);
+    assert.deepEqual(
+      handout.json.campaign.handouts.map((item) => item.name),
+      ["NPC Portrait"]
+    );
+    assert.equal(playerAsset.statusCode, 403);
+    assert.equal(gmAsset.statusCode, 200);
+    assert.deepEqual(gmAsset.rawBody, PNG_BYTES);
+    assert.equal(playerRejected.statusCode, 403);
+    assert.equal(invalid.statusCode, 400);
+    assert.match(invalid.json.error, /supported handout image/i);
+    assert.equal(missingFileName.statusCode, 400);
+    assert.match(missingFileName.json.error, /valid handout file name/i);
+    assert.equal(oversized.statusCode, 413);
+    assert.deepEqual(fs.readdirSync(path.join(dataRoot, "The Long Walk", "handouts")), ["NPC Portrait.png"]);
+    assert.deepEqual(projectStateForRole(stateStore.getState(), "player").activeMap, playerBeforeHandout.activeMap);
+  } finally {
+    player.close();
+    await close(server, io);
+  }
+});
+
+test("GM handout asset route rejects missing and unsafe assets without path leakage", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const campaignDir = path.join(dataRoot, "The Long Walk");
+  fs.mkdirSync(path.join(campaignDir, "handouts"), { recursive: true });
+  fs.writeFileSync(
+    path.join(campaignDir, "campaign.json"),
+    `${JSON.stringify({
+      version: 1,
+      name: "The Long Walk",
+      activeMapId: null,
+      handouts: [
+        { id: "missing", name: "Missing", file: "handouts/missing.png", order: 1 },
+        { id: "unsafe", name: "Unsafe", file: "maps/unsafe.png", order: 2 }
+      ],
+      maps: []
+    })}\n`
+  );
+  const { server, io } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+
+  try {
+    const missing = await getHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/handouts/${encodeURIComponent("missing")}/asset`,
+      { headers: gmHeaders(port) }
+    );
+    const unsafe = await getHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/handouts/${encodeURIComponent("unsafe")}/asset`,
+      { headers: gmHeaders(port) }
+    );
+
+    assert.equal(missing.statusCode, 404);
+    assert.equal(JSON.parse(missing.body).error, "Handout asset not found.");
+    assert.equal(unsafe.statusCode, 400);
+    assert.equal(JSON.parse(unsafe.body).error, "Invalid handout asset path.");
+    assert.doesNotMatch(missing.body, new RegExp(dataRoot.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.doesNotMatch(unsafe.body, new RegExp(dataRoot.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  } finally {
+    await close(server, io);
+  }
+});
+
+test("rejects campaign deletion when handouts remain", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const { server, io } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+
+  try {
+    await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: "Handout Campaign" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    await requestHttps(`${url}/api/campaigns/${encodeURIComponent("Handout Campaign")}/handouts`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "portrait.png"
+      }),
+      method: "POST"
+    });
+    const campaignPath = path.join(dataRoot, "Handout Campaign", "campaign.json");
+    const originalMetadata = fs.readFileSync(campaignPath, "utf8");
+    const rejected = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("Handout Campaign")}`, {
+      headers: gmHeaders(port),
+      method: "DELETE"
+    });
+
+    assert.equal(rejected.statusCode, 409);
+    assert.match(rejected.json.error, /encounters and handouts before deleting the campaign/);
+    assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+    assert.equal(fs.existsSync(path.join(dataRoot, "Handout Campaign", "handouts", "portrait.png")), true);
+  } finally {
     await close(server, io);
   }
 });

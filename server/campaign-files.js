@@ -25,6 +25,10 @@ function createCampaignFiles(options = {}) {
     return path.join(campaignDir(campaignId), "maps");
   }
 
+  function handoutsDir(campaignId) {
+    return path.join(campaignDir(campaignId), "handouts");
+  }
+
   function assertSafeId(id, label) {
     if (!id || id.includes("/") || id.includes("\\") || id === "." || id === "..") {
       throw createUserError(400, `Invalid ${label}.`);
@@ -79,6 +83,32 @@ function createCampaignFiles(options = {}) {
     return realAssetPath;
   }
 
+  function getContainedHandoutAssetPath(campaignId, handout) {
+    const relativeFile = handout.file.replace(/\\/g, "/");
+
+    if (!relativeFile.startsWith("handouts/")) {
+      throw createUserError(400, "Invalid handout asset path.");
+    }
+
+    const resolved = path.resolve(campaignDir(campaignId), handout.file);
+    const handoutsRoot = fs.realpathSync(handoutsDir(campaignId));
+    let realAssetPath;
+
+    try {
+      realAssetPath = fs.realpathSync(resolved);
+    } catch (_error) {
+      throw createUserError(404, "Handout asset not found.");
+    }
+
+    const relative = path.relative(handoutsRoot, realAssetPath);
+
+    if (relative.startsWith("..") || path.isAbsolute(relative)) {
+      throw createUserError(400, "Invalid handout asset path.");
+    }
+
+    return realAssetPath;
+  }
+
   return {
     dataRoot,
     assertCampaignExists,
@@ -88,7 +118,9 @@ function createCampaignFiles(options = {}) {
       fs.mkdirSync(dataRoot, { recursive: true });
     },
     existingNames,
+    getContainedHandoutAssetPath,
     getContainedMapAssetPath,
+    handoutsDir,
     mapsDir,
     writeJsonAtomic
   };

@@ -78,6 +78,7 @@ export function createGmController({ api, socket, state, view }) {
     try {
       const payload = await api.createCampaign(name);
       view.clearCampaignName();
+      view.setCampaignContentView("encounters");
       state.setCurrentCampaign(payload.campaign);
       await loadCampaigns();
       renderCurrentCampaign();
@@ -108,6 +109,7 @@ export function createGmController({ api, socket, state, view }) {
   async function openCampaign(campaignId) {
     try {
       const payload = await api.openCampaign(campaignId);
+      view.setCampaignContentView("encounters");
       state.setCurrentCampaign(payload.campaign);
       renderCurrentCampaign();
     } catch (error) {
@@ -135,6 +137,22 @@ export function createGmController({ api, socket, state, view }) {
     try {
       const payload = await api.uploadMap(campaign.id, file);
       view.clearMapFile();
+      state.setCurrentCampaign(payload.campaign);
+      await loadCampaigns();
+      renderCurrentCampaign();
+    } catch (error) {
+      view.setCampaignMessage(error.message);
+    }
+  }
+
+  async function uploadHandout(file) {
+    const campaign = state.getCurrentCampaign();
+    if (!file || !campaign) return;
+
+    try {
+      const payload = await api.uploadHandout(campaign.id, file);
+      view.clearHandoutFile();
+      view.setCampaignContentView("handouts");
       state.setCurrentCampaign(payload.campaign);
       await loadCampaigns();
       renderCurrentCampaign();
@@ -453,6 +471,10 @@ export function createGmController({ api, socket, state, view }) {
     loadCampaigns();
   }
 
+  function showCampaignContent(viewName) {
+    view.setCampaignContentView(viewName);
+  }
+
   return {
     actions: {
       backToLibrary,
@@ -478,6 +500,7 @@ export function createGmController({ api, socket, state, view }) {
       previewWorkspaceFogRectangle,
       renameMap,
       selectEncounter,
+      showCampaignContent,
       setWorkspaceCircleDiameter,
       setWorkspaceFogShape,
       toggleShownEncounter,
@@ -487,6 +510,7 @@ export function createGmController({ api, socket, state, view }) {
       showWorkspaceEncounter,
       undoWorkspaceFog,
       updateCampaignMetadata,
+      uploadHandout,
       uploadMap,
       zoomWorkspaceMapIn: view.workspaceZoomIn,
       zoomWorkspaceMapOut: view.workspaceZoomOut

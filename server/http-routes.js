@@ -121,6 +121,30 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
     }
   );
 
+  app.post(
+    "/api/campaigns/:campaignId/handouts",
+    requireGm,
+    express.raw({ limit: MAX_MAP_FILE_BYTES, type: "*/*" }),
+    (request, response, next) => {
+      try {
+        const handout = campaignStorage.addHandout(request.params.campaignId, {
+          content: request.body,
+          contentType: request.get("content-type"),
+          originalFileName: request.get("x-file-name")
+        });
+        const campaign = withAssetUrls(campaignStorage, campaignStorage.getCampaign(request.params.campaignId));
+        const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
+        onStateChange(state);
+        response.status(201).json({
+          campaign: state.campaign,
+          handout: state.campaign.handouts.find((candidate) => candidate.id === handout.id)
+        });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
   app.patch("/api/campaigns/:campaignId/maps/:mapId", requireGm, (request, response, next) => {
     try {
       const map = campaignStorage.renameMap(request.params.campaignId, request.params.mapId, request.body.name);
@@ -326,6 +350,15 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
   app.get("/api/campaigns/:campaignId/maps/:mapId/asset", requireGm, (request, response, next) => {
     try {
       const { filePath } = campaignStorage.getMapAsset(request.params.campaignId, request.params.mapId);
+      response.sendFile(filePath);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/campaigns/:campaignId/handouts/:handoutId/asset", requireGm, (request, response, next) => {
+    try {
+      const { filePath } = campaignStorage.getHandoutAsset(request.params.campaignId, request.params.handoutId);
       response.sendFile(filePath);
     } catch (error) {
       next(error);

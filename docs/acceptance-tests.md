@@ -88,6 +88,43 @@ Expected result:
   tokens, initiative, dice, dynamic lighting, cloud login, or other full-VTT
   controls appear.
 
+### Test: GM Can Add And Browse Campaign Handouts
+
+Prerequisites:
+
+- The local HTTPS server is running.
+- The GM View and Player Display are open.
+- A campaign exists with one encounter currently shown to players.
+- Representative valid, invalid, mismatched, oversized, missing-file, and
+  unsafe-path handout image fixtures are available for automated validation.
+
+Steps:
+
+1. Open the campaign in the GM View.
+2. Confirm the Campaign screen can switch between `Encounters` and `Handouts`
+   and shows only one collection at a time.
+3. Add a valid image handout.
+4. Confirm the handout appears in the campaign `Handouts` view with a
+   non-cropped thumbnail and default name from the original filename.
+5. Try invalid, mismatched, oversized, and missing-filename handout uploads.
+6. Confirm rejected uploads leave existing handout files and `campaign.json`
+   unchanged.
+7. Confirm missing or unsafe persisted handout assets produce GM recovery
+   diagnostics without rewriting campaign files or exposing local paths.
+8. Confirm a campaign with handouts cannot be deleted until handout deletion is
+   implemented in a later feature.
+9. Confirm the Player Display continues showing the previously shown encounter.
+
+Expected result:
+
+- Campaign handouts are image files stored separately from encounter maps.
+- Handout upload supports the same image formats and safety checks as map
+  upload.
+- Browsing or adding handouts does not change the Player Display.
+- No Show handout, rotation, rename, delete, PDFs, notes, slideshow controls,
+  overlay mode, player-side rotation, tokens, initiative, dice, dynamic
+  lighting, cloud login, or other full-VTT controls appear in this slice.
+
 ## Milestone 0: Harness and Repo Structure
 
 ### Test: Documentation Scaffold Exists

@@ -26,15 +26,18 @@ the handout into an encounter map.
 
 Tracked as [F-010](./features/F-010.md). Planned child features:
 
-- Proposed: [F-010A](./features/F-010A.md), campaign handout library.
+- Complete: [F-010A](./features/F-010A.md), campaign handout library.
 - Proposed: [F-010B](./features/F-010B.md), show handout to players.
 - Proposed: [F-010C](./features/F-010C.md), GM-controlled handout rotation.
 - Proposed: [F-010D](./features/F-010D.md), handout display polish and
   validation.
+- Proposed: [F-010E](./features/F-010E.md), handout rename and delete.
 
 Initial acceptance direction:
 
 - Handouts are campaign-wide image files, not encounter-specific notes.
+- The first library slice supports adding and browsing handouts; rename and
+  delete are tracked separately in F-010E.
 - Showing a handout is an explicit `Show to Players` action.
 - Showing a handout replaces the currently shown encounter or map on the Player
   Display.

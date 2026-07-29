@@ -83,7 +83,8 @@ Use this tracker to preserve feature state across sessions and agent handoffs. K
 | F-009C | Continuous Integration Enforcement | Complete | Done | [F-009C.md](./F-009C.md) | 2026-06-20 | GitHub Actions matrix, contract tests, independent reviews, local quality, and hosted green checks completed. |
 | F-009D | Browser Workflow Coverage | Complete | Done | [F-009D.md](./F-009D.md) | 2026-06-21 | Four Chromium workflow groups, deterministic cleanup, quality/CI integration, and B-005/B-006 fixes passed all reviews and quality. |
 | F-010 | Campaign Image Handouts | Proposed | Proposed | [F-010.md](./F-010.md) | 2026-07-29 | Campaign-wide image handouts are planned as a new post-V1 display target with explicit Show to Players behavior. |
-| F-010A | Campaign Handout Library | Proposed | Proposed | [F-010A.md](./F-010A.md) | 2026-07-29 | Planned storage and GM browsing slice for campaign-wide image handouts. |
+| F-010A | Campaign Handout Library | Complete | Done | [F-010A.md](./F-010A.md) | 2026-07-29 | Campaign-wide handout add-and-browse storage and GM UI are complete with validation and review evidence. |
 | F-010B | Show Handout to Players | Proposed | Proposed | [F-010B.md](./F-010B.md) | 2026-07-29 | Planned explicit handout show action that replaces the currently shown encounter on the Player Display. |
 | F-010C | GM-Controlled Handout Rotation | Proposed | Proposed | [F-010C.md](./F-010C.md) | 2026-07-29 | Planned 90-degree GM-controlled rotation for shown handouts. |
 | F-010D | Handout Display Polish and Validation | Proposed | Proposed | [F-010D.md](./F-010D.md) | 2026-07-29 | Planned final handout workflow polish, clear behavior, docs, and validation. |
+| F-010E | Handout Rename and Delete | Proposed | Proposed | [F-010E.md](./F-010E.md) | 2026-07-29 | Planned follow-up for individual handout rename and delete after the basic library slice. |

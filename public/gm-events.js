@@ -13,8 +13,15 @@ export function wireGmEvents(elements, actions) {
     actions.uploadMap(elements.mapFile.files[0]);
   });
 
+  elements.handoutForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    actions.uploadHandout(elements.handoutFile.files[0]);
+  });
+
   elements.backToLibrary.addEventListener("click", actions.backToLibrary);
   elements.backToEncounters.addEventListener("click", actions.backToEncounters);
+  elements.showEncounters.addEventListener("click", () => actions.showCampaignContent("encounters"));
+  elements.showHandouts.addEventListener("click", () => actions.showCampaignContent("handouts"));
   elements.playerUrlCopy.addEventListener("click", actions.copyPlayerUrl);
   elements.workspaceShowToPlayers.addEventListener("click", actions.showWorkspaceEncounter);
   elements.gmZoomOut.addEventListener("click", actions.zoomWorkspaceMapOut);
