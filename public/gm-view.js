@@ -27,18 +27,38 @@ function recoveryMessage(campaign) {
   return `Recovered ${issueText}. Original campaign files were not changed.`;
 }
 
-function createButton(document, { action, className, disabled, index, mapId, text }) {
+function createButton(document, { action, className, direction, disabled, handoutId, index, mapId, text }) {
   const button = document.createElement("button");
   button.type = "button";
   button.textContent = text;
   button.dataset.action = action;
 
   if (className) button.className = className;
+  if (direction) button.dataset.direction = direction;
   if (disabled) button.disabled = true;
+  if (handoutId) button.dataset.handoutId = handoutId;
   if (index !== undefined) button.dataset.index = String(index);
   if (mapId) button.dataset.mapId = mapId;
 
   return button;
+}
+
+function isShownTarget(campaign, type, id) {
+  return campaign.shownTarget?.type === type && campaign.shownTarget.id === id;
+}
+
+function shownTargetLabel(campaign) {
+  if (campaign.shownTarget?.type === "encounter") {
+    const encounter = campaign.maps.find((map) => map.id === campaign.shownTarget.id);
+    return encounter ? `Encounter - ${encounter.name}` : "None";
+  }
+
+  if (campaign.shownTarget?.type === "handout") {
+    const handout = (campaign.handouts || []).find((candidate) => candidate.id === campaign.shownTarget.id);
+    return handout ? `Handout - ${handout.name}` : "None";
+  }
+
+  return "None";
 }
 
 export function createGmView(document) {
@@ -279,12 +299,11 @@ export function createGmView(document) {
       renderWorkspaceGridState(createDefaultGridState());
       return;
     }
-    const shownToPlayers = selectedEncounter.id === campaign.activeMapId;
-    const shownEncounter = campaign.maps.find((map) => map.id === campaign.activeMapId);
+    const shownToPlayers = isShownTarget(campaign, "encounter", selectedEncounter.id);
     elements.selectedEncounterHeading.textContent = selectedEncounter.name;
     elements.selectedEncounterStatus.textContent = shownToPlayers
       ? `Selected for Prep: ${selectedEncounter.name}. Shown to Players.`
-      : `Selected for Prep: ${selectedEncounter.name}. Shown to Players: ${shownEncounter?.name || "None"}.`;
+      : `Selected for Prep: ${selectedEncounter.name}. Shown to Players: ${shownTargetLabel(campaign)}.`;
     elements.workspaceShowToPlayers.disabled = false;
     elements.workspaceShowToPlayers.dataset.mapId = selectedEncounter.id;
     elements.workspaceShowToPlayers.dataset.state = shownToPlayers ? "shown" : "ready";
@@ -325,7 +344,7 @@ export function createGmView(document) {
       const item = document.createElement("article");
       item.className = "encounter-card";
       item.dataset.mapId = map.id;
-      if (map.id === campaign.activeMapId) item.dataset.shown = "true";
+      if (isShownTarget(campaign, "encounter", map.id)) item.dataset.shown = "true";
       if (map.id === selectedEncounterId) item.dataset.selected = "true";
 
       const openForPrep = document.createElement("button");
@@ -347,7 +366,7 @@ export function createGmView(document) {
 
       const status = document.createElement("div");
       status.className = "encounter-status";
-      if (map.id === campaign.activeMapId) {
+      if (isShownTarget(campaign, "encounter", map.id)) {
         const shown = document.createElement("span");
         shown.className = "status-pill";
         shown.textContent = "Shown to Players";
@@ -370,11 +389,11 @@ export function createGmView(document) {
         createButton(document, {
           action: "set-active-map",
           mapId: map.id,
-          text: map.id === campaign.activeMapId ? "Shown to Players" : "Show to Players"
+          text: isShownTarget(campaign, "encounter", map.id) ? "Shown to Players" : "Show to Players"
         })
       );
       const runningButton = running.querySelector("button");
-      if (map.id === campaign.activeMapId) {
+      if (isShownTarget(campaign, "encounter", map.id)) {
         runningButton.dataset.state = "shown";
         runningButton.setAttribute("aria-label", `Shown to Players - clear ${map.name} from Player Display`);
       }
@@ -386,8 +405,9 @@ export function createGmView(document) {
 
       const controls = document.createElement("div");
       controls.className = "encounter-controls";
-      const deleteBlockedReason =
-        map.id === campaign.activeMapId ? "Shown to Players. Clear it from the Player Display before deleting." : "";
+      const deleteBlockedReason = isShownTarget(campaign, "encounter", map.id)
+        ? "Shown to Players. Clear it from the Player Display before deleting."
+        : "";
       const deleteReasonId = `delete-reason-${map.id}`;
       const deleteButton = createButton(document, {
         action: "delete-map",
@@ -461,6 +481,7 @@ export function createGmView(document) {
       const item = document.createElement("article");
       item.className = "handout-card";
       item.dataset.handoutId = handout.id;
+      if (isShownTarget(campaign, "handout", handout.id)) item.dataset.shown = "true";
 
       const thumbnail = document.createElement("img");
       thumbnail.className = "handout-thumbnail";
@@ -471,7 +492,58 @@ export function createGmView(document) {
       title.className = "handout-name";
       title.textContent = handout.name;
 
-      item.append(thumbnail, title);
+      const status = document.createElement("div");
+      status.className = "encounter-status";
+      if (isShownTarget(campaign, "handout", handout.id)) {
+        const shown = document.createElement("span");
+        shown.className = "status-pill";
+        shown.textContent = "Shown to Players";
+        status.append(shown);
+      }
+
+      const running = document.createElement("div");
+      running.className = "encounter-running";
+      running.append(
+        createButton(document, {
+          action: "set-shown-handout",
+          handoutId: handout.id,
+          text: isShownTarget(campaign, "handout", handout.id) ? "Shown to Players" : "Show to Players"
+        })
+      );
+      const runningButton = running.querySelector("button");
+      if (isShownTarget(campaign, "handout", handout.id)) {
+        runningButton.dataset.state = "shown";
+        runningButton.setAttribute("aria-label", `Shown to Players - clear ${handout.name} from Player Display`);
+        const rotationControls = document.createElement("div");
+        rotationControls.className = "handout-rotation-controls";
+        rotationControls.append(
+          createButton(document, {
+            action: "rotate-shown-handout",
+            className: "secondary",
+            direction: "left",
+            handoutId: handout.id,
+            text: "Rotate left"
+          }),
+          createButton(document, {
+            action: "rotate-shown-handout",
+            className: "secondary",
+            direction: "right",
+            handoutId: handout.id,
+            text: "Rotate right"
+          })
+        );
+        rotationControls
+          .querySelector("[data-direction='left']")
+          .setAttribute("aria-label", `Rotate ${handout.name} left on Player Display`);
+        rotationControls
+          .querySelector("[data-direction='right']")
+          .setAttribute("aria-label", `Rotate ${handout.name} right on Player Display`);
+        running.append(rotationControls);
+      } else {
+        runningButton.setAttribute("aria-label", `Show ${handout.name} to players`);
+      }
+
+      item.append(thumbnail, title, status, running);
       elements.handoutList.append(item);
     });
   }
@@ -605,10 +677,12 @@ export function createGmView(document) {
           meta.append(handoutCount);
         }
 
-        if (campaign.activeMapName) {
+        if (campaign.shownTargetName) {
           const shown = document.createElement("span");
           shown.className = "campaign-card-shown";
-          shown.textContent = `Shown to Players: ${campaign.activeMapName}`;
+          shown.textContent = `Shown to Players: ${
+            campaign.shownTarget?.type === "handout" ? "Handout - " : ""
+          }${campaign.shownTargetName}`;
           meta.append(shown);
         }
 

@@ -25,6 +25,10 @@ const { validateHandoutImage, validateMapImage } = require("./map-image");
 function createCampaignStorage(options = {}) {
   const campaignFiles = createCampaignFiles(options);
   const { dataRoot } = campaignFiles;
+  const rotationDelta = {
+    left: -90,
+    right: 90
+  };
 
   function readCampaign(campaignId) {
     campaignFiles.assertCampaignExists(campaignId);
@@ -122,15 +126,26 @@ function createCampaignStorage(options = {}) {
       recoveryDiagnostics
     };
 
-    if (recovered.activeMapId && availabilityByMapId.get(recovered.activeMapId) === false) {
+    if (recovered.shownTarget?.type === "encounter" && availabilityByMapId.get(recovered.shownTarget.id) === false) {
       recovered.recoveryDiagnostics.push({
         code: "shown-encounter-not-restored",
-        mapId: recovered.activeMapId,
+        mapId: recovered.shownTarget.id,
         message:
           "The saved Shown to Players encounter could not be restored. The Player Display is waiting for the GM.",
         severity: "warning"
       });
+      recovered.shownTarget = null;
       recovered.activeMapId = null;
+    }
+
+    if (recovered.shownTarget?.type === "handout" && availabilityByHandoutId.get(recovered.shownTarget.id) === false) {
+      recovered.recoveryDiagnostics.push({
+        code: "shown-handout-not-restored",
+        handoutId: recovered.shownTarget.id,
+        message: "The saved Shown to Players handout could not be restored. The Player Display is waiting for the GM.",
+        severity: "warning"
+      });
+      recovered.shownTarget = null;
     }
 
     return recovered;
@@ -141,6 +156,14 @@ function createCampaignStorage(options = {}) {
       campaignFiles.getContainedMapAssetPath(campaignId, map);
     } catch (_error) {
       throw createUserError(409, "This encounter's map image could not be found.");
+    }
+  }
+
+  function assertHandoutAssetAvailable(campaignId, handout) {
+    try {
+      campaignFiles.getContainedHandoutAssetPath(campaignId, handout);
+    } catch (_error) {
+      throw createUserError(409, "This handout image could not be found.");
     }
   }
 
@@ -174,16 +197,28 @@ function createCampaignStorage(options = {}) {
       .forEach((entry) => {
         try {
           const campaign = readCampaign(entry.name);
-          const activeMap = campaign.maps.find((map) => map.id === campaign.activeMapId);
+          const shownEncounter =
+            campaign.shownTarget?.type === "encounter"
+              ? campaign.maps.find((map) => map.id === campaign.shownTarget.id)
+              : null;
 
           campaigns.push({
             id: campaign.id,
             name: campaign.name,
             ...(campaign.description ? { description: campaign.description } : {}),
             ...(campaign.icon ? { icon: campaign.icon } : {}),
-            activeMapName: activeMap ? activeMap.name : null,
+            activeMapName: shownEncounter ? shownEncounter.name : null,
             handoutCount: campaign.handouts?.length || 0,
-            mapCount: campaign.maps.length
+            mapCount: campaign.maps.length,
+            ...(campaign.shownTarget
+              ? {
+                  shownTarget: campaign.shownTarget,
+                  shownTargetName:
+                    campaign.shownTarget.type === "encounter"
+                      ? shownEncounter?.name || null
+                      : campaign.handouts.find((handout) => handout.id === campaign.shownTarget.id)?.name || null
+                }
+              : {})
           });
           (campaign.recoveryDiagnostics || []).forEach((diagnostic) => {
             diagnostics.push({
@@ -319,9 +354,9 @@ function createCampaignStorage(options = {}) {
           version: 1,
           id: safeName,
           name: String(name).trim(),
-          activeMapId: null,
           handouts: [],
-          maps: []
+          maps: [],
+          shownTarget: null
         };
         campaignFiles.writeJsonAtomic(campaignFiles.campaignJsonPath(safeName), serializeCampaign(campaign));
         return campaign;
@@ -368,7 +403,7 @@ function createCampaignStorage(options = {}) {
       const campaign = readCampaign(campaignId);
       const map = findMap(campaign, mapId);
 
-      if (map.id === campaign.activeMapId) {
+      if (campaign.shownTarget?.type === "encounter" && map.id === campaign.shownTarget.id) {
         throw createUserError(409, "Clear this encounter from the Player Display before deleting it.");
       }
 
@@ -424,16 +459,56 @@ function createCampaignStorage(options = {}) {
       return saveCampaign(campaign);
     },
     setActiveMap(campaignId, mapId) {
+      return this.setShownTarget(campaignId, mapId === null ? null : { id: mapId, type: "encounter" });
+    },
+    setShownTarget(campaignId, target) {
       const campaign = readCampaign(campaignId);
 
-      if (mapId === null) {
+      if (target === null) {
+        campaign.shownTarget = null;
         campaign.activeMapId = null;
         return saveCampaign(campaign);
       }
 
-      findMap(campaign, mapId);
-      assertMapAssetAvailable(campaignId, findMap(campaign, mapId));
-      campaign.activeMapId = mapId;
+      if (!target || typeof target !== "object" || Array.isArray(target)) {
+        throw createUserError(400, "Shown target must be an object or null.");
+      }
+
+      if (target.type === "encounter") {
+        const map = findMap(campaign, target.id);
+        assertMapAssetAvailable(campaignId, map);
+        campaign.shownTarget = { id: map.id, type: "encounter" };
+        campaign.activeMapId = map.id;
+        return saveCampaign(campaign);
+      }
+
+      if (target.type === "handout") {
+        const handout = findHandout(campaign, target.id);
+        assertHandoutAssetAvailable(campaignId, handout);
+        campaign.shownTarget = { id: handout.id, rotation: 0, type: "handout" };
+        campaign.activeMapId = null;
+        return saveCampaign(campaign);
+      }
+
+      throw createUserError(400, "Shown target type must be encounter or handout.");
+    },
+    rotateShownHandout(campaignId, direction) {
+      if (!Object.hasOwn(rotationDelta, direction)) {
+        throw createUserError(400, "Shown handout rotation direction must be left or right.");
+      }
+
+      const campaign = readCampaign(campaignId);
+
+      if (campaign.shownTarget?.type !== "handout") {
+        throw createUserError(409, "Rotate a shown handout before changing handout rotation.");
+      }
+
+      const currentRotation = campaign.shownTarget.rotation || 0;
+      campaign.shownTarget = {
+        ...campaign.shownTarget,
+        rotation: (currentRotation + rotationDelta[direction] + 360) % 360
+      };
+      campaign.activeMapId = null;
       return saveCampaign(campaign);
     },
     setMapFog(campaignId, mapId, operations) {

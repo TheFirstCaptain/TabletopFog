@@ -37,32 +37,34 @@ acceptance tests unless there is a specific reason to do otherwise.
 | Campaign | A local collection of prepared encounters for an adventure or game. |
 | Encounter | A prepared table moment inside a campaign. An encounter currently has one map and later owns fog and other encounter-specific tools. |
 | Map | The image asset shown inside an encounter. Maps remain visually prominent, but they are not the primary workflow unit. |
-| Handout | A campaign-wide image asset the GM can prepare outside the encounter workflow. In F-010A, handouts are add-and-browse only and do not appear on the Player Display yet. |
+| Handout | A campaign-wide image asset the GM can prepare and explicitly show on the Player Display outside the encounter workflow. |
 | Encounter Workspace | The GM prep and running surface for one selected encounter. Opening it must not change the Player Display. |
 | Player Display | The read-only player-facing browser view, usually on an iPad mirrored to a TV. |
 | GM View | The GM-facing browser view that owns preparation and show controls. |
 | Show to Players | The explicit action that updates what the Player Display shows. |
 | Selected Encounter | The encounter the GM has opened or selected for prep/editing in the GM View. |
-| Shown to Players | The encounter currently visible on the Player Display. |
+| Shown to Players | The encounter or handout currently visible on the Player Display. |
 
 Use `Shown to Players` for status text. Use `Show to Players` for the action.
 
 ## Internal Implementation Terms
 
 Some existing storage, API, or code names still reflect earlier map-first
-implementation phases. Those names may remain until a reviewed migration
-explicitly changes them.
+implementation phases. Those names may remain where they are legacy
+compatibility paths or older completed-feature records.
 
 | Internal term | User-facing meaning |
 | --- | --- |
 | `maps` | Encounter map assets or legacy encounter records, depending on context. |
-| `activeMapId` | The map for the encounter currently shown to players. It is not the GM's selected/editing encounter. |
+| `shownTarget` | The canonical current Player Display target: empty, encounter, or handout. Shown handouts may include quarter-turn rotation as display state. |
+| `activeMapId` | Legacy persisted/API field read as a shown encounter during migration. It is not the GM's selected/editing encounter. |
 | Active map | Legacy documentation term for the map currently shown to players. Prefer `Shown to Players` in new UI and workflow docs. |
 | Player view | Existing implementation and test term for `/player`. Prefer `Player Display` in user-facing copy. |
 | GM page | Existing implementation term for `/gm`. Prefer `GM View` in user-facing copy. |
 
-Implementation terms should not leak into normal UI. For example, if storage or
-APIs still use `activeMapId`, the UI should still say `Shown to Players`.
+Implementation terms should not leak into normal UI. For example, compatibility
+storage or APIs may still mention `activeMapId`, but the UI should still say
+`Shown to Players`.
 
 ## Terms To Avoid
 

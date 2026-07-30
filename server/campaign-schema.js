@@ -6,10 +6,20 @@ const HANDOUT_EXTRA_FIELDS = Symbol("handoutExtraFields");
 const MAX_CAMPAIGN_DESCRIPTION_LENGTH = 160;
 const MAX_CAMPAIGN_ICON_LENGTH = 4;
 const FOG_OPERATION_TYPES = new Set(["hide-rectangle", "reveal-rectangle", "hide-circle", "reveal-circle"]);
-const campaignFields = new Set(["version", "name", "description", "icon", "activeMapId", "maps", "handouts"]);
+const campaignFields = new Set([
+  "version",
+  "name",
+  "description",
+  "icon",
+  "activeMapId",
+  "shownTarget",
+  "maps",
+  "handouts"
+]);
 const mapFields = new Set(["id", "name", "originalFileName", "file", "order", "fog"]);
 const handoutFields = new Set(["id", "name", "originalFileName", "file", "order"]);
 const metadataFields = new Set(["description", "icon", "name"]);
+const SHOWN_HANDOUT_ROTATIONS = new Set([0, 90, 180, 270]);
 
 function normalizePathSegment(value) {
   return String(value || "")
@@ -109,6 +119,30 @@ function normalizeFogOperations(operations) {
 
 function normalizeFogOperation(operation) {
   return normalizeFogOperations([operation])[0];
+}
+
+function normalizeShownTarget(rawTarget, maps, handouts) {
+  if (!rawTarget) {
+    return null;
+  }
+
+  if (typeof rawTarget !== "object" || Array.isArray(rawTarget)) {
+    return null;
+  }
+
+  const type = rawTarget.type;
+  const id = typeof rawTarget.id === "string" ? rawTarget.id : "";
+
+  if (type === "encounter" && maps.some((map) => map.id === id)) {
+    return { id, type };
+  }
+
+  if (type === "handout" && handouts.some((handout) => handout.id === id)) {
+    const rotation = SHOWN_HANDOUT_ROTATIONS.has(rawTarget.rotation) ? rawTarget.rotation : 0;
+    return { id, rotation, type };
+  }
+
+  return null;
 }
 
 function isValidRect(rect) {
@@ -228,25 +262,30 @@ function normalizeCampaignWithOptions(campaignId, rawCampaign, options = {}) {
     return normalizedHandout;
   });
 
+  const legacyActiveMapId = typeof rawCampaign.activeMapId === "string" ? rawCampaign.activeMapId : null;
+  const hasCanonicalShownTarget = Object.hasOwn(rawCampaign, "shownTarget");
+  const shownTarget = hasCanonicalShownTarget
+    ? normalizeShownTarget(rawCampaign.shownTarget, maps, handouts)
+    : legacyActiveMapId && maps.some((map) => map.id === legacyActiveMapId)
+      ? { id: legacyActiveMapId, type: "encounter" }
+      : null;
+
   const campaign = {
     version: Number.isInteger(rawCampaign.version) ? rawCampaign.version : 1,
     id: campaignId,
     name: String(rawCampaign.name || campaignId),
     description: typeof rawCampaign.description === "string" ? rawCampaign.description : "",
     icon: typeof rawCampaign.icon === "string" ? rawCampaign.icon : "",
-    activeMapId: rawCampaign.activeMapId || null,
+    activeMapId: shownTarget?.type === "encounter" ? shownTarget.id : null,
     handouts,
-    maps
+    maps,
+    shownTarget
   };
 
   Object.defineProperty(campaign, CAMPAIGN_EXTRA_FIELDS, {
     enumerable: true,
     value: collectExtraFields(rawCampaign, campaignFields)
   });
-
-  if (campaign.activeMapId && !campaign.maps.some((map) => map.id === campaign.activeMapId)) {
-    campaign.activeMapId = null;
-  }
 
   if (options.recover) {
     campaign.recoveryDiagnostics = recoveryDiagnostics;
@@ -262,7 +301,7 @@ function serializeCampaign(campaign) {
     name: campaign.name,
     ...(campaign.description ? { description: campaign.description } : {}),
     ...(campaign.icon ? { icon: campaign.icon } : {}),
-    activeMapId: campaign.activeMapId || null,
+    shownTarget: campaign.shownTarget || null,
     handouts: (campaign.handouts || []).map((handout) => ({
       ...(handout[HANDOUT_EXTRA_FIELDS] || {}),
       id: handout.id,

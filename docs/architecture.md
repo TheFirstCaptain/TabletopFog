@@ -66,6 +66,10 @@ The GM View owns control actions:
 - Open a selected/editing encounter workspace without changing the Player Display
   when that feature exists.
 - Explicitly show an encounter to players when that feature exists.
+- Add and browse campaign-wide handouts when that feature exists.
+- Explicitly show a handout to players or clear the Player Display when that
+  feature exists.
+- Rotate the shown handout in 90-degree increments when that feature exists.
 - Add fog to hide map areas and remove fog to reveal them when that feature exists.
 - Reset or clear fog when that feature exists.
 - Save or load local state when that feature exists.
@@ -75,7 +79,8 @@ The GM View owns control actions:
 
 The Player Display is display-only:
 
-- Render the encounter explicitly shown to players with GM-hidden areas obscured.
+- Render the target explicitly shown to players: empty, encounter, or handout.
+- Obscure GM-hidden map areas when the shown target is an encounter with fog.
 - Avoid controls that mutate session state.
 - Allow local display controls such as map zoom and pan without sending those viewport changes to the GM, server, or other Player Displays.
 - Support fullscreen display on iPad where possible.
@@ -90,29 +95,33 @@ transport-level data minimization.
 Initial state can be small and explicit:
 
 - Current campaign identity.
-- Current shown-to-players encounter identity and map image source.
+- Current shown-to-players target and image source.
 - Current GM selected/editing encounter identity, if that becomes shared state.
 - Encounter list, display names, manual order, and map assets.
 - Map viewport/scaling information.
 - Fog shapes or rasterized fog mask for each encounter.
 - Last update timestamp or version number.
 
-For F-004 and F-005, the implemented `active map` concept means the map shown
+For F-004 and F-005, the implemented `active map` concept meant the map shown
 to players. F-005B distinguishes the GM-local selected/editing encounter from
-the shown-to-players encounter. Opening an encounter for GM prep must not change
-the Player Display; `Show to Players` is an explicit GM action.
+the shown-to-players encounter. F-010B migrates the shared display model to a
+canonical `shownTarget`, which is either empty, an encounter, or a handout.
+Opening an encounter or browsing a handout for GM prep must not change the
+Player Display; `Show to Players` is an explicit GM action.
+For shown handouts, `shownTarget` may include a `rotation` value of `0`, `90`,
+`180`, or `270`. Rotation is shared shown-display state, not handout library
+metadata, and it does not apply to encounters or fog.
 
-Existing storage or API names such as `maps` and `activeMapId` may remain for
-compatibility. Where `activeMapId` remains, treat it as the shown-to-players map,
-not necessarily the GM-selected editing encounter. A future migration to clearer
-terminology such as `shownMapId` should be reviewed separately rather than
-bundled casually into UI or fog work.
+Existing storage or API names such as `maps` may remain for compatibility.
+Legacy `activeMapId` campaign files are read as an encounter `shownTarget` and
+migrated on the next explicit save. Compatibility API routes may remain
+temporarily but must not become the authoritative model again.
 
-Shown-to-players encounter identity and content are shared session state. GM
+Shown-to-players target identity and content are shared session state. GM
 selected/editing encounter state may be client-local or separately scoped until
 a feature requires sharing it. Viewport zoom and pan are client-local state:
 each GM or player renderer owns its own viewport, resets when the
-campaign-qualified rendered-map identity changes, and does not persist or
+campaign-qualified rendered-image identity changes, and does not persist or
 broadcast it.
 
 For Milestone 1, a simple shared state value is enough to prove connectivity and live updates.

@@ -69,9 +69,9 @@ renderer = createMapCanvasRenderer({
     message.setAttribute("role", state === "error" ? "alert" : "status");
 
     if (state === "empty") message.textContent = "Waiting for GM.";
-    if (state === "loading") message.textContent = "Loading map...";
+    if (state === "loading") message.textContent = "Loading image...";
     if (state === "ready") message.textContent = map.name;
-    if (state === "error") message.textContent = "Map image could not be loaded.";
+    if (state === "error") message.textContent = "Image could not be loaded.";
 
     setControls(renderer ? renderer.getViewport() : undefined);
   },
@@ -108,9 +108,10 @@ socket.on("disconnect", () => {
 
 socket.on("state:sync", (state) => {
   renderer.setMap(
-    state.activeMap
+    state.shownTarget
       ? {
-          ...state.activeMap
+          ...state.shownTarget,
+          fogOperations: state.shownTarget.fogOperations || []
         }
       : null
   );

@@ -109,12 +109,17 @@ The current local storage format is intentionally simple and inspectable:
 ```
 
 `campaign.json` currently uses `version: 1`, a display `name`, optional
-campaign card metadata such as `description` and `icon`, an `activeMapId`
-implementation field for the encounter currently `Shown to Players`, and a
-`maps` array, and `handouts` array. Each `maps` entry represents an encounter
-map asset with `id`, display `name`, optional `originalFileName`, relative
-`file`, display `order`, and ordered `fog` operations. Each `handouts` entry
-represents a campaign-wide handout image asset with `id`, display `name`,
+campaign card metadata such as `description` and `icon`, a canonical
+`shownTarget` field, a `maps` array, and a `handouts` array. `shownTarget` is
+either `null`, `{ "type": "encounter", "id": "<map-id>" }`, or
+`{ "type": "handout", "id": "<handout-id>", "rotation": 0 }`. Shown handout
+rotation is normalized to `0`, `90`, `180`, or `270` and defaults to `0` when
+missing or invalid. Legacy campaign files with `activeMapId` are still read as
+shown encounter state and are migrated to `shownTarget` on the next explicit
+save. Each `maps` entry represents an
+encounter map asset with `id`, display `name`, optional `originalFileName`,
+relative `file`, display `order`, and ordered `fog` operations. Each `handouts`
+entry represents a campaign-wide handout image asset with `id`, display `name`,
 optional `originalFileName`, relative `file`, and display `order`.
 
 Fog operations are stored as normalized rectangles in map-relative coordinates:
@@ -136,6 +141,7 @@ loads the affected encounter without runtime fog, and attaches GM-only recovery
 diagnostics. When the saved `Shown to Players` encounter has malformed fog but a
 valid map asset, the Player Display restores the map without that malformed
 fog. When the saved `Shown to Players` encounter's map asset is missing or
+invalid, or when the saved `Shown to Players` handout asset is missing or
 invalid, the server restores a safe empty Player Display state and reports the
 problem to the GM.
 

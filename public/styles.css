@@ -509,7 +509,8 @@ h4 {
 }
 
 .map-item[data-active="true"],
-.encounter-card[data-shown="true"] {
+.encounter-card[data-shown="true"],
+.handout-card[data-shown="true"] {
   border-color: var(--accent);
   background: var(--surface-strong);
 }
@@ -577,6 +578,12 @@ h4 {
 }
 
 .encounter-running {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.handout-rotation-controls {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;

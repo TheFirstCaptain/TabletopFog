@@ -36,7 +36,7 @@ test("creates campaigns in safe local folders", (t) => {
 
   assert.equal(campaign.id, "The Long Walk");
   assert.equal(campaign.name, "The Long Walk");
-  assert.equal(campaign.activeMapId, null);
+  assert.equal(campaign.shownTarget, null);
   assert.deepEqual(campaign.maps, []);
   assert.ok(fs.existsSync(path.join(root, "The Long Walk", "campaign.json")));
   assert.ok(fs.existsSync(path.join(root, "The Long Walk", "maps")));
@@ -660,7 +660,7 @@ test("failed handout metadata persistence removes the new asset and preserves ex
   );
 });
 
-test("persists active map and reloads campaign state", (t) => {
+test("persists shown encounter and reloads campaign state with canonical shown target", (t) => {
   const root = createTempRoot(t);
   const storage = createCampaignStorage({ dataRoot: root });
   const campaign = storage.createCampaign("The Long Walk");
@@ -670,16 +670,20 @@ test("persists active map and reloads campaign state", (t) => {
     originalFileName: "forest.png"
   });
 
-  storage.setActiveMap(campaign.id, map.id);
+  storage.setShownTarget(campaign.id, { id: map.id, type: "encounter" });
 
   const reloaded = createCampaignStorage({ dataRoot: root }).getCampaign(campaign.id);
+  const persisted = JSON.parse(fs.readFileSync(path.join(root, campaign.id, "campaign.json"), "utf8"));
 
+  assert.deepEqual(reloaded.shownTarget, { id: map.id, type: "encounter" });
   assert.equal(reloaded.activeMapId, map.id);
+  assert.deepEqual(persisted.shownTarget, { id: map.id, type: "encounter" });
+  assert.equal(Object.hasOwn(persisted, "activeMapId"), false);
   assert.equal(reloaded.maps[0].name, "forest");
   assert.equal(reloaded.maps[0].file, "maps/forest.png");
 });
 
-test("clears active map without changing encounter records", (t) => {
+test("persists shown handout and clearing display without changing encounter or handout records", (t) => {
   const root = createTempRoot(t);
   const storage = createCampaignStorage({ dataRoot: root });
   const campaign = storage.createCampaign("The Long Walk");
@@ -693,13 +697,24 @@ test("clears active map without changing encounter records", (t) => {
     contentType: "image/png",
     originalFileName: "cave.png"
   });
+  const handout = storage.addHandout(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "portrait.png"
+  });
 
-  storage.setActiveMap(campaign.id, first.id);
-  const cleared = storage.setActiveMap(campaign.id, null);
+  const shownHandout = storage.setShownTarget(campaign.id, { id: handout.id, type: "handout" });
+  const cleared = storage.setShownTarget(campaign.id, null);
   const reloaded = createCampaignStorage({ dataRoot: root }).getCampaign(campaign.id);
+  const persisted = JSON.parse(fs.readFileSync(path.join(root, campaign.id, "campaign.json"), "utf8"));
 
+  assert.deepEqual(shownHandout.shownTarget, { id: handout.id, rotation: 0, type: "handout" });
+  assert.equal(shownHandout.activeMapId, null);
+  assert.equal(cleared.shownTarget, null);
   assert.equal(cleared.activeMapId, null);
+  assert.equal(reloaded.shownTarget, null);
   assert.equal(reloaded.activeMapId, null);
+  assert.equal(persisted.shownTarget, null);
   assert.deepEqual(
     reloaded.maps.map((map) => [map.id, map.name, map.file, map.order]),
     [
@@ -707,6 +722,181 @@ test("clears active map without changing encounter records", (t) => {
       [second.id, "cave", "maps/cave.png", 2]
     ]
   );
+  assert.deepEqual(
+    reloaded.handouts.map((item) => [item.id, item.name, item.file, item.order]),
+    [[handout.id, "portrait", "handouts/portrait.png", 1]]
+  );
+});
+
+test("migrates legacy active map id to shown target without rewriting on read", (t) => {
+  const root = createTempRoot(t);
+  const campaignDir = path.join(root, "The Long Walk");
+  const campaignPath = path.join(campaignDir, "campaign.json");
+  fs.mkdirSync(path.join(campaignDir, "maps"), { recursive: true });
+  fs.writeFileSync(path.join(campaignDir, "maps", "forest.png"), PNG_BYTES);
+  const originalJson = `${JSON.stringify(
+    {
+      version: 1,
+      name: "The Long Walk",
+      activeMapId: "forest",
+      maps: [{ id: "forest", name: "Forest", file: "maps/forest.png", order: 1, fog: [] }]
+    },
+    null,
+    2
+  )}\n`;
+  fs.writeFileSync(campaignPath, originalJson);
+  const storage = createCampaignStorage({ dataRoot: root });
+
+  const campaign = storage.getCampaign("The Long Walk");
+
+  assert.deepEqual(campaign.shownTarget, { id: "forest", type: "encounter" });
+  assert.equal(campaign.activeMapId, "forest");
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalJson);
+
+  storage.updateCampaignMetadata("The Long Walk", { description: "Migrated by an explicit save." });
+  const persisted = JSON.parse(fs.readFileSync(campaignPath, "utf8"));
+
+  assert.deepEqual(persisted.shownTarget, { id: "forest", type: "encounter" });
+  assert.equal(Object.hasOwn(persisted, "activeMapId"), false);
+});
+
+test("canonical shown target takes precedence over stale legacy active map id", (t) => {
+  const root = createTempRoot(t);
+  const campaignDir = path.join(root, "The Long Walk");
+  const campaignPath = path.join(campaignDir, "campaign.json");
+  fs.mkdirSync(path.join(campaignDir, "maps"), { recursive: true });
+  fs.writeFileSync(path.join(campaignDir, "maps", "forest.png"), PNG_BYTES);
+  const originalJson = `${JSON.stringify(
+    {
+      version: 1,
+      name: "The Long Walk",
+      activeMapId: "forest",
+      shownTarget: { type: "handout", id: "missing" },
+      maps: [{ id: "forest", name: "Forest", file: "maps/forest.png", order: 1, fog: [] }]
+    },
+    null,
+    2
+  )}\n`;
+  fs.writeFileSync(campaignPath, originalJson);
+  const storage = createCampaignStorage({ dataRoot: root });
+
+  const campaign = storage.getCampaign("The Long Walk");
+
+  assert.equal(campaign.shownTarget, null);
+  assert.equal(campaign.activeMapId, null);
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalJson);
+});
+
+test("persists shown handout rotation with wraparound without changing handout metadata", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const handout = storage.addHandout(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "portrait.png"
+  });
+
+  storage.setShownTarget(campaign.id, { id: handout.id, type: "handout" });
+  const right = storage.rotateShownHandout(campaign.id, "right");
+  const left = storage.rotateShownHandout(campaign.id, "left");
+  const leftWrap = storage.rotateShownHandout(campaign.id, "left");
+  const reloaded = createCampaignStorage({ dataRoot: root }).getCampaign(campaign.id);
+  const persisted = JSON.parse(fs.readFileSync(path.join(root, campaign.id, "campaign.json"), "utf8"));
+
+  assert.deepEqual(right.shownTarget, { id: handout.id, rotation: 90, type: "handout" });
+  assert.deepEqual(left.shownTarget, { id: handout.id, rotation: 0, type: "handout" });
+  assert.deepEqual(leftWrap.shownTarget, { id: handout.id, rotation: 270, type: "handout" });
+  assert.deepEqual(reloaded.shownTarget, { id: handout.id, rotation: 270, type: "handout" });
+  assert.deepEqual(persisted.shownTarget, { id: handout.id, rotation: 270, type: "handout" });
+  assert.equal(Object.hasOwn(persisted.handouts[0], "rotation"), false);
+});
+
+test("normalizes invalid persisted shown handout rotation to zero without rewriting on read", (t) => {
+  const root = createTempRoot(t);
+  const campaignDir = path.join(root, "The Long Walk");
+  const campaignPath = path.join(campaignDir, "campaign.json");
+  fs.mkdirSync(path.join(campaignDir, "handouts"), { recursive: true });
+  fs.writeFileSync(path.join(campaignDir, "handouts", "portrait.png"), PNG_BYTES);
+  const originalJson = `${JSON.stringify(
+    {
+      version: 1,
+      name: "The Long Walk",
+      shownTarget: { type: "handout", id: "portrait", rotation: 45 },
+      handouts: [{ id: "portrait", name: "Portrait", file: "handouts/portrait.png", order: 1 }],
+      maps: []
+    },
+    null,
+    2
+  )}\n`;
+  fs.writeFileSync(campaignPath, originalJson);
+  const storage = createCampaignStorage({ dataRoot: root });
+
+  const campaign = storage.getCampaign("The Long Walk");
+
+  assert.deepEqual(campaign.shownTarget, { id: "portrait", rotation: 0, type: "handout" });
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalJson);
+});
+
+test("rejects invalid shown handout rotation without changing campaign storage", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const map = storage.addMap(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "forest.png"
+  });
+  const handout = storage.addHandout(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "portrait.png"
+  });
+  const campaignPath = path.join(root, campaign.id, "campaign.json");
+
+  [
+    () => storage.rotateShownHandout(campaign.id, "right"),
+    () => storage.rotateShownHandout(campaign.id, "up"),
+    () => storage.rotateShownHandout(campaign.id, null)
+  ].forEach((action) => {
+    const originalMetadata = fs.readFileSync(campaignPath, "utf8");
+    assert.throws(action);
+    assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+  });
+
+  storage.setShownTarget(campaign.id, { id: map.id, type: "encounter" });
+  const shownEncounterMetadata = fs.readFileSync(campaignPath, "utf8");
+  assert.throws(() => storage.rotateShownHandout(campaign.id, "right"), /shown handout/);
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), shownEncounterMetadata);
+
+  storage.setShownTarget(campaign.id, { id: handout.id, type: "handout" });
+  const shownHandoutMetadata = fs.readFileSync(campaignPath, "utf8");
+  assert.throws(() => storage.rotateShownHandout(campaign.id, "up"), /left or right/);
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), shownHandoutMetadata);
+});
+
+test("rejects invalid shown targets without changing campaign storage", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const map = storage.addMap(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "forest.png"
+  });
+  storage.setShownTarget(campaign.id, { id: map.id, type: "encounter" });
+  const campaignPath = path.join(root, campaign.id, "campaign.json");
+  const originalMetadata = fs.readFileSync(campaignPath, "utf8");
+
+  [
+    () => storage.setShownTarget(campaign.id, {}),
+    () => storage.setActiveMap(campaign.id, ""),
+    () => storage.setShownTarget(campaign.id, { id: "missing", type: "encounter" }),
+    () => storage.setShownTarget(campaign.id, { id: "missing", type: "handout" }),
+    () => storage.setShownTarget(campaign.id, { id: map.id, type: "scene" })
+  ].forEach((action) => assert.throws(action));
+
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
 });
 
 test("persists and clears map fog while preserving campaign metadata", (t) => {
@@ -1019,6 +1209,45 @@ test("reports missing handout assets without rewriting metadata", (t) => {
       campaignId: "The Long Walk",
       message: "This handout image could not be found.",
       type: "recovered"
+    }
+  ]);
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalJson);
+});
+
+test("reports missing shown handout assets and clears display only in memory", (t) => {
+  const root = createTempRoot(t);
+  const campaignDir = path.join(root, "The Long Walk");
+  const campaignPath = path.join(campaignDir, "campaign.json");
+  fs.mkdirSync(path.join(campaignDir, "handouts"), { recursive: true });
+  const originalJson = `${JSON.stringify(
+    {
+      version: 1,
+      name: "The Long Walk",
+      shownTarget: { type: "handout", id: "portrait" },
+      handouts: [{ id: "portrait", name: "Portrait", file: "handouts/portrait.png", order: 1 }],
+      maps: []
+    },
+    null,
+    2
+  )}\n`;
+  fs.writeFileSync(campaignPath, originalJson);
+  const storage = createCampaignStorage({ dataRoot: root });
+
+  const campaign = storage.getCampaign("The Long Walk");
+
+  assert.equal(campaign.shownTarget, null);
+  assert.deepEqual(campaign.recoveryDiagnostics, [
+    {
+      code: "missing-handout-asset",
+      handoutId: "portrait",
+      message: "This handout image could not be found.",
+      severity: "warning"
+    },
+    {
+      code: "shown-handout-not-restored",
+      handoutId: "portrait",
+      message: "The saved Shown to Players handout could not be restored. The Player Display is waiting for the GM.",
+      severity: "warning"
     }
   ]);
   assert.equal(fs.readFileSync(campaignPath, "utf8"), originalJson);

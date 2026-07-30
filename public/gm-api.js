@@ -57,11 +57,18 @@ export function createGmApi(fetchRequest) {
         method: "PUT"
       });
     },
-    setActiveMap(campaignId, mapId) {
-      return request(`/api/campaigns/${encodeURIComponent(campaignId)}/active-map`, {
-        body: JSON.stringify({ mapId }),
+    setShownTarget(campaignId, target) {
+      return request(`/api/campaigns/${encodeURIComponent(campaignId)}/shown-target`, {
+        body: JSON.stringify({ target }),
         headers: { "content-type": "application/json" },
         method: "PUT"
+      });
+    },
+    rotateShownHandout(campaignId, direction) {
+      return request(`/api/campaigns/${encodeURIComponent(campaignId)}/shown-target/rotation`, {
+        body: JSON.stringify({ direction }),
+        headers: { "content-type": "application/json" },
+        method: "POST"
       });
     },
     appendFogOperation(campaignId, mapId, operation) {

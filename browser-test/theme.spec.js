@@ -132,7 +132,9 @@ test("loads the local fantasy theme with accessible desktop and narrow layouts",
   });
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await page.getByRole("button", { name: "Show to Players", exact: true }).click();
-  const shownCardStyles = await page.locator(".encounter-card[data-shown='true']").evaluate((element) => ({
+  const shownEncounterCard = page.locator(".encounter-card[data-shown='true']");
+  await expect(shownEncounterCard).toHaveCount(1);
+  const shownCardStyles = await shownEncounterCard.evaluate((element) => ({
     background: getComputedStyle(element).backgroundColor,
     statusColor: getComputedStyle(element.querySelector(".status-pill")).color
   }));

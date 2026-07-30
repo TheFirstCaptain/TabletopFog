@@ -24,6 +24,10 @@ function addCacheKey(assetUrl, map) {
   return `${assetUrl}${separator}map=${id}&version=${version}`;
 }
 
+function normalizeRotation(value) {
+  return [0, 90, 180, 270].includes(value) ? value : 0;
+}
+
 function createDefaultResizeObserver(callback) {
   return typeof ResizeObserver === "undefined" ? null : new ResizeObserver(callback);
 }
@@ -140,9 +144,13 @@ export function createMapCanvasRenderer({
     const imageHeight = state.image.naturalHeight || state.image.height;
     if (!imageWidth || !imageHeight) return null;
 
-    const containScale = Math.min(state.stageWidth / imageWidth, state.stageHeight / imageHeight);
-    const width = imageWidth * containScale * state.zoom;
-    const height = imageHeight * containScale * state.zoom;
+    const rotation = normalizeRotation(state.map?.rotation);
+    const quarterTurn = rotation === 90 || rotation === 270;
+    const rotatedImageWidth = quarterTurn ? imageHeight : imageWidth;
+    const rotatedImageHeight = quarterTurn ? imageWidth : imageHeight;
+    const containScale = Math.min(state.stageWidth / rotatedImageWidth, state.stageHeight / rotatedImageHeight);
+    const width = rotatedImageWidth * containScale * state.zoom;
+    const height = rotatedImageHeight * containScale * state.zoom;
     const maxPanX = Math.max(0, (width - state.stageWidth) / 2);
     const maxPanY = Math.max(0, (height - state.stageHeight) / 2);
 
@@ -158,7 +166,8 @@ export function createMapCanvasRenderer({
     canvas.dataset.fogOperations = String(state.fogOperations.length);
     canvas.dataset.panX = String(Math.round(state.panX));
     canvas.dataset.panY = String(Math.round(state.panY));
-    return { height, width, x, y };
+    canvas.dataset.rotation = String(rotation);
+    return { height, imageHeight, imageWidth, rotation, width, x, y };
   }
 
   function draw() {
@@ -176,11 +185,28 @@ export function createMapCanvasRenderer({
       delete canvas.dataset.fogMaskBuilds;
       delete canvas.dataset.panX;
       delete canvas.dataset.panY;
+      delete canvas.dataset.rotation;
       return;
     }
 
-    context.drawImage(state.image, metrics.x, metrics.y, metrics.width, metrics.height);
+    drawImage(metrics);
     drawFog(metrics);
+  }
+
+  function drawImage(metrics) {
+    if (!metrics.rotation) {
+      context.drawImage(state.image, metrics.x, metrics.y, metrics.width, metrics.height);
+      return;
+    }
+
+    const quarterTurn = metrics.rotation === 90 || metrics.rotation === 270;
+    const scaledImageWidth = quarterTurn ? metrics.height : metrics.width;
+    const scaledImageHeight = quarterTurn ? metrics.width : metrics.height;
+    context.save();
+    context.translate(metrics.x + metrics.width / 2, metrics.y + metrics.height / 2);
+    context.rotate((metrics.rotation * Math.PI) / 180);
+    context.drawImage(state.image, -scaledImageWidth / 2, -scaledImageHeight / 2, scaledImageWidth, scaledImageHeight);
+    context.restore();
   }
 
   function drawFog(metrics) {
@@ -302,6 +328,7 @@ export function createMapCanvasRenderer({
       nextMap &&
       state.map &&
       nextMap.id === state.map.id &&
+      (nextMap.type || "encounter") === (state.map.type || "encounter") &&
       (nextMap.campaignId || null) === (state.map.campaignId || null)
     );
     const nextSource = nextMap ? addCacheKey(nextMap.assetUrl, nextMap) : null;
@@ -333,7 +360,8 @@ export function createMapCanvasRenderer({
     }
 
     canvas.setAttribute("role", "img");
-    canvas.setAttribute("aria-label", nextMap.name ? `Map: ${nextMap.name}` : "Active map");
+    const imageType = nextMap.type === "handout" ? "Handout" : "Map";
+    canvas.setAttribute("aria-label", nextMap.name ? `${imageType}: ${nextMap.name}` : "Shown image");
 
     if (sameMap && nextSource === currentSource && state.status !== "error") {
       reportStatus(state.status);

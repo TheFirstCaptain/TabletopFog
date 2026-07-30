@@ -187,6 +187,7 @@ async function canvasViewport(page, selector) {
     fogOperations: Number(canvas.dataset.fogOperations),
     panX: Number(canvas.dataset.panX),
     panY: Number(canvas.dataset.panY),
+    rotation: Number(canvas.dataset.rotation),
     zoom: Number(canvas.dataset.zoom)
   }));
 }
@@ -261,7 +262,7 @@ test("GM adds campaign handouts without changing the Player Display", async ({ a
   const player = await context.newPage();
   let playerAssetRequests = 0;
   let playerHandoutAssetRequests = 0;
-  await player.route("**/api/player/active-map/asset*", (route) => {
+  await player.route("**/api/player/shown-target/asset*", (route) => {
     playerAssetRequests += 1;
     return route.continue();
   });
@@ -297,13 +298,51 @@ test("GM adds campaign handouts without changing the Player Display", async ({ a
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeHandout);
 
-  await uploadHandoutFile(page, pngFile("NPC Portrait.png"), "NPC Portrait");
+  await uploadHandoutFile(page, await sizedPngFile(page, "NPC Portrait.png", 80, 40), "NPC Portrait");
   await expect(page.locator(".handout-card").filter({ hasText: "NPC Portrait" }).getByRole("img")).toBeVisible();
   await expect(page.getByLabel("Handouts").getByText("1 handout", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Show handout|Rotate|Delete handout/i })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Rotate|Delete handout/i })).toHaveCount(0);
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeHandout);
   expect(playerHandoutAssetRequests).toBe(0);
+
+  const handoutCard = page.locator(".handout-card").filter({ hasText: "NPC Portrait" });
+  await handoutCard.getByRole("button", { name: "Show NPC Portrait to players" }).click();
+  await expect(player.getByRole("img", { name: "Handout: NPC Portrait" })).toBeVisible();
+  await expect(
+    handoutCard.getByRole("button", { name: "Shown to Players - clear NPC Portrait from Player Display" })
+  ).toBeVisible();
+  await expect(handoutCard.locator(".status-pill", { hasText: "Shown to Players" })).toBeVisible();
+  await expect(handoutCard.getByRole("button", { name: "Rotate NPC Portrait left on Player Display" })).toBeVisible();
+  await expect(handoutCard.getByRole("button", { name: "Rotate NPC Portrait right on Player Display" })).toBeVisible();
+  await expect(player.getByRole("button", { name: /Rotate/i })).toHaveCount(0);
+
+  const unrotatedHandoutViewport = await canvasViewport(player, "#player-map");
+  expect(unrotatedHandoutViewport.rotation).toBe(0);
+  expect(unrotatedHandoutViewport.drawWidth / unrotatedHandoutViewport.drawHeight).toBeCloseTo(2, 1);
+  const playerAssetRequestsBeforeRotate = playerAssetRequests;
+  await handoutCard.getByRole("button", { name: "Rotate NPC Portrait right on Player Display" }).click();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("90");
+  const rotatedRightViewport = await canvasViewport(player, "#player-map");
+  expect(rotatedRightViewport.drawWidth / rotatedRightViewport.drawHeight).toBeCloseTo(0.5, 1);
+  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeRotate);
+  await handoutCard.getByRole("button", { name: "Rotate NPC Portrait right on Player Display" }).click();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("180");
+  await handoutCard.getByRole("button", { name: "Rotate NPC Portrait right on Player Display" }).click();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("270");
+  await handoutCard.getByRole("button", { name: "Rotate NPC Portrait right on Player Display" }).click();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("0");
+  await handoutCard.getByRole("button", { name: "Rotate NPC Portrait left on Player Display" }).click();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("270");
+
+  await page.getByRole("button", { name: "Encounters" }).click();
+  await expect(page.getByText("Shown to Players: Handout - NPC Portrait")).toHaveCount(0);
+  await page.getByRole("button", { name: "Open forest for prep" }).click();
+  await expect(page.getByText("Shown to Players: Handout - NPC Portrait")).toBeVisible();
+  await expect(player.getByRole("img", { name: "Handout: NPC Portrait" })).toBeVisible();
+  await page.getByRole("button", { name: "Show to Players from workspace" }).click();
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  await expect(player.locator("#player-map")).toHaveAttribute("data-rotation", "0");
 
   const handoutPresentation = await page.locator(".handout-card").evaluate((card) => {
     const list = card.closest(".handout-list");
@@ -321,6 +360,29 @@ test("GM adds campaign handouts without changing the Player Display", async ({ a
   await page.getByRole("button", { name: "Handouts" }).click();
   await expect(page.getByRole("heading", { level: 4, name: "NPC Portrait" })).toBeVisible();
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+
+  await page
+    .locator(".handout-card")
+    .filter({ hasText: "NPC Portrait" })
+    .getByRole("button", { name: "Show NPC Portrait to players" })
+    .click();
+  await expect(player.getByRole("img", { name: "Handout: NPC Portrait" })).toBeVisible();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("0");
+  await page
+    .locator(".handout-card")
+    .filter({ hasText: "NPC Portrait" })
+    .getByRole("button", { name: "Rotate NPC Portrait right on Player Display" })
+    .click();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("90");
+  await player.reload();
+  await expect(player.getByRole("img", { name: "Handout: NPC Portrait" })).toBeVisible();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("90");
+  await page
+    .locator(".handout-card")
+    .filter({ hasText: "NPC Portrait" })
+    .getByRole("button", { name: "Shown to Players - clear NPC Portrait from Player Display" })
+    .click();
+  await expect(player.getByText("Waiting for GM.", { exact: true })).toBeVisible();
 
   await page.setViewportSize({ height: 844, width: 390 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -384,7 +446,7 @@ test("GM Player Display URL copy fallback keeps the URL selectable", async ({ ap
 test("GM edits campaign card details without changing player display", async ({ app, page, context }) => {
   const player = await context.newPage();
   let playerAssetRequests = 0;
-  await player.route("**/api/player/active-map/asset*", (route) => {
+  await player.route("**/api/player/shown-target/asset*", (route) => {
     playerAssetRequests += 1;
     return route.continue();
   });
@@ -450,7 +512,7 @@ test("GM edits campaign card details without changing player display", async ({ 
 test("GM deletes only empty campaigns after confirmation", async ({ app, page, context }) => {
   const player = await context.newPage();
   let playerAssetRequests = 0;
-  await player.route("**/api/player/active-map/asset*", (route) => {
+  await player.route("**/api/player/shown-target/asset*", (route) => {
     playerAssetRequests += 1;
     return route.continue();
   });
@@ -851,7 +913,7 @@ test("player follows active-map changes and remains read-only", async ({ app, pa
 test("encounter cards open a workspace without changing the player display", async ({ app, page, context }) => {
   const player = await context.newPage();
   let playerAssetRequests = 0;
-  await player.route("**/api/player/active-map/asset*", (route) => {
+  await player.route("**/api/player/shown-target/asset*", (route) => {
     playerAssetRequests += 1;
     return route.continue();
   });
@@ -878,7 +940,7 @@ test("encounter cards open a workspace without changing the player display", asy
   await expect(page.getByRole("button", { name: /^Back to/ })).toHaveCount(1);
   await expect(page.getByRole("heading", { level: 3, name: "cave" })).toBeVisible();
   await expect(page.locator("#selected-encounter-status")).toContainText("Selected for Prep: cave");
-  await expect(page.locator("#selected-encounter-status")).toContainText("Shown to Players: forest");
+  await expect(page.locator("#selected-encounter-status")).toContainText("Shown to Players: Encounter - forest");
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeWorkspaceOpen);
 
@@ -917,7 +979,7 @@ test("selected prep encounter can be deleted when it is not shown to players", a
 test("encounter gallery presentation remains browsable and responsive", async ({ app, page, context }) => {
   const player = await context.newPage();
   let playerAssetRequests = 0;
-  await player.route("**/api/player/active-map/asset*", (route) => {
+  await player.route("**/api/player/shown-target/asset*", (route) => {
     playerAssetRequests += 1;
     return route.continue();
   });
@@ -1138,7 +1200,7 @@ test("GM workspace shell previews selected encounter without changing the player
 }) => {
   const player = await context.newPage();
   let playerAssetRequests = 0;
-  await player.route("**/api/player/active-map/asset*", (route) => {
+  await player.route("**/api/player/shown-target/asset*", (route) => {
     playerAssetRequests += 1;
     return route.continue();
   });
@@ -1169,7 +1231,7 @@ test("GM workspace shell previews selected encounter without changing the player
   await expect(page.locator("#selected-encounter-status")).toContainText(
     `Selected for Prep: ${longWorkspaceEncounterName}`
   );
-  await expect(page.locator("#selected-encounter-status")).toContainText("Shown to Players: forest");
+  await expect(page.locator("#selected-encounter-status")).toContainText("Shown to Players: Encounter - forest");
   await expect(page.getByRole("button", { name: "Show to Players from workspace" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Show to Players from workspace" })).toBeEnabled();
   await expect(page.getByRole("group", { name: "Running actions" })).toBeVisible();
@@ -1332,7 +1394,7 @@ test("GM workspace shell previews selected encounter without changing the player
 test("GM workspace map alignment controls stay local to the GM browser tab", async ({ app, page, context }) => {
   const player = await context.newPage();
   let playerAssetRequests = 0;
-  await player.route("**/api/player/active-map/asset*", (route) => {
+  await player.route("**/api/player/shown-target/asset*", (route) => {
     playerAssetRequests += 1;
     return route.continue();
   });
@@ -1485,7 +1547,7 @@ test("GM workspace map alignment controls stay local to the GM browser tab", asy
 test("GM workspace panning stays local and arbitrates with fog and grid tools", async ({ app, page, context }) => {
   const player = await context.newPage();
   let playerAssetRequests = 0;
-  await player.route("**/api/player/active-map/asset*", (route) => {
+  await player.route("**/api/player/shown-target/asset*", (route) => {
     playerAssetRequests += 1;
     return route.continue();
   });
@@ -1582,7 +1644,10 @@ test("GM workspace panning stays local and arbitrates with fog and grid tools", 
 
   const campaignJson = JSON.parse(fs.readFileSync(path.join(app.dataRoot, "The Long Walk", "campaign.json"), "utf8"));
   expect(campaignJson.maps[0].fog).toHaveLength(1);
-  expect(campaignJson.activeMapId).toBe(await page.locator(".encounter-card").getAttribute("data-map-id"));
+  expect(campaignJson.shownTarget).toEqual({
+    id: await page.locator(".encounter-card").getAttribute("data-map-id"),
+    type: "encounter"
+  });
 
   await page.setViewportSize({ height: 700, width: 1024 });
   await page.getByRole("button", { name: "Fit map" }).click();
@@ -1611,7 +1676,7 @@ test("GM workspace panning stays local and arbitrates with fog and grid tools", 
 test("seeded fog renders by role before drawing controls are used", async ({ app, page, context }) => {
   const player = await context.newPage();
   let playerAssetRequests = 0;
-  await player.route("**/api/player/active-map/asset*", (route) => {
+  await player.route("**/api/player/shown-target/asset*", (route) => {
     playerAssetRequests += 1;
     return route.continue();
   });
@@ -1767,7 +1832,7 @@ test("GM campaign open restores saved shown encounter and fog to player display"
   await page.getByRole("button", { name: "Open cave for prep" }).click();
   await expect(page.getByRole("img", { name: "Map: cave" })).toBeVisible();
   await expect(page.locator("#selected-encounter-status")).toContainText("Selected for Prep: cave");
-  await expect(page.locator("#selected-encounter-status")).toContainText("Shown to Players: forest");
+  await expect(page.locator("#selected-encounter-status")).toContainText("Shown to Players: Encounter - forest");
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   expect(await canvasViewport(player, "#player-map")).toMatchObject(playerBeforePrepOpen);
 });
@@ -1775,7 +1840,7 @@ test("GM campaign open restores saved shown encounter and fog to player display"
 test("GM Clear Fog is confirmed and scoped to the selected encounter", async ({ app, page, context }) => {
   const player = await context.newPage();
   let playerAssetRequests = 0;
-  await player.route("**/api/player/active-map/asset*", (route) => {
+  await player.route("**/api/player/shown-target/asset*", (route) => {
     playerAssetRequests += 1;
     return route.continue();
   });
@@ -1860,14 +1925,14 @@ test("GM Clear Fog is confirmed and scoped to the selected encounter", async ({ 
   await expect(player.locator("input, select, textarea, [contenteditable=true], [data-action]")).toHaveCount(0);
 
   const campaignJson = JSON.parse(fs.readFileSync(path.join(app.dataRoot, "The Long Walk", "campaign.json"), "utf8"));
-  expect(campaignJson.activeMapId).toBe(forestMapId);
+  expect(campaignJson.shownTarget).toEqual({ id: forestMapId, type: "encounter" });
   expect(campaignJson.maps.map((map) => map.fog.length)).toEqual([1, 0]);
 });
 
 test("GM Undo fog action walks back shown and unshown fog changes", async ({ app, page, context }) => {
   const player = await context.newPage();
   let playerAssetRequests = 0;
-  await player.route("**/api/player/active-map/asset*", (route) => {
+  await player.route("**/api/player/shown-target/asset*", (route) => {
     playerAssetRequests += 1;
     return route.continue();
   });
@@ -1973,7 +2038,7 @@ test("GM Undo fog action walks back shown and unshown fog changes", async ({ app
 test("GM rectangle Hide tool draws shown fog and isolates unshown prep fog", async ({ app, page, context }) => {
   const player = await context.newPage();
   let playerAssetRequests = 0;
-  await player.route("**/api/player/active-map/asset*", (route) => {
+  await player.route("**/api/player/shown-target/asset*", (route) => {
     playerAssetRequests += 1;
     return route.continue();
   });
@@ -2110,7 +2175,7 @@ test("GM brush fog tool paints fixed-size hide and reveal operations", async ({ 
   let playerAssetRequests = 0;
   let brushBatchRequests = 0;
   let singleFogAppendRequests = 0;
-  await player.route("**/api/player/active-map/asset*", (route) => {
+  await player.route("**/api/player/shown-target/asset*", (route) => {
     playerAssetRequests += 1;
     return route.continue();
   });
@@ -2255,7 +2320,7 @@ test("GM brush fog tool paints fixed-size hide and reveal operations", async ({ 
 test("GM circle fog tool drags one sized hide or reveal operation", async ({ app, page, context }) => {
   const player = await context.newPage();
   let playerAssetRequests = 0;
-  await player.route("**/api/player/active-map/asset*", (route) => {
+  await player.route("**/api/player/shown-target/asset*", (route) => {
     playerAssetRequests += 1;
     return route.continue();
   });
@@ -2461,9 +2526,16 @@ test("Player Display can enter and exit fullscreen locally", async ({ app, page,
   await createCampaign(page);
   await uploadMapFile(page, await sizedPngFile(page, "landscape.png", 800, 400));
   await page.getByRole("button", { name: "Show to Players", exact: true }).click();
+  await page.getByRole("button", { name: "Handouts" }).click();
+  await uploadHandoutFile(page, await sizedPngFile(page, "Portrait Handout.png", 400, 800), "Portrait Handout");
+  await page
+    .locator(".handout-card")
+    .filter({ hasText: "Portrait Handout" })
+    .getByRole("button", { name: "Show Portrait Handout to players" })
+    .click();
 
   await player.goto(`${app.baseURL}/player`);
-  await expect(player.getByRole("img", { name: "Map: landscape" })).toBeVisible();
+  await expect(player.getByRole("img", { name: "Handout: Portrait Handout" })).toBeVisible();
   await expect(player.getByRole("button", { name: "Enter fullscreen" })).toBeVisible();
   await player.getByRole("button", { name: "Enter fullscreen" }).click();
   await expect(player.getByRole("button", { name: "Exit fullscreen" })).toBeVisible();
@@ -2471,8 +2543,15 @@ test("Player Display can enter and exit fullscreen locally", async ({ app, page,
   await expect
     .poll(() => player.evaluate(() => document.fullscreenElement?.classList.contains("player-display")))
     .toBe(true);
-  await expect(player.getByRole("img", { name: "Map: landscape" })).toBeVisible();
+  await expect(player.getByRole("img", { name: "Handout: Portrait Handout" })).toBeVisible();
   await expect(player.locator("input, select, textarea, [contenteditable=true], [data-action]")).toHaveCount(0);
+  await page
+    .locator(".handout-card")
+    .filter({ hasText: "Portrait Handout" })
+    .getByRole("button", { name: "Rotate Portrait Handout right on Player Display" })
+    .click();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("90");
+  await expect(player.getByRole("img", { name: "Handout: Portrait Handout" })).toBeVisible();
 
   await player.getByRole("button", { name: "Exit fullscreen" }).click();
   await expect(player.getByRole("button", { name: "Enter fullscreen" })).toBeVisible();
@@ -2567,14 +2646,14 @@ test("player reports an active-map image load failure", async ({ app, page, cont
   ]);
 
   await page.route("**/api/campaigns/*/maps/*/asset*", (route) => route.fulfill({ status: 500 }));
-  await player.route("**/api/player/active-map/asset*", (route) => route.fulfill({ status: 500 }));
+  await player.route("**/api/player/shown-target/asset*", (route) => route.fulfill({ status: 500 }));
   await player.goto(`${app.baseURL}/player`);
   await page.getByRole("button", { name: "Open forest for prep" }).click();
   await page.getByRole("button", { name: "Show to Players from workspace" }).click();
 
   await expect(page.getByText("Map image could not be loaded.", { exact: true })).toBeVisible();
   await expect(page.getByRole("img", { name: "Map: forest" })).toBeHidden();
-  await expect(player.getByText("Map image could not be loaded.", { exact: true })).toBeVisible();
+  await expect(player.getByText("Image could not be loaded.", { exact: true })).toBeVisible();
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeHidden();
   await expect(player.getByRole("button", { name: "Zoom in" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Clear Fog" })).toBeEnabled();
@@ -2597,7 +2676,7 @@ test("stale image completion cannot replace a newer active map", async ({ app, p
   const player = await context.newPage();
   let delayedRoute;
   let requestCount = 0;
-  await player.route("**/api/player/active-map/asset*", async (route) => {
+  await player.route("**/api/player/shown-target/asset*", async (route) => {
     requestCount += 1;
     if (requestCount === 1) {
       delayedRoute = route;

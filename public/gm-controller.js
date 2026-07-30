@@ -202,9 +202,13 @@ export function createGmController({ api, socket, state, view }) {
     }
   }
 
-  async function setShownEncounter(mapId) {
+  function isShownTarget(campaign, type, id) {
+    return campaign?.shownTarget?.type === type && campaign.shownTarget.id === id;
+  }
+
+  async function setShownTarget(target) {
     try {
-      const payload = await api.setActiveMap(state.getCurrentCampaign().id, mapId);
+      const payload = await api.setShownTarget(state.getCurrentCampaign().id, target);
       state.setCurrentCampaign(payload.campaign);
       renderCurrentCampaign();
     } catch (error) {
@@ -245,8 +249,27 @@ export function createGmController({ api, socket, state, view }) {
   }
 
   function toggleShownEncounter(mapId) {
-    const activeMapId = state.getCurrentCampaign()?.activeMapId || null;
-    setShownEncounter(mapId === activeMapId ? null : mapId);
+    const campaign = state.getCurrentCampaign();
+    setShownTarget(isShownTarget(campaign, "encounter", mapId) ? null : { id: mapId, type: "encounter" });
+  }
+
+  function toggleShownHandout(handoutId) {
+    const campaign = state.getCurrentCampaign();
+    setShownTarget(isShownTarget(campaign, "handout", handoutId) ? null : { id: handoutId, type: "handout" });
+  }
+
+  async function rotateShownHandout(direction) {
+    const campaign = state.getCurrentCampaign();
+    if (!campaign) return;
+
+    try {
+      const previousCampaign = state.getCurrentCampaign();
+      const payload = await api.rotateShownHandout(campaign.id, direction);
+      state.setCurrentCampaign(payload.campaign);
+      renderCampaignChange(previousCampaign);
+    } catch (error) {
+      view.setCampaignMessage(error.message);
+    }
   }
 
   function moveWorkspaceGrid(deltaX, deltaY) {
@@ -390,7 +413,7 @@ export function createGmController({ api, socket, state, view }) {
       !campaign ||
       !selectedEncounter ||
       !selectedEncounter.fogOperations?.length ||
-      !view.confirmClearFog(selectedEncounter.name, selectedEncounter.id === campaign.activeMapId)
+      !view.confirmClearFog(selectedEncounter.name, isShownTarget(campaign, "encounter", selectedEncounter.id))
     ) {
       return;
     }
@@ -499,11 +522,13 @@ export function createGmController({ api, socket, state, view }) {
       previewWorkspaceFogCircle,
       previewWorkspaceFogRectangle,
       renameMap,
+      rotateShownHandout,
       selectEncounter,
       showCampaignContent,
       setWorkspaceCircleDiameter,
       setWorkspaceFogShape,
       toggleShownEncounter,
+      toggleShownHandout,
       toggleWorkspaceGrid,
       toggleWorkspaceGridLock,
       toggleWorkspaceFogAction,

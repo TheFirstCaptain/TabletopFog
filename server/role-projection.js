@@ -19,22 +19,46 @@ function projectStateForRole(state, role) {
   }
 
   const campaign = state.campaign;
-  const activeMap = campaign ? campaign.maps.find((map) => map.id === campaign.activeMapId) : null;
+  const shownTarget = campaign ? getShownTargetProjection(campaign) : null;
 
   return {
-    activeMap: activeMap
-      ? {
-          campaignId: campaign.id,
-          id: activeMap.id,
-          name: activeMap.name,
-          assetUrl: "/api/player/active-map/asset",
-          fogOperations: activeMap.fogOperations || [],
-          version: `${campaign.id}/${activeMap.id}`
-        }
-      : null,
+    activeMap: shownTarget?.type === "encounter" ? shownTarget : null,
+    shownTarget,
     updatedAt: state.updatedAt,
     version: state.version
   };
+}
+
+function getShownTargetProjection(campaign) {
+  if (campaign.shownTarget?.type === "encounter") {
+    const encounter = campaign.maps.find((map) => map.id === campaign.shownTarget.id);
+    if (!encounter) return null;
+    return {
+      campaignId: campaign.id,
+      fogOperations: encounter.fogOperations || [],
+      id: encounter.id,
+      name: encounter.name,
+      assetUrl: "/api/player/shown-target/asset",
+      type: "encounter",
+      version: `${campaign.id}/encounter/${encounter.id}`
+    };
+  }
+
+  if (campaign.shownTarget?.type === "handout") {
+    const handout = (campaign.handouts || []).find((candidate) => candidate.id === campaign.shownTarget.id);
+    if (!handout) return null;
+    return {
+      campaignId: campaign.id,
+      id: handout.id,
+      name: handout.name,
+      assetUrl: "/api/player/shown-target/asset",
+      rotation: campaign.shownTarget.rotation || 0,
+      type: "handout",
+      version: `${campaign.id}/handout/${handout.id}`
+    };
+  }
+
+  return null;
 }
 
 function requireGm(request, response, next) {
@@ -48,6 +72,7 @@ function requireGm(request, response, next) {
 
 module.exports = {
   getRoleFromReferer,
+  getShownTargetProjection,
   projectStateForRole,
   requireGm
 };

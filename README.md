@@ -15,14 +15,15 @@ and automated quality validation covers the current GM/player Chromium
 workflows.
 
 The HTTPS app serves separate GM View and Player Display pages, stores local
-campaign folders, lets the GM manage map-backed encounter cards, and syncs only
-the current encounter shown to players to the read-only Player Display over
-Socket.IO.
+campaign folders, lets the GM manage map-backed encounter cards and campaign
+handouts, and syncs only the current shown target to the read-only Player
+Display over Socket.IO.
 
-Post-V1 handout work has started with a campaign-wide image handout library.
-The GM can add and browse image handouts stored in the campaign's local
-`handouts/` folder. Handouts do not show on the Player Display yet; that remains
-tracked as later F-010 work.
+Post-V1 handout work has started with a campaign-wide image handout library and
+explicit handout display. The GM can add and browse image handouts stored in
+the campaign's local `handouts/` folder, show one handout to players, clear it
+from the Player Display, rotate the shown handout in 90-degree increments, and
+replace it by showing an encounter again.
 
 The quality gate runs Chromium characterization for current GM/player workflows
 and theme behavior, plus linting, formatting, module baselines, harness policy,
@@ -96,10 +97,11 @@ The same Fog tools include a compact `Undo` action for the selected encounter;
 it can walk back recent Hide, Reveal, and Clear Fog actions during the current
 runtime, autosaves the resulting fog state, and intentionally loses undo
 history on campaign reload or server restart.
-When the GM opens a saved campaign, the app restores the encounter previously
-`Shown to Players` and its persisted fog to the Player Display; server startup
-or campaign-library browsing alone leaves the Player Display waiting.
-Malformed persisted fog and missing restored map assets now recover
+When the GM opens a saved campaign, the app restores the target previously
+`Shown to Players`: either an encounter with its persisted fog or a campaign
+handout with its shown-display rotation. Server startup or campaign-library
+browsing alone leaves the Player Display waiting. Malformed persisted fog,
+missing restored map assets, and missing restored handout assets recover
 non-destructively with quiet GM-facing diagnostics, keeping valid campaign data
 usable and leaving the Player Display in a safe state when restoration would be
 unsafe.
@@ -108,10 +110,11 @@ copy action for table setup.
 Campaign screens use
 `Back to Campaign Library`, and normal GM UI avoids showing local filesystem
 paths. Opening or navigating the workspace does not change the Player Display.
-Existing storage still uses `maps` and
-`activeMapId`, where `activeMapId` is an implementation detail meaning the
-encounter currently shown to players until a reviewed migration chooses clearer
-names. The UI should say `Shown to Players`.
+Existing storage still uses `maps` for encounter records. The shown-to-players
+state now uses `shownTarget`, which can be empty, an encounter, or a handout.
+Shown handouts store a `rotation` value of `0`, `90`, `180`, or `270`.
+Legacy campaign files with `activeMapId` are read as shown encounters and are
+migrated on the next explicit save.
 
 Completed local-connectivity work proved:
 

@@ -70,9 +70,9 @@ Steps:
 4. Click `Show to Players` for a handout.
 5. Confirm the Player Display replaces the encounter with the handout image.
 6. Enter fullscreen on the Player Display while the handout is shown.
-7. Rotate the shown handout from the GM View in 90-degree increments.
-8. Confirm the Player Display updates to the GM-selected orientation.
-9. Show an encounter to players again.
+7. Click the handout's `Shown to Players` action.
+8. Confirm the Player Display returns to the waiting state.
+9. Show the handout again, then show an encounter to players.
 10. Confirm the Player Display replaces the handout with the encounter map and
     preserves expected encounter fog behavior.
 
@@ -80,13 +80,50 @@ Expected result:
 
 - Handouts are campaign-wide image assets separate from encounter maps.
 - The Player Display changes only after explicit GM `Show to Players` actions
-  or GM-controlled rotation of the currently shown handout.
+  or clear actions.
 - Showing a handout replaces the currently shown encounter.
 - Showing an encounter replaces the currently shown handout.
 - The Player Display remains read-only and fullscreen-capable.
-- No PDFs, notes, slideshow controls, overlay mode, player-side rotation,
-  tokens, initiative, dice, dynamic lighting, cloud login, or other full-VTT
-  controls appear.
+- No PDFs, notes, slideshow controls, overlay mode, player-side controls beyond
+  local display controls, tokens, initiative, dice, dynamic lighting, cloud
+  login, or other full-VTT controls appear.
+
+### Test: GM Can Rotate A Shown Campaign Handout
+
+Prerequisites:
+
+- The local HTTPS server is running.
+- The GM View and Player Display are open.
+- A campaign exists with one encounter and one asymmetric image handout.
+
+Steps:
+
+1. Open the campaign in the GM View.
+2. Show the handout to players.
+3. Confirm rotate-left and rotate-right controls appear only on the shown
+   handout card.
+4. Click `Rotate right` four times and confirm the Player Display moves through
+   `90`, `180`, `270`, and back to `0` degrees.
+5. Click `Rotate left` and confirm the Player Display wraps to `270` degrees.
+6. Enter fullscreen on the Player Display while the handout is rotated.
+7. Rotate the handout again from the GM View and confirm the fullscreen Player
+   Display updates without exposing player-side rotation controls.
+8. Reload or reopen the Player Display and confirm the current shown handout
+   rotation restores.
+9. Show an encounter to players and confirm rotation state no longer appears on
+   the Player Display and encounter fog behavior is unchanged.
+
+Expected result:
+
+- Rotation is GM-controlled shared display state for the currently shown
+  handout.
+- Rotation supports only quarter-turn values: `0`, `90`, `180`, and `270`.
+- Unshown handouts do not show rotation controls and browsing them does not
+  change the Player Display.
+- Encounter maps and fog are not rotated.
+- No arbitrary-angle, crop, flip, slideshow, player-side rotation, tokens,
+  initiative, dice, dynamic lighting, cloud login, or other full-VTT controls
+  appear.
 
 ### Test: GM Can Add And Browse Campaign Handouts
 
@@ -121,9 +158,9 @@ Expected result:
 - Handout upload supports the same image formats and safety checks as map
   upload.
 - Browsing or adding handouts does not change the Player Display.
-- No Show handout, rotation, rename, delete, PDFs, notes, slideshow controls,
-  overlay mode, player-side rotation, tokens, initiative, dice, dynamic
-  lighting, cloud login, or other full-VTT controls appear in this slice.
+- No rotation, rename, delete, PDFs, notes, slideshow controls, overlay mode,
+  player-side rotation, tokens, initiative, dice, dynamic lighting, cloud
+  login, or other full-VTT controls appear in this slice.
 
 ## Milestone 0: Harness and Repo Structure
 
@@ -189,16 +226,16 @@ Steps:
 2. Confirm campaign creation, library return, and campaign reopening pass.
 3. Confirm invalid upload rejection and valid PNG upload pass.
 4. Confirm map rename, reorder, and boundary controls pass.
-5. Confirm active-map changes reach the already-open Player Display.
+5. Confirm shown-target changes reach the already-open Player Display.
 6. Confirm player zoom and pan remain local to that Player Display while the GM
    View and a second Player Display remain unchanged.
 7. Confirm the player exposes no shared-state mutation controls and a
    player-originated GM request is rejected.
 8. Confirm offline/online recovery reports `Reconnecting...` and returns to
    `Live`.
-9. Confirm a failed active-map image displays the error message and hides the
+9. Confirm a failed shown-target image displays the error message and hides the
    failed image.
-10. Confirm a delayed older image cannot replace a newer active map.
+10. Confirm a delayed older image cannot replace a newer shown target.
 
 Expected result:
 

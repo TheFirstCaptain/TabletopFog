@@ -188,6 +188,59 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
     }
   });
 
+  app.put("/api/campaigns/:campaignId/shown-target", requireGm, (request, response, next) => {
+    try {
+      if (!Object.hasOwn(request.body || {}, "target")) {
+        response.status(400).json({ error: "Shown target request must include target." });
+        return;
+      }
+
+      const target = request.body.target;
+      if (target !== null && (!target || typeof target !== "object" || Array.isArray(target))) {
+        response.status(400).json({ error: "Shown target must be an object or null." });
+        return;
+      }
+
+      if (target !== null && (typeof target.id !== "string" || !["encounter", "handout"].includes(target.type))) {
+        response.status(400).json({ error: "Shown target must include type and id." });
+        return;
+      }
+
+      const campaign = withAssetUrls(
+        campaignStorage,
+        campaignStorage.setShownTarget(request.params.campaignId, target)
+      );
+      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
+      onStateChange(state);
+      response.json({ campaign: state.campaign });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/campaigns/:campaignId/shown-target/rotation", requireGm, (request, response, next) => {
+    try {
+      const direction = request.body?.direction;
+      const campaign = withAssetUrls(
+        campaignStorage,
+        campaignStorage.rotateShownHandout(request.params.campaignId, direction)
+      );
+      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
+      onStateChange(state);
+      response.json({ campaign: state.campaign });
+    } catch (error) {
+      if (/shown handout/.test(error.message)) {
+        response.status(409).json({ error: error.message });
+        return;
+      }
+      if (/left or right/.test(error.message)) {
+        response.status(400).json({ error: error.message });
+        return;
+      }
+      next(error);
+    }
+  });
+
   app.put("/api/campaigns/:campaignId/active-map", requireGm, (request, response, next) => {
     try {
       if (!Object.hasOwn(request.body || {}, "mapId")) {
@@ -200,9 +253,10 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
         return;
       }
 
+      const target = request.body.mapId === null ? null : { id: request.body.mapId, type: "encounter" };
       const campaign = withAssetUrls(
         campaignStorage,
-        campaignStorage.setActiveMap(request.params.campaignId, request.body.mapId)
+        campaignStorage.setShownTarget(request.params.campaignId, target)
       );
       const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
       onStateChange(state);
@@ -329,18 +383,39 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
     }
   });
 
+  app.get("/api/player/shown-target/asset", (_request, response, next) => {
+    try {
+      const state = stateStore.getState();
+      const campaign = state.campaign;
+      const shownTarget = campaign?.shownTarget || null;
+
+      if (!campaign || !shownTarget) {
+        response.status(404).json({ error: "No shown target." });
+        return;
+      }
+
+      const { filePath } =
+        shownTarget.type === "encounter"
+          ? campaignStorage.getMapAsset(campaign.id, shownTarget.id)
+          : campaignStorage.getHandoutAsset(campaign.id, shownTarget.id);
+      response.sendFile(filePath);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.get("/api/player/active-map/asset", (_request, response, next) => {
     try {
       const state = stateStore.getState();
       const campaign = state.campaign;
-      const activeMap = campaign ? campaign.maps.find((map) => map.id === campaign.activeMapId) : null;
+      const shownTarget = campaign?.shownTarget || null;
 
-      if (!campaign || !activeMap) {
+      if (!campaign || shownTarget?.type !== "encounter") {
         response.status(404).json({ error: "No active map." });
         return;
       }
 
-      const { filePath } = campaignStorage.getMapAsset(campaign.id, activeMap.id);
+      const { filePath } = campaignStorage.getMapAsset(campaign.id, shownTarget.id);
       response.sendFile(filePath);
     } catch (error) {
       next(error);

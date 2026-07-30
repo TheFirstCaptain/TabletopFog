@@ -129,8 +129,10 @@ function waitForActiveMap(client, expectedMapId) {
 
     client.on("state:sync", (state) => {
       if (
-        (state.campaign && state.campaign.activeMapId === expectedMapId) ||
-        (state.activeMap && state.activeMap.id === expectedMapId)
+        (state.campaign &&
+          state.campaign.shownTarget?.type === "encounter" &&
+          state.campaign.shownTarget.id === expectedMapId) ||
+        (state.shownTarget?.type === "encounter" && state.shownTarget.id === expectedMapId)
       ) {
         clearTimeout(timeout);
         resolve(state);
@@ -146,7 +148,11 @@ function waitForActiveMapFogCount(client, expectedMapId, expectedCount) {
     }, 2000);
 
     client.on("state:sync", (state) => {
-      if (state.activeMap?.id === expectedMapId && state.activeMap.fogOperations?.length === expectedCount) {
+      if (
+        state.shownTarget?.type === "encounter" &&
+        state.shownTarget.id === expectedMapId &&
+        state.shownTarget.fogOperations?.length === expectedCount
+      ) {
         clearTimeout(timeout);
         resolve(state);
       }
@@ -177,8 +183,8 @@ function waitForNoActiveMap(client) {
 
     client.on("state:sync", (state) => {
       if (
-        (state.campaign && state.campaign.activeMapId === null) ||
-        (Object.hasOwn(state, "activeMap") && state.activeMap === null)
+        (state.campaign && state.campaign.shownTarget === null) ||
+        (Object.hasOwn(state, "shownTarget") && state.shownTarget === null)
       ) {
         clearTimeout(timeout);
         resolve(state);
@@ -577,27 +583,41 @@ test("manages maps and broadcasts active map state", async (t) => {
       method: "PUT"
     });
     const active = waitForActiveMap(player, first.json.map.id);
-    const selected = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/active-map`, {
-      body: JSON.stringify({ mapId: first.json.map.id }),
+    const selected = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/shown-target`, {
+      body: JSON.stringify({ target: { id: first.json.map.id, type: "encounter" } }),
       headers: gmHeaders(port, { "content-type": "application/json" }),
       method: "PUT"
     });
-    const missingMapId = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/active-map`, {
-      body: JSON.stringify({}),
-      headers: gmHeaders(port, { "content-type": "application/json" }),
-      method: "PUT"
-    });
-    const invalidMapId = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/active-map`, {
-      body: JSON.stringify({ mapId: 12 }),
-      headers: gmHeaders(port, { "content-type": "application/json" }),
-      method: "PUT"
-    });
-    const playerClear = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/active-map`, {
-      body: JSON.stringify({ mapId: null }),
+    const missingTarget = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/shown-target`,
+      {
+        body: JSON.stringify({}),
+        headers: gmHeaders(port, { "content-type": "application/json" }),
+        method: "PUT"
+      }
+    );
+    const invalidTarget = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/shown-target`,
+      {
+        body: JSON.stringify({ target: { id: first.json.map.id, type: "scene" } }),
+        headers: gmHeaders(port, { "content-type": "application/json" }),
+        method: "PUT"
+      }
+    );
+    const invalidLegacyMapId = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/active-map`,
+      {
+        body: JSON.stringify({ mapId: "" }),
+        headers: gmHeaders(port, { "content-type": "application/json" }),
+        method: "PUT"
+      }
+    );
+    const playerClear = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/shown-target`, {
+      body: JSON.stringify({ target: null }),
       headers: playerHeaders(port, { "content-type": "application/json" }),
       method: "PUT"
     });
-    const playerAsset = await getHttps(`${url}/api/player/active-map/asset`, {
+    const playerAsset = await getHttps(`${url}/api/player/shown-target/asset`, {
       headers: playerHeaders(port)
     });
     const playerState = await active;
@@ -617,7 +637,7 @@ test("manages maps and broadcasts active map state", async (t) => {
     );
     const playerAfterDelete = new Promise((resolve) => {
       player.on("state:sync", (state) => {
-        if (state.activeMap?.id === first.json.map.id) resolve(state);
+        if (state.shownTarget?.type === "encounter" && state.shownTarget.id === first.json.map.id) resolve(state);
       });
     });
     const deleted = await requestHttps(
@@ -637,14 +657,14 @@ test("manages maps and broadcasts active map state", async (t) => {
       headers: gmHeaders(port),
       label: "deleted asset"
     });
-    const activePlayerAssetAfterDelete = await getHttps(`${url}/api/player/active-map/asset`, {
+    const activePlayerAssetAfterDelete = await getHttps(`${url}/api/player/shown-target/asset`, {
       headers: playerHeaders(port),
       label: "active player asset after delete"
     });
     const playerDeleteState = await playerAfterDelete;
     const clearedState = waitForNoActiveMap(player);
-    const cleared = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/active-map`, {
-      body: JSON.stringify({ mapId: null }),
+    const cleared = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/shown-target`, {
+      body: JSON.stringify({ target: null }),
       headers: gmHeaders(port, { "content-type": "application/json" }),
       method: "PUT"
     });
@@ -657,7 +677,7 @@ test("manages maps and broadcasts active map state", async (t) => {
       label: "inactive player asset"
     });
     const playerClearedState = await clearedState;
-    const clearedPlayerAsset = await getHttps(`${url}/api/player/active-map/asset`, {
+    const clearedPlayerAsset = await getHttps(`${url}/api/player/shown-target/asset`, {
       headers: playerHeaders(port)
     });
 
@@ -672,11 +692,12 @@ test("manages maps and broadcasts active map state", async (t) => {
         [first.json.map.id, 2]
       ]
     );
-    assert.equal(selected.json.campaign.activeMapId, first.json.map.id);
+    assert.deepEqual(selected.json.campaign.shownTarget, { id: first.json.map.id, type: "encounter" });
     assert.equal(cleared.statusCode, 200);
-    assert.equal(cleared.json.campaign.activeMapId, null);
-    assert.equal(missingMapId.statusCode, 400);
-    assert.equal(invalidMapId.statusCode, 400);
+    assert.equal(cleared.json.campaign.shownTarget, null);
+    assert.equal(missingTarget.statusCode, 400);
+    assert.equal(invalidTarget.statusCode, 400);
+    assert.equal(invalidLegacyMapId.statusCode, 404);
     assert.equal(playerClear.statusCode, 403);
     assert.equal(activeDelete.statusCode, 409);
     assert.equal(playerDelete.statusCode, 403);
@@ -687,21 +708,23 @@ test("manages maps and broadcasts active map state", async (t) => {
     );
     assert.equal(deletedAsset.statusCode, 404);
     assert.equal(activePlayerAssetAfterDelete.statusCode, 200);
-    assert.equal(playerState.activeMap.id, first.json.map.id);
-    assert.equal(playerState.activeMap.campaignId, "The Long Walk");
-    assert.equal(playerState.activeMap.version, `The Long Walk/${first.json.map.id}`);
+    assert.equal(playerState.shownTarget.type, "encounter");
+    assert.equal(playerState.shownTarget.id, first.json.map.id);
+    assert.equal(playerState.shownTarget.campaignId, "The Long Walk");
+    assert.equal(playerState.shownTarget.version, `The Long Walk/encounter/${first.json.map.id}`);
     assert.equal(playerState.campaign, undefined);
-    assert.equal(playerState.activeMap.assetUrl, "/api/player/active-map/asset");
-    assert.equal(playerDeleteState.activeMap.id, first.json.map.id);
-    assert.equal(playerDeleteState.activeMap.version, playerState.activeMap.version);
+    assert.equal(playerState.shownTarget.assetUrl, "/api/player/shown-target/asset");
+    assert.equal(playerState.activeMap.id, first.json.map.id);
+    assert.equal(playerDeleteState.shownTarget.id, first.json.map.id);
+    assert.equal(playerDeleteState.shownTarget.version, playerState.shownTarget.version);
     assert.equal(gmAsset.statusCode, 200);
     assert.deepEqual(gmAsset.rawBody, PNG_BYTES);
     assert.equal(inactivePlayerAsset.statusCode, 403);
     assert.equal(playerAsset.statusCode, 200);
     assert.deepEqual(playerAsset.rawBody, PNG_BYTES);
-    assert.equal(playerClearedState.activeMap, null);
+    assert.equal(playerClearedState.shownTarget, null);
     assert.equal(clearedPlayerAsset.statusCode, 404);
-    assert.equal(stateStore.getState().campaign.activeMapId, null);
+    assert.equal(stateStore.getState().campaign.shownTarget, null);
   } finally {
     player.close();
     await close(server, io);
@@ -803,11 +826,66 @@ test("adds campaign handouts through GM API without changing player projection",
       }),
       method: "POST"
     });
+    const shownHandout = waitForPlayerState(
+      player,
+      (state) =>
+        state.shownTarget?.type === "handout" &&
+        state.shownTarget.id === handout.json.handout.id &&
+        state.shownTarget.rotation === 0,
+      "shown handout"
+    );
+    const showHandout = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/shown-target`, {
+      body: JSON.stringify({ target: { id: handout.json.handout.id, type: "handout" } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+    const shownHandoutState = await shownHandout;
+    const rotatedHandout = waitForPlayerState(
+      player,
+      (state) => state.shownTarget?.type === "handout" && state.shownTarget.rotation === 90,
+      "rotated handout"
+    );
+    const rotateRight = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/shown-target/rotation`,
+      {
+        body: JSON.stringify({ direction: "right" }),
+        headers: gmHeaders(port, { "content-type": "application/json" }),
+        method: "POST"
+      }
+    );
+    const rotatedHandoutState = await rotatedHandout;
+    const invalidRotation = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/shown-target/rotation`,
+      {
+        body: JSON.stringify({ direction: "up" }),
+        headers: gmHeaders(port, { "content-type": "application/json" }),
+        method: "POST"
+      }
+    );
+    const playerRotationRejected = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/shown-target/rotation`,
+      {
+        body: JSON.stringify({ direction: "right" }),
+        headers: playerHeaders(port, { "content-type": "application/json" }),
+        method: "POST"
+      }
+    );
+    const shownHandoutAsset = await getHttps(`${url}/api/player/shown-target/asset`, {
+      headers: playerHeaders(port),
+      label: "shown player handout asset"
+    });
+    const shownEncounterAgain = waitForActiveMap(player, map.json.map.id);
+    await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/shown-target`, {
+      body: JSON.stringify({ target: { id: map.json.map.id, type: "encounter" } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+    const shownEncounterAgainState = await shownEncounterAgain;
 
     assert.equal(handout.statusCode, 201);
     assert.equal(handout.json.handout.name, "NPC Portrait");
     assert.equal(handout.json.handout.file, "handouts/NPC Portrait.png");
-    assert.equal(handout.json.campaign.activeMapId, map.json.map.id);
+    assert.deepEqual(handout.json.campaign.shownTarget, { id: map.json.map.id, type: "encounter" });
     assert.deepEqual(
       handout.json.campaign.handouts.map((item) => item.name),
       ["NPC Portrait"]
@@ -822,7 +900,42 @@ test("adds campaign handouts through GM API without changing player projection",
     assert.match(missingFileName.json.error, /valid handout file name/i);
     assert.equal(oversized.statusCode, 413);
     assert.deepEqual(fs.readdirSync(path.join(dataRoot, "The Long Walk", "handouts")), ["NPC Portrait.png"]);
-    assert.deepEqual(projectStateForRole(stateStore.getState(), "player").activeMap, playerBeforeHandout.activeMap);
+    assert.deepEqual(
+      projectStateForRole(stateStore.getState(), "player").shownTarget,
+      shownEncounterAgainState.shownTarget
+    );
+    assert.deepEqual(playerBeforeHandout.shownTarget, {
+      ...playerBeforeHandout.activeMap,
+      assetUrl: "/api/player/shown-target/asset",
+      type: "encounter",
+      version: `The Long Walk/encounter/${map.json.map.id}`
+    });
+    assert.equal(showHandout.statusCode, 200);
+    assert.deepEqual(showHandout.json.campaign.shownTarget, {
+      id: handout.json.handout.id,
+      rotation: 0,
+      type: "handout"
+    });
+    assert.equal(shownHandoutState.shownTarget.type, "handout");
+    assert.equal(shownHandoutState.shownTarget.name, "NPC Portrait");
+    assert.equal(shownHandoutState.shownTarget.assetUrl, "/api/player/shown-target/asset");
+    assert.equal(shownHandoutState.shownTarget.rotation, 0);
+    assert.equal(shownHandoutState.shownTarget.fogOperations, undefined);
+    assert.equal(rotateRight.statusCode, 200);
+    assert.deepEqual(rotateRight.json.campaign.shownTarget, {
+      id: handout.json.handout.id,
+      rotation: 90,
+      type: "handout"
+    });
+    assert.equal(rotatedHandoutState.shownTarget.rotation, 90);
+    assert.equal(rotatedHandoutState.shownTarget.fogOperations, undefined);
+    assert.equal(invalidRotation.statusCode, 400);
+    assert.match(invalidRotation.json.error, /left or right/);
+    assert.equal(playerRotationRejected.statusCode, 403);
+    assert.equal(shownHandoutAsset.statusCode, 200);
+    assert.deepEqual(shownHandoutAsset.rawBody, PNG_BYTES);
+    assert.equal(shownEncounterAgainState.shownTarget.type, "encounter");
+    assert.equal(shownEncounterAgainState.shownTarget.rotation, undefined);
   } finally {
     player.close();
     await close(server, io);
@@ -2058,10 +2171,13 @@ test("restores shown encounter and fog to players only after GM opens the campai
     assert.equal(restoredPlayerState.campaign, undefined);
     assert.equal(restoredPlayerState.activeMap.id, forestMapId);
     assert.equal(restoredPlayerState.activeMap.name, "forest");
-    assert.equal(restoredPlayerState.activeMap.assetUrl, "/api/player/active-map/asset");
-    assert.equal(restoredPlayerState.activeMap.version, `The Long Walk/${forestMapId}`);
-    assert.deepEqual(restoredPlayerState.activeMap.fogOperations, forestFog);
-    assert.equal(secondServer.stateStore.getState().campaign.activeMapId, forestMapId);
+    assert.equal(restoredPlayerState.shownTarget.assetUrl, "/api/player/shown-target/asset");
+    assert.equal(restoredPlayerState.shownTarget.version, `The Long Walk/encounter/${forestMapId}`);
+    assert.deepEqual(restoredPlayerState.shownTarget.fogOperations, forestFog);
+    assert.deepEqual(secondServer.stateStore.getState().campaign.shownTarget, {
+      id: forestMapId,
+      type: "encounter"
+    });
   } finally {
     player.close();
     await close(secondServer.server, secondServer.io);
@@ -2216,6 +2332,82 @@ test("restores missing shown map asset as empty Player Display without path leak
     assert.equal(playerState.activeMap, null);
     assert.equal(JSON.stringify(playerState).includes(dataRoot), false);
     assert.equal(stateStore.getState().campaign.activeMapId, null);
+    assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+  } finally {
+    player.close();
+    await close(server, io);
+  }
+});
+
+test("restores missing shown handout asset as empty Player Display without path leakage", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const campaignDir = path.join(dataRoot, "The Long Walk");
+  const campaignPath = path.join(campaignDir, "campaign.json");
+  fs.mkdirSync(path.join(campaignDir, "handouts"), { recursive: true });
+  const originalMetadata = `${JSON.stringify(
+    {
+      version: 1,
+      name: "The Long Walk",
+      shownTarget: { type: "handout", id: "portrait" },
+      handouts: [{ id: "portrait", name: "Portrait", file: "handouts/portrait.png", order: 1 }],
+      maps: []
+    },
+    null,
+    2
+  )}\n`;
+  fs.writeFileSync(campaignPath, originalMetadata);
+  const { server, io, stateStore } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+  const player = createClient(url, {
+    forceNew: true,
+    rejectUnauthorized: false,
+    reconnection: false,
+    transports: ["websocket"],
+    extraHeaders: {
+      referer: `${url}/player`
+    }
+  });
+
+  try {
+    await waitForPlayerState(
+      player,
+      (state) => Object.hasOwn(state, "shownTarget") && state.shownTarget === null,
+      "empty startup player projection"
+    );
+    const restoredPlayer = waitForPlayerState(
+      player,
+      (state) => Object.hasOwn(state, "shownTarget") && state.shownTarget === null,
+      "missing shown handout remains empty"
+    );
+    const opened = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}`, {
+      headers: gmHeaders(port)
+    });
+    const playerState = await restoredPlayer;
+
+    assert.equal(opened.statusCode, 200);
+    assert.equal(opened.json.campaign.shownTarget, null);
+    assert.deepEqual(opened.json.campaign.recoveryDiagnostics, [
+      {
+        code: "missing-handout-asset",
+        handoutId: "portrait",
+        message: "This handout image could not be found.",
+        severity: "warning"
+      },
+      {
+        code: "shown-handout-not-restored",
+        handoutId: "portrait",
+        message: "The saved Shown to Players handout could not be restored. The Player Display is waiting for the GM.",
+        severity: "warning"
+      }
+    ]);
+    assert.equal(playerState.campaign, undefined);
+    assert.equal(playerState.shownTarget, null);
+    assert.equal(JSON.stringify(playerState).includes(dataRoot), false);
+    assert.equal(stateStore.getState().campaign.shownTarget, null);
     assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
   } finally {
     player.close();

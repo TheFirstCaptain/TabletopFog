@@ -243,4 +243,15 @@ export function wireGmEvents(elements, actions) {
       actions.toggleShownEncounter(button.dataset.mapId);
     }
   });
+
+  elements.handoutList.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-action]");
+    if (!button) return;
+
+    if (button.dataset.action === "set-shown-handout") {
+      actions.toggleShownHandout(button.dataset.handoutId);
+    } else if (button.dataset.action === "rotate-shown-handout") {
+      actions.rotateShownHandout(button.dataset.direction);
+    }
+  });
 }
