@@ -186,8 +186,8 @@ Steps:
    unchanged.
 7. Confirm missing or unsafe persisted handout assets produce GM recovery
    diagnostics without rewriting campaign files or exposing local paths.
-8. Confirm a campaign with handouts cannot be deleted until handout deletion is
-   implemented in a later feature.
+8. Confirm a campaign with handouts cannot be deleted until the GM deletes the
+   handouts first.
 9. Confirm the Player Display continues showing the previously shown encounter.
 
 Expected result:
@@ -199,6 +199,42 @@ Expected result:
 - No rotation, rename, delete, PDFs, notes, slideshow controls, overlay mode,
   player-side rotation, tokens, initiative, dice, dynamic lighting, cloud
   login, or other full-VTT controls appear in this slice.
+
+### Test: GM Can Rename And Delete Campaign Handouts
+
+Prerequisites:
+
+- The local HTTPS server is running.
+- The GM View and Player Display are open.
+- A campaign exists with at least two campaign handouts.
+
+Steps:
+
+1. Open the campaign in the GM View.
+2. Switch to `Handouts`.
+3. Rename an unshown handout.
+4. Confirm the handout card updates while the stored asset path remains
+   unchanged.
+5. Show a different handout or encounter to players.
+6. Start deleting the renamed unshown handout, then cancel the confirmation.
+7. Confirm the handout card, asset, metadata, and Player Display are unchanged.
+8. Delete the renamed unshown handout and accept the confirmation.
+9. Confirm the handout card is removed, the copied asset is removed, the
+   handout count updates, and the Player Display still shows the previously
+   shown target.
+10. Confirm rename and delete controls are disabled for the currently shown
+    handout with guidance to clear it from the Player Display first.
+
+Expected result:
+
+- Rename is metadata-only and does not change the stored handout asset path.
+- Delete removes an unshown handout's metadata and copied asset together.
+- Failed, canceled, invalid, or blocked rename/delete attempts leave metadata
+  and files unchanged.
+- Handout management remains GM-only and never changes what players see.
+- No PDFs, notes, folders, tags, search, slideshow controls, overlay mode,
+  player-side rotation, tokens, initiative, dice, dynamic lighting, cloud
+  login, or other full-VTT controls appear.
 
 ## Milestone 0: Harness and Repo Structure
 

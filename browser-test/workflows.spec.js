@@ -2649,6 +2649,80 @@ test("Player Display can enter and exit fullscreen locally", async ({ app, page,
   await expect.poll(() => player.evaluate(() => document.fullscreenElement === null)).toBe(true);
 });
 
+test("GM can rename and delete unshown campaign handouts", async ({ app, page, context }) => {
+  const player = await context.newPage();
+  await openGm(page, app.baseURL);
+  await createCampaign(page);
+  await page.getByRole("button", { name: "Handouts" }).click();
+  await uploadHandoutFile(page, await sizedPngFile(page, "Portrait Handout.png", 400, 800), "Portrait Handout");
+  await uploadHandoutFile(page, await sizedPngFile(page, "Secret Clue.png", 800, 400), "Secret Clue");
+
+  const clueCard = page.locator(".handout-card").filter({ hasText: "Secret Clue" });
+  await clueCard.getByRole("textbox", { name: "Handout name for Secret Clue" }).fill("Strange Clue");
+  await clueCard.getByRole("button", { name: "Rename Secret Clue" }).click();
+  await expect(page.getByRole("heading", { level: 4, name: "Strange Clue" })).toBeVisible();
+  await expect(page.locator("#handout-count")).toHaveText("2 handouts");
+  expect(fs.existsSync(path.join(app.dataRoot, "The Long Walk", "handouts", "Secret Clue.png"))).toBe(true);
+
+  const portraitCard = page.locator(".handout-card").filter({ hasText: "Portrait Handout" });
+  await portraitCard.getByRole("button", { name: "Show Portrait Handout to players" }).click();
+  await player.goto(`${app.baseURL}/player`);
+  await expect(player.getByRole("img", { name: "Handout: Portrait Handout" })).toBeVisible();
+
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toContain('This permanently deletes "Strange Clue" from this campaign.');
+    await dialog.dismiss();
+  });
+  await page
+    .locator(".handout-card")
+    .filter({ hasText: "Strange Clue" })
+    .getByRole("button", { name: "Delete Strange Clue" })
+    .click();
+  await expect(page.getByRole("heading", { level: 4, name: "Strange Clue" })).toBeVisible();
+  await expect(player.getByRole("img", { name: "Handout: Portrait Handout" })).toBeVisible();
+
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toContain('This permanently deletes "Strange Clue" from this campaign.');
+    await dialog.accept();
+  });
+  await page
+    .locator(".handout-card")
+    .filter({ hasText: "Strange Clue" })
+    .getByRole("button", { name: "Delete Strange Clue" })
+    .click();
+  await expect(page.getByRole("heading", { level: 4, name: "Strange Clue" })).toHaveCount(0);
+  await expect(page.locator("#handout-count")).toHaveText("1 handout");
+  await expect(player.getByRole("img", { name: "Handout: Portrait Handout" })).toBeVisible();
+  expect(fs.existsSync(path.join(app.dataRoot, "The Long Walk", "handouts", "Secret Clue.png"))).toBe(false);
+
+  await expect(portraitCard.getByRole("button", { name: "Rename Portrait Handout" })).toBeDisabled();
+  await expect(portraitCard.getByRole("button", { name: "Delete Portrait Handout" })).toBeDisabled();
+  await expect(
+    portraitCard.getByText("Shown to Players. Clear it from the Player Display before renaming or deleting.")
+  ).toBeVisible();
+});
+
+test("handout management controls fit narrow layouts with long names", async ({ app, page }) => {
+  await openGm(page, app.baseURL);
+  await createCampaign(page);
+  await page.getByRole("button", { name: "Handouts" }).click();
+  const longName = "Ancient Portrait With A Very Long Handout Name That Wraps";
+  await uploadHandoutFile(page, await sizedPngFile(page, `${longName}.png`, 400, 800), longName);
+
+  const card = page.locator(".handout-card").filter({ hasText: longName });
+  await card.getByRole("button", { name: `Show ${longName} to players` }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  await expect(card.getByRole("heading", { level: 4, name: longName })).toBeVisible();
+  await expect(card.getByRole("textbox", { name: `Handout name for ${longName}` })).toBeDisabled();
+  await expect(card.getByRole("button", { name: `Rename ${longName}` })).toBeDisabled();
+  await expect(card.getByRole("button", { name: `Delete ${longName}` })).toBeDisabled();
+  await expect(
+    card.getByText("Shown to Players. Clear it from the Player Display before renaming or deleting.")
+  ).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
 test("Player Display fullscreen failure stays local and quiet", async ({ app, page, context }) => {
   const player = await context.newPage();
   await player.addInitScript(() => {

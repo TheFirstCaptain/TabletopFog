@@ -50,6 +50,18 @@ export function createGmApi(fetchRequest) {
         method: "PATCH"
       });
     },
+    deleteHandout(campaignId, handoutId) {
+      return request(`/api/campaigns/${encodeURIComponent(campaignId)}/handouts/${encodeURIComponent(handoutId)}`, {
+        method: "DELETE"
+      });
+    },
+    renameHandout(campaignId, handoutId, name) {
+      return request(`/api/campaigns/${encodeURIComponent(campaignId)}/handouts/${encodeURIComponent(handoutId)}`, {
+        body: JSON.stringify({ name }),
+        headers: { "content-type": "application/json" },
+        method: "PATCH"
+      });
+    },
     reorderMaps(campaignId, mapIds) {
       return request(`/api/campaigns/${encodeURIComponent(campaignId)}/maps/reorder`, {
         body: JSON.stringify({ mapIds }),

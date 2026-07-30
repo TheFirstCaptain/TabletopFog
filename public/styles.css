@@ -597,14 +597,16 @@ h4 {
   gap: 0.5rem;
 }
 
-.encounter-admin {
+.encounter-admin,
+.handout-admin {
   display: grid;
   gap: 0.55rem;
   border-top: 1px solid rgb(155 123 79 / 45%);
   padding-top: 0.65rem;
 }
 
-.encounter-admin input {
+.encounter-admin input,
+.handout-admin input {
   min-height: 2.45rem;
   background: rgb(255 250 235 / 45%);
 }
@@ -612,17 +614,20 @@ h4 {
 .encounter-status,
 .encounter-running,
 .encounter-controls,
+.handout-controls,
 .map-controls {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
 
-.encounter-controls {
+.encounter-controls,
+.handout-controls {
   align-items: center;
 }
 
-.encounter-controls button {
+.encounter-controls button,
+.handout-controls button {
   min-width: 4.25rem;
   min-height: 2.4rem;
   padding: 0.45rem 0.65rem;
@@ -638,7 +643,8 @@ h4 {
 }
 
 .campaign-delete-reason,
-.encounter-delete-reason {
+.encounter-delete-reason,
+.handout-manage-reason {
   color: var(--muted);
   font-size: 0.875rem;
   line-height: 1.25;

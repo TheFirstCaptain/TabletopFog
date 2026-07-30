@@ -421,6 +421,34 @@ function createCampaignStorage(options = {}) {
         throw error;
       }
     },
+    deleteHandout(campaignId, handoutId) {
+      const campaign = readCampaign(campaignId);
+      const handout = findHandout(campaign, handoutId);
+
+      if (campaign.shownTarget?.type === "handout" && handout.id === campaign.shownTarget.id) {
+        throw createUserError(409, "Clear this handout from the Player Display before deleting it.");
+      }
+
+      const assetPath = campaignFiles.getContainedHandoutAssetPath(campaignId, handout);
+      const deletePath = `${assetPath}.delete-${process.pid}-${Date.now()}`;
+      fs.renameSync(assetPath, deletePath);
+
+      let savedCampaign;
+      try {
+        campaign.handouts = (campaign.handouts || []).filter((candidate) => candidate.id !== handout.id);
+        savedCampaign = saveCampaign(campaign);
+      } catch (error) {
+        fs.renameSync(deletePath, assetPath);
+        throw error;
+      }
+
+      try {
+        fs.rmSync(deletePath, { force: true });
+      } catch (_error) {
+        // Metadata is the commit point; the original asset path is already gone.
+      }
+      return savedCampaign;
+    },
     renameMap(campaignId, mapId, name) {
       const campaign = readCampaign(campaignId);
       const map = findMap(campaign, mapId);
@@ -432,6 +460,22 @@ function createCampaignStorage(options = {}) {
 
       map.name = displayName;
       return findMap(saveCampaign(campaign), mapId);
+    },
+    renameHandout(campaignId, handoutId, name) {
+      const campaign = readCampaign(campaignId);
+      const handout = findHandout(campaign, handoutId);
+      const displayName = String(name || "").trim();
+
+      if (!displayName) {
+        throw createUserError(400, "A handout name is required.");
+      }
+
+      if (campaign.shownTarget?.type === "handout" && handout.id === campaign.shownTarget.id) {
+        throw createUserError(409, "Clear this handout from the Player Display before renaming it.");
+      }
+
+      handout.name = displayName;
+      return findHandout(saveCampaign(campaign), handoutId);
     },
     reorderMaps(campaignId, mapIds) {
       const campaign = readCampaign(campaignId);

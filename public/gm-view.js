@@ -487,6 +487,7 @@ export function createGmView(document) {
       item.className = "handout-card";
       item.dataset.handoutId = handout.id;
       if (isShownTarget(campaign, "handout", handout.id)) item.dataset.shown = "true";
+      const shownToPlayers = isShownTarget(campaign, "handout", handout.id);
 
       const thumbnail = document.createElement("img");
       thumbnail.className = "handout-thumbnail";
@@ -499,7 +500,7 @@ export function createGmView(document) {
 
       const status = document.createElement("div");
       status.className = "encounter-status";
-      if (isShownTarget(campaign, "handout", handout.id)) {
+      if (shownToPlayers) {
         const shown = document.createElement("span");
         shown.className = "status-pill";
         shown.textContent = "Shown to Players";
@@ -512,11 +513,11 @@ export function createGmView(document) {
         createButton(document, {
           action: "set-shown-handout",
           handoutId: handout.id,
-          text: isShownTarget(campaign, "handout", handout.id) ? "Shown to Players" : "Show to Players"
+          text: shownToPlayers ? "Shown to Players" : "Show to Players"
         })
       );
       const runningButton = running.querySelector("button");
-      if (isShownTarget(campaign, "handout", handout.id)) {
+      if (shownToPlayers) {
         runningButton.dataset.state = "shown";
         runningButton.setAttribute("aria-label", `Shown to Players - clear ${handout.name} from Player Display`);
         const rotationControls = document.createElement("div");
@@ -548,7 +549,52 @@ export function createGmView(document) {
         runningButton.setAttribute("aria-label", `Show ${handout.name} to players`);
       }
 
-      item.append(thumbnail, title, status, running);
+      const name = document.createElement("input");
+      name.type = "text";
+      name.value = handout.name;
+      name.disabled = shownToPlayers;
+      name.setAttribute("aria-label", `Handout name for ${handout.name}`);
+
+      const controls = document.createElement("div");
+      controls.className = "handout-controls";
+      const blockedReason = shownToPlayers
+        ? "Shown to Players. Clear it from the Player Display before renaming or deleting."
+        : "";
+      const blockedReasonId = `handout-manage-reason-${handout.id}`;
+      const renameButton = createButton(document, {
+        action: "rename-handout",
+        className: "secondary",
+        disabled: Boolean(blockedReason),
+        handoutId: handout.id,
+        text: "Rename"
+      });
+      renameButton.setAttribute("aria-label", `Rename ${handout.name}`);
+      const deleteButton = createButton(document, {
+        action: "delete-handout",
+        className: "secondary danger-secondary",
+        disabled: Boolean(blockedReason),
+        handoutId: handout.id,
+        text: "Delete..."
+      });
+      deleteButton.setAttribute("aria-label", `Delete ${handout.name}`);
+      if (blockedReason) {
+        renameButton.setAttribute("aria-describedby", blockedReasonId);
+        deleteButton.setAttribute("aria-describedby", blockedReasonId);
+      }
+      controls.append(renameButton, deleteButton);
+
+      const admin = document.createElement("div");
+      admin.className = "handout-admin";
+      admin.append(name, controls);
+      if (blockedReason) {
+        const reason = document.createElement("p");
+        reason.className = "handout-manage-reason";
+        reason.id = blockedReasonId;
+        reason.textContent = blockedReason;
+        admin.append(reason);
+      }
+
+      item.append(thumbnail, title, status, running, admin);
       elements.handoutList.append(item);
     });
   }
@@ -569,6 +615,11 @@ export function createGmView(document) {
     confirmDeleteCampaign(name) {
       return document.defaultView.confirm(
         `Delete campaign?\n\nThis permanently deletes "${name}". This can't be undone.`
+      );
+    },
+    confirmDeleteHandout(name) {
+      return document.defaultView.confirm(
+        `Delete handout?\n\nThis permanently deletes "${name}" from this campaign.\nThis can't be undone.`
       );
     },
     confirmClearFog(name, shownToPlayers) {

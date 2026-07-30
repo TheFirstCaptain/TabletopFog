@@ -19,12 +19,13 @@ campaign folders, lets the GM manage map-backed encounter cards and campaign
 handouts, and syncs only the current shown target to the read-only Player
 Display over Socket.IO.
 
-Post-V1 handout work has started with a campaign-wide image handout library and
-explicit handout display. The GM can add and browse image handouts stored in
-the campaign's local `handouts/` folder, show one handout to players, clear it
-from the Player Display, rotate the shown handout in 90-degree increments, and
-replace it by showing an encounter again. The Campaign screen includes a
-compact `Shown to Players` status so the GM can tell whether players are seeing
+Post-V1 campaign image handouts are complete. The GM can add and browse image
+handouts stored in the campaign's local `handouts/` folder, show one handout to
+players, clear it from the Player Display, rotate the shown handout in
+90-degree increments, rename or delete unshown handouts, and replace a shown
+handout by showing an encounter again. Rename and delete are blocked while a
+handout is currently `Shown to Players`. The Campaign screen includes a compact
+`Shown to Players` status so the GM can tell whether players are seeing
 nothing, an encounter, or a handout without switching collections.
 
 The quality gate runs Chromium characterization for current GM/player workflows

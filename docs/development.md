@@ -150,11 +150,11 @@ not change the Player Display.
 
 Recovery reads do not rewrite `campaign.json`, delete assets, or strip unknown
 metadata. A later successful explicit GM mutation, such as rename, reorder,
-show, fog edit, clear, or handout upload, writes the current supported storage
-shape back to disk and preserves unknown campaign, map, and handout metadata
-where the compatibility policy supports it. Treat broader field renames,
-storage migrations, or moving from JSON files to another datastore as reviewed
-future work, not automatic repair.
+show, fog edit, clear, handout upload, handout rename, or unshown handout
+delete, writes the current supported storage shape back to disk and preserves
+unknown campaign, map, and handout metadata where the compatibility policy
+supports it. Treat broader field renames, storage migrations, or moving from
+JSON files to another datastore as reviewed future work, not automatic repair.
 
 ## Validation Commands
 

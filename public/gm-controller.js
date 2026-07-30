@@ -171,6 +171,16 @@ export function createGmController({ api, socket, state, view }) {
     }
   }
 
+  async function renameHandout(handoutId, name) {
+    try {
+      const payload = await api.renameHandout(state.getCurrentCampaign().id, handoutId, name);
+      state.setCurrentCampaign(payload.campaign);
+      renderCurrentCampaign();
+    } catch (error) {
+      view.setCampaignMessage(error.message);
+    }
+  }
+
   async function deleteMap(mapId) {
     const campaign = state.getCurrentCampaign();
     const map = campaign?.maps.find((candidate) => candidate.id === mapId);
@@ -181,6 +191,24 @@ export function createGmController({ api, socket, state, view }) {
 
     try {
       const payload = await api.deleteMap(campaign.id, mapId);
+      state.setCurrentCampaign(payload.campaign);
+      await loadCampaigns();
+      renderCurrentCampaign();
+    } catch (error) {
+      view.setCampaignMessage(error.message);
+    }
+  }
+
+  async function deleteHandout(handoutId) {
+    const campaign = state.getCurrentCampaign();
+    const handout = campaign?.handouts?.find((candidate) => candidate.id === handoutId);
+
+    if (!campaign || !handout || !view.confirmDeleteHandout(handout.name)) {
+      return;
+    }
+
+    try {
+      const payload = await api.deleteHandout(campaign.id, handoutId);
       state.setCurrentCampaign(payload.campaign);
       await loadCampaigns();
       renderCurrentCampaign();
@@ -511,6 +539,7 @@ export function createGmController({ api, socket, state, view }) {
       commitWorkspaceFogCircle,
       commitWorkspaceFogRectangle,
       deleteCampaign,
+      deleteHandout,
       deleteMap,
       getWorkspaceFogShape: view.getWorkspaceFogShape,
       fitWorkspaceMap: view.workspaceFitMap,
@@ -522,6 +551,7 @@ export function createGmController({ api, socket, state, view }) {
       previewWorkspaceFogCircle,
       previewWorkspaceFogRectangle,
       renameMap,
+      renameHandout,
       rotateShownHandout,
       selectEncounter,
       showCampaignContent,

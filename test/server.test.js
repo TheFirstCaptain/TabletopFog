@@ -942,6 +942,177 @@ test("adds campaign handouts through GM API without changing player projection",
   }
 });
 
+test("renames and deletes handouts through GM API without surprising the Player Display", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const { server, io, stateStore } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+  const clientOptions = {
+    forceNew: true,
+    rejectUnauthorized: false,
+    reconnection: false,
+    transports: ["websocket"]
+  };
+  const player = createClient(url, {
+    ...clientOptions,
+    extraHeaders: {
+      referer: `${url}/player`
+    }
+  });
+
+  try {
+    await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: "The Long Walk" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const portrait = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/handouts`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "portrait.png"
+      }),
+      method: "POST"
+    });
+    const clue = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/handouts`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "clue.png"
+      }),
+      method: "POST"
+    });
+    const campaignPath = path.join(dataRoot, "The Long Walk", "campaign.json");
+    const metadataBeforeInvalidRename = fs.readFileSync(campaignPath, "utf8");
+    const missingRenameName = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/handouts/${encodeURIComponent(clue.json.handout.id)}`,
+      {
+        body: JSON.stringify({}),
+        headers: gmHeaders(port, { "content-type": "application/json" }),
+        method: "PATCH"
+      }
+    );
+    const emptyRenameName = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/handouts/${encodeURIComponent(clue.json.handout.id)}`,
+      {
+        body: JSON.stringify({ name: "   " }),
+        headers: gmHeaders(port, { "content-type": "application/json" }),
+        method: "PATCH"
+      }
+    );
+    assert.equal(missingRenameName.statusCode, 400);
+    assert.match(missingRenameName.json.error, /handout name/);
+    assert.equal(emptyRenameName.statusCode, 400);
+    assert.match(emptyRenameName.json.error, /handout name/);
+    assert.equal(fs.readFileSync(campaignPath, "utf8"), metadataBeforeInvalidRename);
+
+    const renamedClue = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/handouts/${encodeURIComponent(clue.json.handout.id)}`,
+      {
+        body: JSON.stringify({ name: "Strange Clue" }),
+        headers: gmHeaders(port, { "content-type": "application/json" }),
+        method: "PATCH"
+      }
+    );
+    const playerRenameRejected = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/handouts/${encodeURIComponent(clue.json.handout.id)}`,
+      {
+        body: JSON.stringify({ name: "Player Edit" }),
+        headers: playerHeaders(port, { "content-type": "application/json" }),
+        method: "PATCH"
+      }
+    );
+    const shownHandout = waitForPlayerState(
+      player,
+      (state) => state.shownTarget?.type === "handout" && state.shownTarget.id === portrait.json.handout.id,
+      "shown handout"
+    );
+    await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/shown-target`, {
+      body: JSON.stringify({ target: { id: portrait.json.handout.id, type: "handout" } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+    const playerBeforeDelete = await shownHandout;
+    const shownRenameRejected = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/handouts/${encodeURIComponent(
+        portrait.json.handout.id
+      )}`,
+      {
+        body: JSON.stringify({ name: "Shown Portrait" }),
+        headers: gmHeaders(port, { "content-type": "application/json" }),
+        method: "PATCH"
+      }
+    );
+    const shownDeleteRejected = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/handouts/${encodeURIComponent(
+        portrait.json.handout.id
+      )}`,
+      {
+        headers: gmHeaders(port),
+        method: "DELETE"
+      }
+    );
+    const playerDeleteRejected = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/handouts/${encodeURIComponent(clue.json.handout.id)}`,
+      {
+        headers: playerHeaders(port),
+        method: "DELETE"
+      }
+    );
+    const deleted = await requestHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/handouts/${encodeURIComponent(clue.json.handout.id)}`,
+      {
+        headers: gmHeaders(port),
+        method: "DELETE"
+      }
+    );
+    const deletedAsset = await getHttps(
+      `${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/handouts/${encodeURIComponent(
+        clue.json.handout.id
+      )}/asset`,
+      {
+        headers: gmHeaders(port),
+        label: "deleted handout asset"
+      }
+    );
+    const shownAsset = await getHttps(`${url}/api/player/shown-target/asset`, {
+      headers: playerHeaders(port),
+      label: "shown handout asset after delete"
+    });
+
+    assert.equal(renamedClue.statusCode, 200);
+    assert.equal(renamedClue.json.handout.name, "Strange Clue");
+    assert.equal(renamedClue.json.handout.file, "handouts/clue.png");
+    assert.deepEqual(
+      renamedClue.json.campaign.handouts.map((handout) => handout.name),
+      ["portrait", "Strange Clue"]
+    );
+    assert.equal(playerRenameRejected.statusCode, 403);
+    assert.equal(shownRenameRejected.statusCode, 409);
+    assert.match(shownRenameRejected.json.error, /Player Display/);
+    assert.equal(shownDeleteRejected.statusCode, 409);
+    assert.match(shownDeleteRejected.json.error, /Player Display/);
+    assert.equal(playerDeleteRejected.statusCode, 403);
+    assert.equal(deleted.statusCode, 200);
+    assert.deepEqual(
+      deleted.json.campaign.handouts.map((handout) => [handout.id, handout.name, handout.order]),
+      [[portrait.json.handout.id, "portrait", 1]]
+    );
+    assert.equal(deletedAsset.statusCode, 404);
+    assert.equal(shownAsset.statusCode, 200);
+    assert.deepEqual(shownAsset.rawBody, PNG_BYTES);
+    assert.deepEqual(projectStateForRole(stateStore.getState(), "player").shownTarget, playerBeforeDelete.shownTarget);
+  } finally {
+    player.close();
+    await close(server, io);
+  }
+});
+
 test("GM handout asset route rejects missing and unsafe assets without path leakage", async (t) => {
   const dataRoot = createTempRoot(t);
   const campaignDir = path.join(dataRoot, "The Long Walk");

@@ -31,13 +31,15 @@ Tracked as [F-010](./features/F-010.md). Planned child features:
 - Complete: [F-010C](./features/F-010C.md), GM-controlled handout rotation.
 - Complete: [F-010D](./features/F-010D.md), handout display polish and
   validation.
-- Proposed: [F-010E](./features/F-010E.md), handout rename and delete.
+- Complete: [F-010E](./features/F-010E.md), handout rename and delete.
 
 Initial acceptance direction:
 
 - Handouts are campaign-wide image files, not encounter-specific notes.
 - The first library slice supports adding and browsing handouts; rename and
   delete are tracked separately in F-010E.
+- Rename and delete are GM-only management actions and are blocked while the
+  handout is currently shown to players.
 - Showing a handout is an explicit `Show to Players` action.
 - Showing a handout replaces the currently shown encounter or map on the Player
   Display.

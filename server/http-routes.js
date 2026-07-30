@@ -160,11 +160,44 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
     }
   });
 
+  app.patch("/api/campaigns/:campaignId/handouts/:handoutId", requireGm, (request, response, next) => {
+    try {
+      const handout = campaignStorage.renameHandout(
+        request.params.campaignId,
+        request.params.handoutId,
+        request.body.name
+      );
+      const campaign = withAssetUrls(campaignStorage, campaignStorage.getCampaign(request.params.campaignId));
+      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
+      onStateChange(state);
+      response.json({
+        campaign: state.campaign,
+        handout: state.campaign.handouts.find((candidate) => candidate.id === handout.id)
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.delete("/api/campaigns/:campaignId/maps/:mapId", requireGm, (request, response, next) => {
     try {
       const campaign = withAssetUrls(
         campaignStorage,
         campaignStorage.deleteMap(request.params.campaignId, request.params.mapId)
+      );
+      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
+      onStateChange(state);
+      response.json({ campaign: state.campaign });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/campaigns/:campaignId/handouts/:handoutId", requireGm, (request, response, next) => {
+    try {
+      const campaign = withAssetUrls(
+        campaignStorage,
+        campaignStorage.deleteHandout(request.params.campaignId, request.params.handoutId)
       );
       const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
       onStateChange(state);

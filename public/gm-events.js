@@ -252,6 +252,11 @@ export function wireGmEvents(elements, actions) {
       actions.toggleShownHandout(button.dataset.handoutId);
     } else if (button.dataset.action === "rotate-shown-handout") {
       actions.rotateShownHandout(button.dataset.direction);
+    } else if (button.dataset.action === "rename-handout") {
+      const name = button.closest("article").querySelector("input").value;
+      actions.renameHandout(button.dataset.handoutId, name);
+    } else if (button.dataset.action === "delete-handout") {
+      actions.deleteHandout(button.dataset.handoutId);
     }
   });
 }
