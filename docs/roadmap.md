@@ -29,7 +29,7 @@ Tracked as [F-010](./features/F-010.md). Planned child features:
 - Complete: [F-010A](./features/F-010A.md), campaign handout library.
 - Complete: [F-010B](./features/F-010B.md), show handout to players.
 - Complete: [F-010C](./features/F-010C.md), GM-controlled handout rotation.
-- Proposed: [F-010D](./features/F-010D.md), handout display polish and
+- Complete: [F-010D](./features/F-010D.md), handout display polish and
   validation.
 - Proposed: [F-010E](./features/F-010E.md), handout rename and delete.
 

@@ -273,6 +273,7 @@ test("GM adds campaign handouts without changing the Player Display", async ({ a
 
   await openGm(page, app.baseURL);
   await createCampaign(page);
+  await expect(page.getByText("Shown to Players: None", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Encounters" })).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator("#handout-library")).toBeHidden();
   await page.getByRole("button", { name: "Handouts" }).click();
@@ -282,6 +283,7 @@ test("GM adds campaign handouts without changing the Player Display", async ({ a
   await page.getByRole("button", { name: "Encounters" }).click();
   await addMap(page, "forest.png");
   await page.getByRole("button", { name: "Show to Players", exact: true }).click();
+  await expect(page.getByText("Shown to Players: Encounter - forest", { exact: true })).toBeVisible();
   await player.goto(`${app.baseURL}/player`);
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   const playerAssetRequestsBeforeHandout = playerAssetRequests;
@@ -308,6 +310,7 @@ test("GM adds campaign handouts without changing the Player Display", async ({ a
 
   const handoutCard = page.locator(".handout-card").filter({ hasText: "NPC Portrait" });
   await handoutCard.getByRole("button", { name: "Show NPC Portrait to players" }).click();
+  await expect(page.getByText("Shown to Players: Handout - NPC Portrait", { exact: true })).toBeVisible();
   await expect(player.getByRole("img", { name: "Handout: NPC Portrait" })).toBeVisible();
   await expect(
     handoutCard.getByRole("button", { name: "Shown to Players - clear NPC Portrait from Player Display" })
@@ -336,11 +339,12 @@ test("GM adds campaign handouts without changing the Player Display", async ({ a
   await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("270");
 
   await page.getByRole("button", { name: "Encounters" }).click();
-  await expect(page.getByText("Shown to Players: Handout - NPC Portrait")).toHaveCount(0);
+  await expect(page.getByText("Shown to Players: Handout - NPC Portrait", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Open forest for prep" }).click();
-  await expect(page.getByText("Shown to Players: Handout - NPC Portrait")).toBeVisible();
+  await expect(page.getByText("Shown to Players: Handout - NPC Portrait", { exact: true })).toBeVisible();
   await expect(player.getByRole("img", { name: "Handout: NPC Portrait" })).toBeVisible();
   await page.getByRole("button", { name: "Show to Players from workspace" }).click();
+  await expect(page.getByText("Shown to Players: Encounter - forest", { exact: true })).toBeVisible();
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   await expect(player.locator("#player-map")).toHaveAttribute("data-rotation", "0");
 
@@ -366,6 +370,7 @@ test("GM adds campaign handouts without changing the Player Display", async ({ a
     .filter({ hasText: "NPC Portrait" })
     .getByRole("button", { name: "Show NPC Portrait to players" })
     .click();
+  await expect(page.getByText("Shown to Players: Handout - NPC Portrait", { exact: true })).toBeVisible();
   await expect(player.getByRole("img", { name: "Handout: NPC Portrait" })).toBeVisible();
   await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("0");
   await page
@@ -382,6 +387,7 @@ test("GM adds campaign handouts without changing the Player Display", async ({ a
     .filter({ hasText: "NPC Portrait" })
     .getByRole("button", { name: "Shown to Players - clear NPC Portrait from Player Display" })
     .click();
+  await expect(page.getByText("Shown to Players: None", { exact: true })).toBeVisible();
   await expect(player.getByText("Waiting for GM.", { exact: true })).toBeVisible();
 
   await page.setViewportSize({ height: 844, width: 390 });
@@ -395,6 +401,91 @@ test("GM adds campaign handouts without changing the Player Display", async ({ a
     };
   });
   expect(handoutFormLayout).toEqual({ buttonBelowInput: true, formWithinViewport: true });
+});
+
+test("handout display polish preserves status, reconnect, viewports, and encounter fog", async ({
+  app,
+  page,
+  context
+}) => {
+  test.setTimeout(35_000);
+  const player = await context.newPage();
+
+  await openGm(page, app.baseURL);
+  await createCampaign(page);
+  await uploadMapFile(page, await sizedPngFile(page, "fogged-forest.png", 800, 400), "fogged-forest");
+  const forestMapId = await page
+    .locator(".encounter-card")
+    .filter({ hasText: "fogged-forest" })
+    .getAttribute("data-map-id");
+  app.seedFogOperations("The Long Walk", forestMapId, [
+    { type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }
+  ]);
+  await page.getByRole("button", { name: "Show to Players", exact: true }).click();
+
+  await player.setViewportSize({ height: 768, width: 1024 });
+  await player.goto(`${app.baseURL}/player`);
+  await expect(page.getByText("Shown to Players: Encounter - fogged-forest", { exact: true })).toBeVisible();
+  await expect(player.getByRole("img", { name: "Map: fogged-forest" })).toBeVisible();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("1");
+
+  await page.getByRole("button", { name: "Handouts" }).click();
+  await uploadHandoutFile(page, await sizedPngFile(page, "Clue Handout.png", 80, 40), "Clue Handout");
+  await page
+    .locator(".handout-card")
+    .filter({ hasText: "Clue Handout" })
+    .getByRole("button", { name: "Show Clue Handout to players" })
+    .click();
+  await expect(page.getByText("Shown to Players: Handout - Clue Handout", { exact: true })).toBeVisible();
+  await expect(player.getByRole("img", { name: "Handout: Clue Handout" })).toBeVisible();
+  await expect(player.locator("#viewport-controls")).toHaveAttribute("aria-label", "Image view controls");
+  await expect(player.getByText("Use arrow keys to pan a zoomed image.")).toHaveClass(/visually-hidden/);
+  await expect(player.locator("input, select, textarea, [contenteditable=true], [data-action]")).toHaveCount(0);
+  await expect(player.getByRole("button", { name: /Show|Shown|Rotate|Delete|Rename/i })).toHaveCount(0);
+
+  for (const viewport of [
+    { height: 768, width: 1024 },
+    { height: 844, width: 390 },
+    { height: 1080, width: 1920 }
+  ]) {
+    await player.setViewportSize(viewport);
+    await expect(player.getByRole("img", { name: "Handout: Clue Handout" })).toBeVisible();
+    await waitForCanvasFrame(player, "#player-map");
+    expect(await player.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    const metrics = await canvasViewport(player, "#player-map");
+    expect(metrics.drawWidth).toBeLessThanOrEqual(
+      await player.locator("#player-map").evaluate((canvas) => canvas.clientWidth)
+    );
+    expect(metrics.drawHeight).toBeLessThanOrEqual(
+      await player.locator("#player-map").evaluate((canvas) => canvas.clientHeight)
+    );
+    expect(metrics.drawWidth / metrics.drawHeight).toBeCloseTo(2, 1);
+  }
+
+  await page
+    .locator(".handout-card")
+    .filter({ hasText: "Clue Handout" })
+    .getByRole("button", { name: "Rotate Clue Handout right on Player Display" })
+    .click();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("90");
+
+  await player.context().setOffline(true);
+  await expect(player.getByText("Reconnecting...", { exact: true })).toBeVisible();
+  await player.context().setOffline(false);
+  await expect(player.getByText("Live", { exact: true })).toBeVisible({ timeout: 15_000 });
+  await expect(player.getByRole("img", { name: "Handout: Clue Handout" })).toBeVisible();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("90");
+
+  await player.reload();
+  await expect(player.getByRole("img", { name: "Handout: Clue Handout" })).toBeVisible();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("90");
+
+  await page.getByRole("button", { name: "Encounters" }).click();
+  await page.getByRole("button", { name: "Show to Players", exact: true }).click();
+  await expect(page.getByText("Shown to Players: Encounter - fogged-forest", { exact: true })).toBeVisible();
+  await expect(player.getByRole("img", { name: "Map: fogged-forest" })).toBeVisible();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-fog-operations")).toBe("1");
+  await expect(player.locator("#player-map")).toHaveAttribute("data-rotation", "0");
 });
 
 test("GM can view and copy the Player Display URL", async ({ app, page, context }) => {
@@ -2663,6 +2754,29 @@ test("player reports an active-map image load failure", async ({ app, page, cont
   });
   await page.getByRole("button", { name: "Clear Fog" }).click();
   await expect(page.getByRole("button", { name: "Clear Fog" })).toBeDisabled();
+});
+
+test("player reports a shown handout image load failure", async ({ app, page, context }) => {
+  const player = await context.newPage();
+
+  await openGm(page, app.baseURL);
+  await createCampaign(page);
+  await page.getByRole("button", { name: "Handouts" }).click();
+  await uploadHandoutFile(page, await sizedPngFile(page, "Broken Clue.png", 80, 40), "Broken Clue");
+  await page
+    .locator(".handout-card")
+    .filter({ hasText: "Broken Clue" })
+    .getByRole("button", { name: "Show Broken Clue to players" })
+    .click();
+  await expect(page.getByText("Shown to Players: Handout - Broken Clue", { exact: true })).toBeVisible();
+
+  await player.route("**/api/player/shown-target/asset*", (route) => route.fulfill({ status: 500 }));
+  await player.goto(`${app.baseURL}/player`);
+
+  await expect(player.getByText("Image could not be loaded.", { exact: true })).toBeVisible();
+  await expect(player.getByRole("img", { name: "Handout: Broken Clue" })).toBeHidden();
+  await expect(player.getByRole("button", { name: "Zoom in" })).toBeDisabled();
+  await expect(player.getByRole("button", { name: /Show|Shown|Rotate|Delete|Rename/i })).toHaveCount(0);
 });
 
 test("stale image completion cannot replace a newer active map", async ({ app, page, context }) => {

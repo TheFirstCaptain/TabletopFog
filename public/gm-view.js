@@ -100,6 +100,7 @@ export function createGmView(document) {
     selectedEncounterStatus: document.querySelector("#selected-encounter-status"),
     showEncounters: document.querySelector("#show-encounters"),
     showHandouts: document.querySelector("#show-handouts"),
+    shownTargetStatus: document.querySelector("#shown-target-status"),
     status: document.querySelector("#connection-status"),
     workspaceFogOverlay: document.querySelector("#workspace-fog-overlay"),
     workspaceCircleSize: document.querySelector("#workspace-circle-size"),
@@ -327,6 +328,10 @@ export function createGmView(document) {
     elements.showHandouts.dataset.active = String(showHandouts);
     elements.showEncounters.setAttribute("aria-pressed", String(showEncounters));
     elements.showHandouts.setAttribute("aria-pressed", String(showHandouts));
+  }
+
+  function renderShownTargetStatus(campaign) {
+    elements.shownTargetStatus.textContent = `Shown to Players: ${shownTargetLabel(campaign)}`;
   }
 
   function renderMaps(campaign, selectedEncounterId) {
@@ -606,6 +611,7 @@ export function createGmView(document) {
       elements.campaignHeading.textContent = campaign.name;
       elements.campaignMessage.textContent =
         recoveryMessage(campaign) || (campaign.maps.length === 0 ? "Add an encounter map to begin." : "");
+      renderShownTargetStatus(campaign);
       renderMaps(campaign, selectedEncounterId);
       renderHandouts(campaign);
       renderSelectedEncounter(campaign, selectedEncounterId, screen, gridState);
@@ -620,6 +626,7 @@ export function createGmView(document) {
       elements.campaignHeading.textContent = campaign.name;
       elements.campaignMessage.textContent =
         recoveryMessage(campaign) || (campaign.maps.length === 0 ? "Add an encounter map to begin." : "");
+      renderShownTargetStatus(campaign);
       renderSelectedEncounter(campaign, selectedEncounterId, screen, gridState);
     },
     renderLibrary({ campaigns, diagnostics }) {

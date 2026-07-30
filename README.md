@@ -23,7 +23,9 @@ Post-V1 handout work has started with a campaign-wide image handout library and
 explicit handout display. The GM can add and browse image handouts stored in
 the campaign's local `handouts/` folder, show one handout to players, clear it
 from the Player Display, rotate the shown handout in 90-degree increments, and
-replace it by showing an encounter again.
+replace it by showing an encounter again. The Campaign screen includes a
+compact `Shown to Players` status so the GM can tell whether players are seeing
+nothing, an encounter, or a handout without switching collections.
 
 The quality gate runs Chromium characterization for current GM/player workflows
 and theme behavior, plus linting, formatting, module baselines, harness policy,

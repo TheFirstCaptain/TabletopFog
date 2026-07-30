@@ -125,6 +125,44 @@ Expected result:
   initiative, dice, dynamic lighting, cloud login, or other full-VTT controls
   appear.
 
+### Test: Campaign Handout Display Is Table-Ready
+
+Prerequisites:
+
+- The local HTTPS server is running.
+- The GM View and Player Display are open.
+- A campaign exists with one fogged encounter and one asymmetric image handout.
+
+Steps:
+
+1. Open the campaign in the GM View.
+2. Confirm the Campaign screen shows `Shown to Players: None`.
+3. Show the fogged encounter to players.
+4. Confirm the Campaign screen shows the encounter as `Shown to Players` and
+   the Player Display shows the encounter with expected fog.
+5. Switch to `Handouts`, show the handout to players, and rotate it once.
+6. Confirm the Campaign screen shows the handout as `Shown to Players`, the
+   Player Display shows the rotated handout, and the Player Display exposes no
+   shared-state mutation controls.
+7. Reload and reconnect the Player Display while the handout is shown.
+8. Confirm the handout and its rotation restore.
+9. Check representative narrow, tablet, and TV-like viewports.
+10. Simulate or observe a shown-handout image load failure.
+11. Show the encounter again.
+
+Expected result:
+
+- The GM can clearly tell whether players are seeing nothing, an encounter, or
+  a handout without switching to the matching card collection.
+- Handout display remains read-only, fullscreen-capable, and target-neutral.
+- Handout image failure shows the Player Display error state without exposing
+  shared-state controls.
+- Showing an encounter after a handout restores expected encounter map and fog
+  behavior.
+- No PDFs, notes, slideshow controls, overlay mode, player-side rotation,
+  tokens, initiative, dice, dynamic lighting, cloud login, or other full-VTT
+  controls appear.
+
 ### Test: GM Can Add And Browse Campaign Handouts
 
 Prerequisites:
