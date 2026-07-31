@@ -16,6 +16,8 @@
   --border: #9b7b4f;
   --accent: #6b3e24;
   --accent-strong: #4a2918;
+  --shown: #3f6b3c;
+  --shown-strong: #2d4f2b;
   --danger: #8c1d2c;
   --danger-surface: #f5d8d2;
   --focus: #1f5e73;
@@ -443,6 +445,7 @@ h4 {
 
 .shown-target-status {
   display: inline-block;
+  min-height: 2.5rem;
   margin: 0.25rem 0 0;
   color: var(--muted);
   font-weight: 700;
@@ -591,6 +594,13 @@ h4 {
   gap: 0.5rem;
 }
 
+.encounter-running button {
+  height: 2.4rem;
+  min-height: 2.4rem;
+  padding: 0.45rem 0.65rem;
+  white-space: nowrap;
+}
+
 .handout-rotation-controls {
   display: flex;
   flex-wrap: wrap;
@@ -651,6 +661,10 @@ h4 {
   margin: 0;
 }
 
+.encounter-delete-reason {
+  min-height: 1.1rem;
+}
+
 .status-pill {
   display: inline-flex;
   min-height: 1.75rem;
@@ -671,16 +685,15 @@ h4 {
 
 .encounter-running button[data-state="shown"],
 #workspace-show-to-players[data-state="shown"] {
-  border-color: var(--accent-strong);
-  background: var(--surface);
-  color: var(--accent-strong);
-  box-shadow: inset 0 0 0 2px rgb(74 41 24 / 18%);
+  border-color: var(--shown-strong);
+  background: var(--shown);
+  color: #ffffff;
 }
 
 .encounter-running button[data-state="shown"]:hover:not(:disabled),
 #workspace-show-to-players[data-state="shown"]:hover:not(:disabled) {
-  background: var(--surface-strong);
-  color: var(--accent-strong);
+  background: var(--shown-strong);
+  color: #ffffff;
 }
 
 .icon-button {

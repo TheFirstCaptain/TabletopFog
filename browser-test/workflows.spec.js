@@ -1022,7 +1022,11 @@ test("encounter cards open a workspace without changing the player display", asy
   await forestCard.getByRole("button", { name: "Show to Players", exact: true }).click();
   await player.goto(`${app.baseURL}/player`);
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
-  await expect(forestCard.locator(".status-pill").filter({ hasText: "Shown to Players" })).toBeVisible();
+  await expect(forestCard.getByRole("button", { name: /Shown to Players - clear/ })).toHaveAttribute(
+    "data-state",
+    "shown"
+  );
+  await expect(forestCard.locator(".status-pill").filter({ hasText: "Shown to Players" })).toHaveCount(0);
   const playerAssetRequestsBeforeWorkspaceOpen = playerAssetRequests;
 
   await caveCard.getByRole("button", { name: "Open cave for prep" }).focus();
@@ -1036,10 +1040,16 @@ test("encounter cards open a workspace without changing the player display", asy
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeWorkspaceOpen);
 
   await page.getByRole("button", { name: "Back to Campaign" }).click();
-  await expect(caveCard.getByText("Selected for Prep", { exact: true })).toBeVisible();
+  await expect(caveCard).toHaveAttribute("data-selected", "true");
+  await expect(caveCard).toHaveAttribute("aria-current", "true");
+  await expect(caveCard.getByText("Selected for Prep", { exact: true })).toHaveCount(0);
   await caveCard.getByRole("button", { name: "Show to Players", exact: true }).click();
   await expect(player.getByRole("img", { name: "Map: cave" })).toBeVisible();
-  await expect(caveCard.locator(".status-pill").filter({ hasText: "Shown to Players" })).toBeVisible();
+  await expect(caveCard.getByRole("button", { name: /Shown to Players - clear/ })).toHaveAttribute(
+    "data-state",
+    "shown"
+  );
+  await expect(caveCard.locator(".status-pill").filter({ hasText: "Shown to Players" })).toHaveCount(0);
 });
 
 test("selected prep encounter can be deleted when it is not shown to players", async ({ app, page }) => {
@@ -1051,7 +1061,9 @@ test("selected prep encounter can be deleted when it is not shown to players", a
   await soloCard.getByRole("button", { name: "Open solo for prep" }).click();
   await expectGmHeader(page, "Campaign Library / Single Delete Campaign / solo");
   await page.getByRole("button", { name: "Back to Campaign" }).click();
-  await expect(soloCard.getByText("Selected for Prep", { exact: true })).toBeVisible();
+  await expect(soloCard).toHaveAttribute("data-selected", "true");
+  await expect(soloCard).toHaveAttribute("aria-current", "true");
+  await expect(soloCard.getByText("Selected for Prep", { exact: true })).toHaveCount(0);
 
   await expect(soloCard.getByRole("button", { name: "Delete solo" })).toBeEnabled();
   page.once("dialog", async (dialog) => {
@@ -1117,10 +1129,11 @@ test("encounter gallery presentation remains browsable and responsive", async ({
   await longCard.getByRole("button", { name: "Show to Players", exact: true }).click();
   await player.goto(`${app.baseURL}/player`);
   await expect(player.getByRole("img", { name: `Map: ${longEncounterName}` })).toBeVisible();
-  await expect(longCard.locator(".status-pill").filter({ hasText: "Shown to Players" })).toBeVisible();
   const longShownButton = longCard.locator(".encounter-running").getByRole("button", {
     name: /Shown to Players - clear/
   });
+  await expect(longShownButton).toHaveAttribute("data-state", "shown");
+  await expect(longCard.locator(".status-pill").filter({ hasText: "Shown to Players" })).toHaveCount(0);
   await expect(longShownButton).toBeEnabled();
   await longShownButton.click();
   await expect(player.getByText("Waiting for GM.", { exact: true })).toBeVisible();
@@ -1129,7 +1142,8 @@ test("encounter gallery presentation remains browsable and responsive", async ({
   await expect(longCard.getByRole("button", { name: "Show to Players", exact: true })).toBeVisible();
   await longCard.getByRole("button", { name: "Show to Players", exact: true }).click();
   await expect(player.getByRole("img", { name: `Map: ${longEncounterName}` })).toBeVisible();
-  await expect(longCard.locator(".status-pill").filter({ hasText: "Shown to Players" })).toBeVisible();
+  await expect(longShownButton).toHaveAttribute("data-state", "shown");
+  await expect(longCard.locator(".status-pill").filter({ hasText: "Shown to Players" })).toHaveCount(0);
   const playerAssetRequestsBeforeManageActions = playerAssetRequests;
 
   const galleryLayout = await page.evaluate(() => {
@@ -1213,7 +1227,9 @@ test("encounter gallery presentation remains browsable and responsive", async ({
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeOpen);
 
   await page.getByRole("button", { name: "Back to Campaign" }).click();
-  await expect(tallCard.getByText("Selected for Prep", { exact: true })).toBeVisible();
+  await expect(tallCard).toHaveAttribute("data-selected", "true");
+  await expect(tallCard).toHaveAttribute("aria-current", "true");
+  await expect(tallCard.getByText("Selected for Prep", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Manage Encounters" })).toHaveCount(0);
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeManageActions);
   await squareCard.getByRole("button", { name: "Move square-keep up" }).click();
@@ -1239,17 +1255,46 @@ test("encounter gallery presentation remains browsable and responsive", async ({
         borderRadius: computed.borderRadius,
         color: computed.color,
         enabled: !element.disabled,
+        height: element.getBoundingClientRect().height,
         minHeight: computed.minHeight
       };
     });
+  const readyActionHeight = await tallCard
+    .locator(".encounter-running")
+    .getByRole("button", { name: "Show to Players", exact: true })
+    .evaluate((element) => element.getBoundingClientRect().height);
+  const renameActionHeight = await tallCard
+    .getByRole("button", { name: "Rename tall-tower" })
+    .evaluate((element) => element.getBoundingClientRect().height);
   expect(shownActionStyles).toEqual({
-    background: "rgb(247, 235, 207)",
-    borderColor: "rgb(74, 41, 24)",
+    background: "rgb(63, 107, 60)",
+    borderColor: "rgb(45, 79, 43)",
     borderRadius: "6px",
-    color: "rgb(74, 41, 24)",
+    color: "rgb(255, 255, 255)",
     enabled: true,
-    minHeight: "44px"
+    height: readyActionHeight,
+    minHeight: "38.4px"
   });
+  expect(readyActionHeight).toBe(renameActionHeight);
+  await page.evaluate(() => window.scrollTo(0, 80));
+  const scrollBeforeShownSwitch = await page.evaluate(() => window.scrollY);
+  await tallCard.getByRole("button", { name: "Show to Players", exact: true }).click();
+  await expect(tallCard.getByRole("button", { name: /Shown to Players - clear/ })).toHaveAttribute(
+    "data-state",
+    "shown"
+  );
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY), {
+      message: "campaign gallery scroll position remains stable after shown-target changes"
+    })
+    .toBe(scrollBeforeShownSwitch);
+  await longCard.getByRole("button", { name: "Show to Players", exact: true }).click();
+  await expect(longShownButton).toHaveAttribute("data-state", "shown");
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY), {
+      message: "campaign gallery scroll position remains stable after restoring shown target"
+    })
+    .toBe(scrollBeforeShownSwitch);
 
   page.once("dialog", async (dialog) => {
     expect(dialog.message()).toContain('This permanently deletes the "square-keep" encounter.');
@@ -1441,7 +1486,9 @@ test("GM workspace shell previews selected encounter without changing the player
   });
 
   await page.getByRole("button", { name: "Back to Campaign" }).click();
-  await expect(caveCard.getByText("Selected for Prep", { exact: true })).toBeVisible();
+  await expect(caveCard).toHaveAttribute("data-selected", "true");
+  await expect(caveCard).toHaveAttribute("aria-current", "true");
+  await expect(caveCard.getByText("Selected for Prep", { exact: true })).toHaveCount(0);
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeWorkspaceOpen);
 
@@ -1460,7 +1507,11 @@ test("GM workspace shell previews selected encounter without changing the player
   await page.getByRole("button", { name: "Show to Players from workspace" }).click();
   await expect(player.getByRole("img", { name: `Map: ${longWorkspaceEncounterName}` })).toBeVisible();
   await page.getByRole("button", { name: "Back to Campaign" }).click();
-  await expect(caveCard.locator(".status-pill").filter({ hasText: "Shown to Players" })).toBeVisible();
+  await expect(caveCard.getByRole("button", { name: /Shown to Players - clear/ })).toHaveAttribute(
+    "data-state",
+    "shown"
+  );
+  await expect(caveCard.locator(".status-pill").filter({ hasText: "Shown to Players" })).toHaveCount(0);
 
   await page.setViewportSize({ height: 844, width: 390 });
   await caveCard.getByRole("button", { name: `Open ${longWorkspaceEncounterName} for prep` }).click();
@@ -1913,10 +1964,13 @@ test("GM campaign open restores saved shown encounter and fog to player display"
     zoom: 1
   });
   await expect(
-    page.locator(".encounter-card").filter({ hasText: "forest" }).locator(".status-pill").filter({
-      hasText: "Shown to Players"
-    })
-  ).toBeVisible();
+    page
+      .locator(".encounter-card")
+      .filter({ hasText: "forest" })
+      .getByRole("button", {
+        name: /Shown to Players - clear/
+      })
+  ).toHaveAttribute("data-state", "shown");
   await expect(page.locator("#selected-encounter-status")).toContainText("Choose an encounter card to prep it here.");
 
   const playerBeforePrepOpen = await canvasViewport(player, "#player-map");
@@ -2876,7 +2930,11 @@ test("stale image completion cannot replace a newer active map", async ({ app, p
 
   await page.getByRole("button", { name: "Show to Players", exact: true }).first().click();
   await expect.poll(() => Boolean(delayedRoute)).toBe(true);
-  await expect(page.locator(".status-pill").filter({ hasText: "Shown to Players" })).toBeVisible();
+  await expect(
+    page.getByRole("button", {
+      name: /Shown to Players - clear/
+    })
+  ).toHaveAttribute("data-state", "shown");
   await page.getByRole("button", { name: "Show to Players", exact: true }).click();
   const canvas = player.getByRole("img", { name: "Map: cave" });
   await expect(canvas).toBeVisible();

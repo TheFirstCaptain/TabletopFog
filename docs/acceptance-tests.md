@@ -125,6 +125,48 @@ Expected result:
   initiative, dice, dynamic lighting, cloud login, or other full-VTT controls
   appear.
 
+### Test: GM View Preview Matches Shown Handout Rotation
+
+Prerequisites:
+
+- The local HTTPS server is running.
+- The GM View and Player Display are open.
+- A campaign exists with one asymmetric image handout and one encounter.
+
+Steps:
+
+1. Open the campaign in the GM View.
+2. Switch to `Handouts`.
+3. Show the asymmetric handout to players.
+4. Confirm the GM View card preview and Player Display both start at `0`
+   degrees.
+5. Click `Rotate right`.
+6. Confirm the GM View card preview and Player Display both show the handout at
+   `90` degrees.
+7. Continue rotating through `180`, `270`, and back to `0`, confirming the GM
+   View card preview stays in sync each time.
+8. Click `Rotate left` and confirm both views wrap to `270` degrees.
+9. Confirm the rotated GM View preview stays contained in the card image area
+   without cropping important content, overflowing the card, or moving unrelated
+   controls.
+10. Reload or reopen the campaign and confirm the currently shown handout's GM
+    View preview restores to the same rotation as the Player Display.
+11. Show an encounter to players.
+12. Confirm handout rotation no longer appears on the GM View card preview or
+    Player Display, and encounter map/fog behavior is unchanged.
+
+Expected result:
+
+- The GM View preview for the currently shown handout matches the Player
+  Display rotation.
+- Unshown handout cards remain unrotated library previews.
+- Rotation still supports only `0`, `90`, `180`, and `270` degrees.
+- Rotation remains GM-controlled shared display state, not handout library
+  metadata.
+- No arbitrary-angle, crop, flip, slideshow, player-side rotation, tokens,
+  initiative, dice, dynamic lighting, cloud login, or other full-VTT controls
+  appear.
+
 ### Test: Campaign Handout Display Is Table-Ready
 
 Prerequisites:
@@ -232,6 +274,49 @@ Expected result:
 - Failed, canceled, invalid, or blocked rename/delete attempts leave metadata
   and files unchanged.
 - Handout management remains GM-only and never changes what players see.
+- No PDFs, notes, folders, tags, search, slideshow controls, overlay mode,
+  player-side rotation, tokens, initiative, dice, dynamic lighting, cloud
+  login, or other full-VTT controls appear.
+
+### Test: Campaign Handout Gallery Matches Encounter Card Polish
+
+Prerequisites:
+
+- The local HTTPS server is running.
+- The GM View and Player Display are open.
+- A campaign exists with at least two campaign handouts and at least one
+  encounter.
+
+Steps:
+
+1. Open the campaign in the GM View.
+2. Switch between `Encounters` and `Handouts`.
+3. Confirm the Handouts view does not show the divider directly below the
+   `Encounters` / `Handouts` tab controls.
+4. Confirm the Handouts view does not show handout count text.
+5. Show one handout to players.
+6. Confirm the shown handout card does not show a separate card-level
+   `Shown to Players` pill.
+7. Confirm the shown handout's action button reads `Shown to Players`, is green,
+   remains enabled, and matches the compact size and behavior of Encounter card
+   show/shown actions.
+8. Confirm unshown handout cards use matching `Show to Players` buttons.
+9. Click the shown handout's `Shown to Players` action.
+10. Confirm the Player Display returns to the waiting state and the handout card
+    action returns to `Show to Players`.
+11. Confirm switching tabs and changing the shown handout does not cause
+    avoidable gallery layout jumps.
+
+Expected result:
+
+- The Handouts gallery uses the same quiet card and button language as the
+  Encounters gallery.
+- The shown handout is communicated by the green action button rather than a
+  separate status pill.
+- The Player Display changes only after explicit GM `Show to Players` or clear
+  actions.
+- Handout rename, delete, rotation, upload, storage, and recovery behavior are
+  unchanged.
 - No PDFs, notes, folders, tags, search, slideshow controls, overlay mode,
   player-side rotation, tokens, initiative, dice, dynamic lighting, cloud
   login, or other full-VTT controls appear.
@@ -850,29 +935,30 @@ Steps:
 3. Add or inspect several encounters with varied thumbnail aspect ratios.
 4. Confirm thumbnails are visually prominent and remain inside their cards.
 5. Confirm long encounter names wrap inside cards without horizontal overflow.
-6. Confirm `Shown to Players` and `Selected for Prep` remain visually distinct,
-   and that the `Shown to Players` clear action reads as an enabled control
-   rather than a passive badge.
-7. Confirm `Show to Players` remains available in Normal Mode.
-8. Confirm there is no `Manage Encounters` or `Done Managing` mode switch.
-9. Confirm Add Encounter, Rename, Up, Down, and Delete controls are directly
+6. Confirm the selected prep encounter uses only the card highlight, with no
+   separate `Selected for Prep` pill shifting card content.
+7. Confirm the `Shown to Players` clear action reads as a green enabled control
+   rather than a passive badge or separate card-level pill.
+8. Confirm `Show to Players` remains available in Normal Mode.
+9. Confirm there is no `Manage Encounters` or `Done Managing` mode switch.
+10. Confirm Add Encounter, Rename, Up, Down, and Delete controls are directly
    available on the Campaign page but do not visually dominate browsing.
-10. Confirm Delete is disabled with a visible reason for encounters that are
+11. Confirm Delete is disabled with a visible reason for encounters that are
    `Shown to Players`.
-11. Confirm Delete remains available for encounters that are only
+12. Confirm Delete remains available for encounters that are only
    `Selected for Prep`.
-12. Cancel deletion of an encounter that is not shown to players.
-13. Confirm the encounter, map asset, order, and Player Display remain unchanged.
-14. Confirm deletion of an encounter that is not shown to players.
-15. Confirm the encounter is permanently removed, remaining order is repaired,
+13. Cancel deletion of an encounter that is not shown to players.
+14. Confirm the encounter, map asset, order, and Player Display remain unchanged.
+15. Confirm deletion of an encounter that is not shown to players.
+16. Confirm the encounter is permanently removed, remaining order is repaired,
    and the Player Display remains unchanged.
-16. Open an encounter that is not shown to players.
-17. Confirm the Player Display does not change.
-18. Use `Show to Players` and confirm the Player Display changes only then.
-19. Click that encounter's `Shown to Players` action and confirm the Player
+17. Open an encounter that is not shown to players.
+18. Confirm the Player Display does not change.
+19. Use `Show to Players` and confirm the Player Display changes only then.
+20. Click that encounter's `Shown to Players` action and confirm the Player
     Display returns to waiting state.
-20. Confirm the encounter action changes back to `Show to Players`.
-21. Repeat at Chromebook-sized and narrow widths.
+21. Confirm the encounter action changes back to `Show to Players`.
+22. Repeat at Chromebook-sized and narrow widths.
 
 Expected result:
 
@@ -905,8 +991,8 @@ Steps:
 2. Confirm `Manage Encounters` and `Done Managing` are not visible.
 3. Confirm Add Encounter is a compact upper-right header control, not an
    encounter-grid card.
-4. Confirm encounter cards show thumbnails, names, status badges,
-   open-for-prep actions, explicit `Show to Players` actions, and quiet
+4. Confirm encounter cards show thumbnails, names, open-for-prep actions,
+   explicit `Show to Players` actions, and quiet
    rename, reorder, and delete controls.
 5. Open an encounter for prep and confirm the Player Display remains on the
    previously shown encounter.
@@ -918,8 +1004,8 @@ Steps:
 9. Confirm Delete remains available for the encounter selected for prep when it
    is not shown to players.
 10. Cancel deletion of an encounter that is not shown to players.
-11. Confirm the encounter list, order, files, selected prep badge, shown badge,
-    and Player Display remain unchanged.
+11. Confirm the encounter list, order, files, selected-card highlight, shown
+    button state, and Player Display remain unchanged.
 12. Confirm deletion of an encounter that is not shown to players.
 13. Confirm the encounter is removed, remaining order is repaired, and the
     Player Display does not reload or change.

@@ -350,7 +350,10 @@ export function createGmView(document) {
       item.className = "encounter-card";
       item.dataset.mapId = map.id;
       if (isShownTarget(campaign, "encounter", map.id)) item.dataset.shown = "true";
-      if (map.id === selectedEncounterId) item.dataset.selected = "true";
+      if (map.id === selectedEncounterId) {
+        item.dataset.selected = "true";
+        item.setAttribute("aria-current", "true");
+      }
 
       const openForPrep = document.createElement("button");
       openForPrep.type = "button";
@@ -369,24 +372,9 @@ export function createGmView(document) {
       title.className = "encounter-name";
       title.textContent = map.name;
 
-      const status = document.createElement("div");
-      status.className = "encounter-status";
-      if (isShownTarget(campaign, "encounter", map.id)) {
-        const shown = document.createElement("span");
-        shown.className = "status-pill";
-        shown.textContent = "Shown to Players";
-        status.append(shown);
-      }
-      if (map.id === selectedEncounterId) {
-        const selected = document.createElement("span");
-        selected.className = "status-pill secondary-pill";
-        selected.textContent = "Selected for Prep";
-        status.append(selected);
-      }
-
       const summary = document.createElement("div");
       summary.className = "encounter-summary";
-      summary.append(title, status);
+      summary.append(title);
 
       const running = document.createElement("div");
       running.className = "encounter-running";
@@ -455,13 +443,12 @@ export function createGmView(document) {
       const admin = document.createElement("div");
       admin.className = "encounter-admin";
       admin.append(name, controls);
-      if (deleteBlockedReason) {
-        const reason = document.createElement("p");
-        reason.className = "encounter-delete-reason";
-        reason.id = deleteReasonId;
-        reason.textContent = deleteBlockedReason;
-        admin.append(reason);
-      }
+      const reason = document.createElement("p");
+      reason.className = "encounter-delete-reason";
+      reason.id = deleteReasonId;
+      reason.textContent = deleteBlockedReason;
+      if (!deleteBlockedReason) reason.setAttribute("aria-hidden", "true");
+      admin.append(reason);
 
       item.append(openForPrep, summary, running, admin);
       elements.mapList.append(item);
@@ -648,11 +635,12 @@ export function createGmView(document) {
       return elements.playerUrl.value;
     },
     renderCampaign(campaign, selectedEncounterId = null, screen = "campaign", gridState = createDefaultGridState()) {
-      if (!campaign) {
-        navigation.showLibrary();
-        return;
-      }
+      if (!campaign) return navigation.showLibrary();
 
+      const preserveScroll =
+        screen === "campaign" && !elements.campaignPanel.hidden && elements.workspaceGrid.dataset.screen === "campaign";
+      const scrollLeft = preserveScroll ? document.defaultView?.scrollX || 0 : 0;
+      const scrollTop = preserveScroll ? document.defaultView?.scrollY || 0 : 0;
       const selectedEncounter = campaign.maps.find((map) => map.id === selectedEncounterId);
       if (screen === "workspace" && selectedEncounter) {
         navigation.showWorkspace(campaign, selectedEncounter);
@@ -667,12 +655,10 @@ export function createGmView(document) {
       renderHandouts(campaign);
       renderSelectedEncounter(campaign, selectedEncounterId, screen, gridState);
       renderCampaignContentView(screen);
+      if (preserveScroll) document.defaultView?.scrollTo(scrollLeft, scrollTop);
     },
     renderSelectedWorkspace(campaign, selectedEncounterId, screen = "workspace", gridState = createDefaultGridState()) {
-      if (!campaign) {
-        navigation.showLibrary();
-        return;
-      }
+      if (!campaign) return navigation.showLibrary();
 
       elements.campaignHeading.textContent = campaign.name;
       elements.campaignMessage.textContent =

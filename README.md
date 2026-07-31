@@ -52,10 +52,10 @@ remain deferred.
 
 Opening a campaign now shows a full encounter gallery with a compact
 upper-right Add Encounter control, larger map thumbnails, quiet always-available
-management controls, `Selected for Prep` and `Shown to Players` status badges,
-and explicit card-level `Show to Players` actions. Clicking a currently shown
-encounter's `Shown to Players` action clears the Player Display back to its
-waiting state and returns the action to `Show to Players`. Rename, reorder,
+management controls, a selected-prep card highlight, and explicit card-level
+`Show to Players` actions. A currently shown encounter's action changes to a
+green `Shown to Players` button. Clicking that button clears the Player
+Display back to its waiting state and returns the action to `Show to Players`. Rename, reorder,
 upload, and confirmed permanent delete stay directly available on the Campaign
 page without a separate Manage Mode; delete is blocked only for encounters
 currently `Shown to Players`. Campaign Library cards also support confirmed
