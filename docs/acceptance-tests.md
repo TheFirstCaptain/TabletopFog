@@ -107,7 +107,7 @@ Steps:
 5. Click `Rotate left` and confirm the Player Display wraps to `270` degrees.
 6. Enter fullscreen on the Player Display while the handout is rotated.
 7. Rotate the handout again from the GM View and confirm the fullscreen Player
-   Display updates without exposing player-side rotation controls.
+   Display updates without exposing controls that mutate shared display state.
 8. Reload or reopen the Player Display and confirm the current shown handout
    rotation restores.
 9. Show an encounter to players and confirm rotation state no longer appears on
@@ -121,9 +121,9 @@ Expected result:
 - Unshown handouts do not show rotation controls and browsing them does not
   change the Player Display.
 - Encounter maps and fog are not rotated.
-- No arbitrary-angle, crop, flip, slideshow, player-side rotation, tokens,
-  initiative, dice, dynamic lighting, cloud login, or other full-VTT controls
-  appear.
+- No arbitrary-angle, crop, flip, slideshow, shared player-side mutation,
+  tokens, initiative, dice, dynamic lighting, cloud login, or other full-VTT
+  controls appear.
 
 ### Test: GM View Preview Matches Shown Handout Rotation
 
@@ -163,9 +163,55 @@ Expected result:
 - Rotation still supports only `0`, `90`, `180`, and `270` degrees.
 - Rotation remains GM-controlled shared display state, not handout library
   metadata.
-- No arbitrary-angle, crop, flip, slideshow, player-side rotation, tokens,
-  initiative, dice, dynamic lighting, cloud login, or other full-VTT controls
-  appear.
+- No arbitrary-angle, crop, flip, slideshow, shared player-side mutation,
+  tokens, initiative, dice, dynamic lighting, cloud login, or other full-VTT
+  controls appear.
+
+### Test: Player Display Can Locally Rotate A Shown Handout
+
+Prerequisites:
+
+- The local HTTPS server is running.
+- The GM View and at least one Player Display are open.
+- A campaign exists with one asymmetric image handout and one encounter.
+
+Steps:
+
+1. Open the campaign in the GM View.
+2. Show the asymmetric handout to players.
+3. Confirm the Player Display toolbar includes rotate-left and rotate-right
+   controls alongside zoom, reset, and fullscreen controls.
+4. Click the Player Display rotate-right control four times.
+5. Confirm the Player Display moves through `90`, `180`, `270`, and back to
+   `0` degrees without changing the GM View preview or campaign state.
+6. Click the Player Display rotate-left control and confirm the local handout
+   view wraps to `270` degrees.
+7. Use zoom, pan, reset, and fullscreen while the handout is locally rotated.
+8. Confirm the toolbar remains usable and no controls overlap at representative
+   narrow, tablet, and TV-like viewports.
+9. Rotate the same shown handout from the GM View and confirm the Player
+   Display keeps its local quarter-turn offset relative to the new GM-controlled
+   baseline.
+10. If practical, open a second Player Display and confirm player-local
+    rotation on one display does not rotate the other display.
+11. Show an encounter to players and confirm player-local handout rotation
+    resets and no handout rotate controls apply to the encounter map.
+12. Show the handout again and confirm the Player Display local handout rotation
+    starts at `0`.
+
+Expected result:
+
+- Player Display handout rotation is a local display control like zoom, pan,
+  reset, and fullscreen.
+- Player rotation supports only `0`, `90`, `180`, and `270` degree
+  orientations.
+- Player rotation does not change the GM View, another Player Display,
+  campaign storage, or shared shown-target rotation.
+- Player rotate controls are available only when a handout is shown.
+- The Player Display remains read-only: players can adjust local presentation
+  but cannot choose, show, clear, upload, rename, delete, or reorder content.
+- No arbitrary-angle, crop, flip, slideshow, tokens, initiative, dice, dynamic
+  lighting, cloud login, or other full-VTT controls appear.
 
 ### Test: Campaign Handout Display Is Table-Ready
 
@@ -201,9 +247,9 @@ Expected result:
   shared-state controls.
 - Showing an encounter after a handout restores expected encounter map and fog
   behavior.
-- No PDFs, notes, slideshow controls, overlay mode, player-side rotation,
-  tokens, initiative, dice, dynamic lighting, cloud login, or other full-VTT
-  controls appear.
+- No PDFs, notes, slideshow controls, overlay mode, shared player-side
+  mutation, tokens, initiative, dice, dynamic lighting, cloud login, or other
+  full-VTT controls appear.
 
 ### Test: GM Can Add And Browse Campaign Handouts
 
@@ -238,9 +284,9 @@ Expected result:
 - Handout upload supports the same image formats and safety checks as map
   upload.
 - Browsing or adding handouts does not change the Player Display.
-- No rotation, rename, delete, PDFs, notes, slideshow controls, overlay mode,
-  player-side rotation, tokens, initiative, dice, dynamic lighting, cloud
-  login, or other full-VTT controls appear in this slice.
+- No shared rotation, rename, delete, PDFs, notes, slideshow controls, overlay
+  mode, player-side shared-state mutation, tokens, initiative, dice, dynamic
+  lighting, cloud login, or other full-VTT controls appear in this slice.
 
 ### Test: GM Can Rename And Delete Campaign Handouts
 
@@ -275,8 +321,8 @@ Expected result:
   and files unchanged.
 - Handout management remains GM-only and never changes what players see.
 - No PDFs, notes, folders, tags, search, slideshow controls, overlay mode,
-  player-side rotation, tokens, initiative, dice, dynamic lighting, cloud
-  login, or other full-VTT controls appear.
+  player-side shared-state mutation, tokens, initiative, dice, dynamic
+  lighting, cloud login, or other full-VTT controls appear.
 
 ### Test: Campaign Handout Gallery Matches Encounter Card Polish
 
@@ -318,8 +364,8 @@ Expected result:
 - Handout rename, delete, rotation, upload, storage, and recovery behavior are
   unchanged.
 - No PDFs, notes, folders, tags, search, slideshow controls, overlay mode,
-  player-side rotation, tokens, initiative, dice, dynamic lighting, cloud
-  login, or other full-VTT controls appear.
+  player-side shared-state mutation, tokens, initiative, dice, dynamic
+  lighting, cloud login, or other full-VTT controls appear.
 
 ## Milestone 0: Harness and Repo Structure
 
