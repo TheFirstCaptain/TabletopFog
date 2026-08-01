@@ -20,7 +20,7 @@ const {
   splitFileName,
   validateCampaignMetadataPatch
 } = require("./campaign-schema");
-const { validateHandoutImage, validateMapImage } = require("./map-image");
+const { validateCampaignImage, validateHandoutImage, validateMapImage } = require("./map-image");
 
 function createCampaignStorage(options = {}) {
   const campaignFiles = createCampaignFiles(options);
@@ -67,6 +67,12 @@ function createCampaignStorage(options = {}) {
   function addAssetUrls(campaign) {
     return {
       ...campaign,
+      campaignImage: campaign.campaignImage
+        ? {
+            ...campaign.campaignImage,
+            assetUrl: `/api/campaigns/${encodeURIComponent(campaign.id)}/campaign-image/asset`
+          }
+        : null,
       handouts: (campaign.handouts || []).map((handout) => ({
         ...handout,
         assetUrl: `/api/campaigns/${encodeURIComponent(campaign.id)}/handouts/${encodeURIComponent(handout.id)}/asset`
@@ -80,8 +86,23 @@ function createCampaignStorage(options = {}) {
 
   function recoverCampaignAssets(campaignId, campaign) {
     const recoveryDiagnostics = [...(campaign.recoveryDiagnostics || [])];
+    let campaignImageAvailable = null;
     const availabilityByHandoutId = new Map();
     const availabilityByMapId = new Map();
+
+    if (campaign.campaignImage) {
+      try {
+        campaignFiles.getContainedCampaignImageAssetPath(campaignId, campaign.campaignImage);
+        campaignImageAvailable = true;
+      } catch (_error) {
+        campaignImageAvailable = false;
+        recoveryDiagnostics.push({
+          code: "missing-campaign-image-asset",
+          message: "This Campaign Image could not be found.",
+          severity: "warning"
+        });
+      }
+    }
 
     (campaign.handouts || []).forEach((handout) => {
       try {
@@ -115,6 +136,12 @@ function createCampaignStorage(options = {}) {
 
     const recovered = {
       ...campaign,
+      campaignImage: campaign.campaignImage
+        ? {
+            ...campaign.campaignImage,
+            assetAvailable: campaignImageAvailable !== false
+          }
+        : null,
       handouts: (campaign.handouts || []).map((handout) => ({
         ...handout,
         assetAvailable: availabilityByHandoutId.get(handout.id) !== false
@@ -167,6 +194,10 @@ function createCampaignStorage(options = {}) {
     }
   }
 
+  function getCampaignImageAssetPath(campaignId, campaignImage) {
+    return campaignFiles.getContainedCampaignImageAssetPath(campaignId, campaignImage);
+  }
+
   function findMap(campaign, mapId) {
     const map = campaign.maps.find((candidate) => candidate.id === mapId);
 
@@ -208,6 +239,17 @@ function createCampaignStorage(options = {}) {
             ...(campaign.description ? { description: campaign.description } : {}),
             ...(campaign.icon ? { icon: campaign.icon } : {}),
             activeMapName: shownEncounter ? shownEncounter.name : null,
+            ...(campaign.campaignImage
+              ? {
+                  campaignImage: {
+                    assetAvailable: campaign.campaignImage.assetAvailable !== false,
+                    assetUrl: `/api/campaigns/${encodeURIComponent(campaign.id)}/campaign-image/asset`,
+                    name: campaign.campaignImage.name,
+                    originalFileName: campaign.campaignImage.originalFileName
+                  },
+                  hasCampaignImage: true
+                }
+              : {}),
             handoutCount: campaign.handouts?.length || 0,
             mapCount: campaign.maps.length,
             ...(campaign.shownTarget
@@ -331,6 +373,64 @@ function createCampaignStorage(options = {}) {
 
       return handout;
     },
+    setCampaignImage(campaignId, imageInput) {
+      const campaign = readCampaign(campaignId);
+      const originalFileName = String(imageInput.originalFileName || "").trim();
+      const safeFileName = normalizeFileName(originalFileName);
+
+      if (!safeFileName) {
+        throw createUserError(400, "A valid Campaign Image file name is required.");
+      }
+
+      const content = Buffer.isBuffer(imageInput.content) ? imageInput.content : Buffer.from(imageInput.content || "");
+
+      validateCampaignImage(content, imageInput.contentType, safeFileName);
+
+      fs.mkdirSync(campaignFiles.campaignImagesDir(campaignId), { recursive: true });
+      const storedFileName = uniqueName(
+        safeFileName,
+        campaignFiles.existingNames(campaignFiles.campaignImagesDir(campaignId))
+      );
+      const storedPath = path.join(campaignFiles.campaignImagesDir(campaignId), storedFileName);
+      const previousImage = campaign.campaignImage;
+      let previousPath = null;
+      let deletePath = null;
+      const campaignImage = {
+        name: displayNameFromFileName(originalFileName),
+        originalFileName,
+        file: path.posix.join("campaign-images", storedFileName)
+      };
+
+      if (previousImage && previousImage.assetAvailable !== false) {
+        previousPath = getCampaignImageAssetPath(campaignId, previousImage);
+        deletePath = `${previousPath}.delete-${process.pid}-${Date.now()}`;
+      }
+
+      try {
+        fs.writeFileSync(storedPath, content);
+        if (previousPath && previousPath !== storedPath) {
+          fs.renameSync(previousPath, deletePath);
+        }
+        campaign.campaignImage = campaignImage;
+        saveCampaign(campaign);
+      } catch (error) {
+        fs.rmSync(storedPath, { force: true });
+        if (deletePath && previousPath && fs.existsSync(deletePath)) {
+          fs.renameSync(deletePath, previousPath);
+        }
+        throw error;
+      }
+
+      if (deletePath) {
+        try {
+          fs.rmSync(deletePath, { force: true });
+        } catch (_error) {
+          // Metadata is the commit point; stale staged files are harmless.
+        }
+      }
+
+      return readCampaign(campaignId).campaignImage;
+    },
     createCampaign(name) {
       campaignFiles.ensureDataRoot();
       const safeName = normalizePathSegment(name);
@@ -348,12 +448,14 @@ function createCampaignStorage(options = {}) {
       const dir = campaignFiles.campaignDir(safeName);
 
       try {
+        fs.mkdirSync(path.join(dir, "campaign-images"), { recursive: true });
         fs.mkdirSync(path.join(dir, "handouts"), { recursive: true });
         fs.mkdirSync(path.join(dir, "maps"), { recursive: true });
         const campaign = {
           version: 1,
           id: safeName,
           name: String(name).trim(),
+          campaignImage: null,
           handouts: [],
           maps: [],
           shownTarget: null
@@ -394,6 +496,18 @@ function createCampaignStorage(options = {}) {
       return {
         filePath: campaignFiles.getContainedHandoutAssetPath(campaignId, handout),
         handout
+      };
+    },
+    getCampaignImageAsset(campaignId) {
+      const campaign = readCampaign(campaignId);
+
+      if (!campaign.campaignImage) {
+        throw createUserError(404, "Campaign Image not found.");
+      }
+
+      return {
+        filePath: getCampaignImageAssetPath(campaignId, campaign.campaignImage),
+        campaignImage: campaign.campaignImage
       };
     },
     listCampaigns() {
@@ -446,6 +560,42 @@ function createCampaignStorage(options = {}) {
         fs.rmSync(deletePath, { force: true });
       } catch (_error) {
         // Metadata is the commit point; the original asset path is already gone.
+      }
+      return savedCampaign;
+    },
+    removeCampaignImage(campaignId) {
+      const campaign = readCampaign(campaignId);
+
+      if (!campaign.campaignImage) {
+        return campaign;
+      }
+
+      let assetPath = null;
+      let deletePath = null;
+
+      if (campaign.campaignImage.assetAvailable !== false) {
+        assetPath = getCampaignImageAssetPath(campaignId, campaign.campaignImage);
+        deletePath = `${assetPath}.delete-${process.pid}-${Date.now()}`;
+        fs.renameSync(assetPath, deletePath);
+      }
+
+      let savedCampaign;
+      try {
+        campaign.campaignImage = null;
+        savedCampaign = saveCampaign(campaign);
+      } catch (error) {
+        if (deletePath && assetPath && fs.existsSync(deletePath)) {
+          fs.renameSync(deletePath, assetPath);
+        }
+        throw error;
+      }
+
+      if (deletePath) {
+        try {
+          fs.rmSync(deletePath, { force: true });
+        } catch (_error) {
+          // Metadata is the commit point; the original asset path is already gone.
+        }
       }
       return savedCampaign;
     },

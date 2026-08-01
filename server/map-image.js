@@ -69,7 +69,8 @@ function validateImage(content, contentType, fileName, label = "Map") {
   const imageType = detectMapImageType(content);
 
   if (!imageType) {
-    throw createMapImageError(400, `A supported ${label.toLowerCase()} image is required (PNG, JPEG, GIF, or WebP).`);
+    const subject = label.toLowerCase().endsWith("image") ? label : `${label.toLowerCase()} image`;
+    throw createMapImageError(400, `A supported ${subject} is required (PNG, JPEG, GIF, or WebP).`);
   }
 
   const format = mapImageFormats[imageType];
@@ -92,9 +93,14 @@ function validateHandoutImage(content, contentType, fileName) {
   validateImage(content, contentType, fileName, "Handout");
 }
 
+function validateCampaignImage(content, contentType, fileName) {
+  validateImage(content, contentType, fileName, "Campaign Image");
+}
+
 module.exports = {
   MAX_MAP_FILE_BYTES,
   detectMapImageType,
+  validateCampaignImage,
   validateHandoutImage,
   validateMapImage
 };

@@ -130,6 +130,45 @@ export function createGmController({ api, socket, state, view }) {
     }
   }
 
+  async function uploadCampaignImage(campaignId, file) {
+    if (!file) return;
+
+    try {
+      const payload = await api.uploadCampaignImage(campaignId, file);
+      if (state.getCurrentCampaign()?.id === payload.campaign.id) {
+        state.setCurrentCampaign(payload.campaign);
+        renderCurrentCampaign();
+      }
+      await loadCampaigns();
+      view.setCampaignCardMessage(campaignId, "Campaign Image updated.", "status");
+    } catch (error) {
+      view.setCampaignCardMessage(campaignId, error.message);
+    }
+  }
+
+  async function removeCampaignImage(campaignId) {
+    const campaign =
+      state.getCurrentCampaign()?.id === campaignId
+        ? state.getCurrentCampaign()
+        : state.getLibrary().campaigns.find((candidate) => candidate.id === campaignId);
+
+    if (!campaign?.campaignImage || !view.confirmRemoveCampaignImage(campaign.name)) {
+      return;
+    }
+
+    try {
+      const payload = await api.deleteCampaignImage(campaignId);
+      if (state.getCurrentCampaign()?.id === payload.campaign.id) {
+        state.setCurrentCampaign(payload.campaign);
+        renderCurrentCampaign();
+      }
+      await loadCampaigns();
+      view.setCampaignCardMessage(campaignId, "Campaign Image removed.", "status");
+    } catch (error) {
+      view.setCampaignCardMessage(campaignId, error.message);
+    }
+  }
+
   async function uploadMap(file) {
     const campaign = state.getCurrentCampaign();
     if (!file || !campaign) return;
@@ -552,6 +591,7 @@ export function createGmController({ api, socket, state, view }) {
       previewWorkspaceFogRectangle,
       renameMap,
       renameHandout,
+      removeCampaignImage,
       rotateShownHandout,
       selectEncounter,
       showCampaignContent,
@@ -565,6 +605,7 @@ export function createGmController({ api, socket, state, view }) {
       showWorkspaceEncounter,
       undoWorkspaceFog,
       updateCampaignMetadata,
+      uploadCampaignImage,
       uploadHandout,
       uploadMap,
       zoomWorkspaceMapIn: view.workspaceZoomIn,

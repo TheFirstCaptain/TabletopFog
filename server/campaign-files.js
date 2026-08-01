@@ -21,6 +21,10 @@ function createCampaignFiles(options = {}) {
     return path.join(campaignDir(campaignId), "campaign.json");
   }
 
+  function campaignImagesDir(campaignId) {
+    return path.join(campaignDir(campaignId), "campaign-images");
+  }
+
   function mapsDir(campaignId) {
     return path.join(campaignDir(campaignId), "maps");
   }
@@ -109,15 +113,43 @@ function createCampaignFiles(options = {}) {
     return realAssetPath;
   }
 
+  function getContainedCampaignImageAssetPath(campaignId, campaignImage) {
+    const relativeFile = campaignImage.file.replace(/\\/g, "/");
+
+    if (!relativeFile.startsWith("campaign-images/")) {
+      throw createUserError(400, "Invalid Campaign Image asset path.");
+    }
+
+    const resolved = path.resolve(campaignDir(campaignId), campaignImage.file);
+    const campaignImagesRoot = fs.realpathSync(campaignImagesDir(campaignId));
+    let realAssetPath;
+
+    try {
+      realAssetPath = fs.realpathSync(resolved);
+    } catch (_error) {
+      throw createUserError(404, "Campaign Image asset not found.");
+    }
+
+    const relative = path.relative(campaignImagesRoot, realAssetPath);
+
+    if (relative.startsWith("..") || path.isAbsolute(relative)) {
+      throw createUserError(400, "Invalid Campaign Image asset path.");
+    }
+
+    return realAssetPath;
+  }
+
   return {
     dataRoot,
     assertCampaignExists,
     campaignDir,
+    campaignImagesDir,
     campaignJsonPath,
     ensureDataRoot() {
       fs.mkdirSync(dataRoot, { recursive: true });
     },
     existingNames,
+    getContainedCampaignImageAssetPath,
     getContainedHandoutAssetPath,
     getContainedMapAssetPath,
     handoutsDir,

@@ -625,6 +625,11 @@ export function createGmView(document) {
         `Delete handout?\n\nThis permanently deletes "${name}" from this campaign.\nThis can't be undone.`
       );
     },
+    confirmRemoveCampaignImage(name) {
+      return document.defaultView.confirm(
+        `Remove Campaign Image?\n\nThis removes the Campaign Image from "${name}". This can't be undone.`
+      );
+    },
     confirmClearFog(name, shownToPlayers) {
       const playerImpact = shownToPlayers ? "\nThe Player Display will update immediately." : "";
       return document.defaultView.confirm(
@@ -816,6 +821,57 @@ export function createGmView(document) {
         descriptionInput.value = campaign.description || "";
         descriptionLabel.append(descriptionInput);
 
+        const campaignImageSection = document.createElement("section");
+        campaignImageSection.className = "campaign-image-editor";
+        campaignImageSection.setAttribute("aria-label", "Campaign Image");
+
+        const campaignImageLabel = document.createElement("p");
+        campaignImageLabel.className = "campaign-image-label";
+        campaignImageLabel.textContent = "Campaign Image";
+
+        const campaignImageStatus = document.createElement("p");
+        campaignImageStatus.className = "muted campaign-image-status";
+        campaignImageStatus.textContent = campaign.campaignImage
+          ? campaign.campaignImage.assetAvailable === false
+            ? "Campaign Image file could not be found."
+            : campaign.campaignImage.name || campaign.campaignImage.originalFileName || "Campaign Image set."
+          : "No Campaign Image set.";
+
+        const campaignImageFrame = document.createElement("div");
+        campaignImageFrame.className = "campaign-image-preview-frame";
+        campaignImageFrame.hidden = !campaign.campaignImage || campaign.campaignImage.assetAvailable === false;
+        if (campaign.campaignImage && campaign.campaignImage.assetAvailable !== false) {
+          const campaignImagePreview = document.createElement("img");
+          campaignImagePreview.className = "campaign-image-preview";
+          campaignImagePreview.src = campaign.campaignImage.assetUrl;
+          campaignImagePreview.alt = `Campaign Image preview for ${campaign.name}`;
+          campaignImageFrame.append(campaignImagePreview);
+        }
+
+        const campaignImageControls = document.createElement("div");
+        campaignImageControls.className = "campaign-image-controls";
+        const campaignImageInput = document.createElement("input");
+        campaignImageInput.name = "campaign-image-file";
+        campaignImageInput.type = "file";
+        campaignImageInput.accept = "image/*";
+        campaignImageInput.setAttribute("aria-label", "Campaign Image file");
+        const uploadCampaignImage = createButton(document, {
+          action: "upload-campaign-image",
+          className: "secondary",
+          text: campaign.campaignImage ? "Replace image" : "Upload image"
+        });
+        uploadCampaignImage.dataset.campaignId = campaign.id;
+        const removeCampaignImage = createButton(document, {
+          action: "remove-campaign-image",
+          className: "secondary danger-secondary",
+          disabled: !campaign.campaignImage,
+          text: "Remove..."
+        });
+        removeCampaignImage.dataset.campaignId = campaign.id;
+        removeCampaignImage.setAttribute("aria-label", `Remove Campaign Image from ${campaign.name}`);
+        campaignImageControls.append(campaignImageInput, uploadCampaignImage, removeCampaignImage);
+        campaignImageSection.append(campaignImageLabel, campaignImageFrame, campaignImageStatus, campaignImageControls);
+
         const editorActions = document.createElement("div");
         editorActions.className = "campaign-card-actions";
         const save = createButton(document, {
@@ -841,7 +897,7 @@ export function createGmView(document) {
         deleteReason.textContent = deleteBlockedReason;
         deleteReason.hidden = !deleteBlockedReason;
 
-        form.append(nameLabel, iconLabel, descriptionLabel, editorActions);
+        form.append(nameLabel, iconLabel, descriptionLabel, campaignImageSection, editorActions);
         if (deleteBlockedReason) {
           actions.append(deleteReason);
         }
@@ -849,7 +905,7 @@ export function createGmView(document) {
         elements.campaignList.append(item);
       });
     },
-    setCampaignCardMessage(campaignId, message) {
+    setCampaignCardMessage(campaignId, message, state = "error") {
       const card = elements.campaignList.querySelector(`[data-campaign-id="${CSS.escape(campaignId)}"]`);
       if (!card) {
         elements.libraryMessage.textContent = message;
@@ -858,7 +914,7 @@ export function createGmView(document) {
 
       const cardMessage = card.querySelector(".campaign-card-message");
       cardMessage.textContent = message;
-      cardMessage.classList.toggle("error-text", Boolean(message));
+      cardMessage.classList.toggle("error-text", Boolean(message) && state === "error");
     },
     setCampaignMessage(message) {
       elements.campaignMessage.textContent = message;

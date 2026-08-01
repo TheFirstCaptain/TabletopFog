@@ -278,6 +278,89 @@ test("GM creates, reopens, uploads, renames, and reorders campaign maps", async 
   await expect(page.getByRole("button", { name: "Move Forest Ambush down" })).toBeDisabled();
 });
 
+test("GM manages a Campaign Image from campaign edit cards without changing shown encounter", async ({
+  app,
+  page,
+  context
+}) => {
+  const player = await context.newPage();
+  let playerAssetRequests = 0;
+  await player.route("**/api/player/shown-target/asset*", (route) => {
+    playerAssetRequests += 1;
+    return route.continue();
+  });
+
+  await openGm(page, app.baseURL);
+  await createCampaign(page);
+  await addMap(page, "forest.png");
+  await page.getByRole("button", { name: "Show to Players", exact: true }).click();
+  await player.goto(`${app.baseURL}/player`);
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  const playerAssetRequestsBeforeCampaignImage = playerAssetRequests;
+
+  await page.getByRole("button", { name: "Back to Campaign Library" }).click();
+  const campaignCard = page.locator(".campaign-card").filter({ hasText: "The Long Walk" });
+  await campaignCard.getByRole("button", { name: "Edit campaign details" }).click();
+  await expect(campaignCard.getByText("No Campaign Image set.")).toBeVisible();
+  await expect(campaignCard.getByRole("button", { name: "Remove Campaign Image from The Long Walk" })).toBeDisabled();
+
+  await campaignCard.getByLabel("Campaign Image file").setInputFiles({
+    buffer: Buffer.from("not-an-image"),
+    mimeType: "image/png",
+    name: "invalid.png"
+  });
+  await campaignCard.getByRole("button", { name: "Upload image" }).click();
+  await expect(campaignCard.getByText(/supported Campaign Image/i)).toBeVisible();
+  await expect(campaignCard.getByRole("img", { name: /Campaign Image preview/ })).toHaveCount(0);
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeCampaignImage);
+
+  await campaignCard
+    .getByLabel("Campaign Image file")
+    .setInputFiles(await sizedPngFile(page, "Campaign Splash.png", 80, 50));
+  await campaignCard.getByRole("button", { name: "Upload image" }).click();
+  await expect(page.getByText("Campaign Image updated.")).toBeVisible();
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeCampaignImage);
+
+  await campaignCard.getByRole("button", { name: "Edit campaign details" }).click();
+  await expect(campaignCard.getByRole("img", { name: "Campaign Image preview for The Long Walk" })).toBeVisible();
+  await expect(campaignCard.getByText("Campaign Splash")).toBeVisible();
+
+  await campaignCard
+    .getByLabel("Campaign Image file")
+    .setInputFiles(await sizedPngFile(page, "New Splash.png", 120, 60));
+  await campaignCard.getByRole("button", { name: "Replace image" }).click();
+  await expect(page.getByText("Campaign Image updated.")).toBeVisible();
+  await campaignCard.getByRole("button", { name: "Edit campaign details" }).click();
+  await expect(campaignCard.getByText("New Splash")).toBeVisible();
+
+  await campaignCard.getByLabel("Campaign Image file").setInputFiles({
+    buffer: Buffer.from("not-an-image"),
+    mimeType: "image/png",
+    name: "invalid.png"
+  });
+  await campaignCard.getByRole("button", { name: "Replace image" }).click();
+  await expect(campaignCard.getByText(/supported Campaign Image/i)).toBeVisible();
+  await expect(campaignCard.getByText("New Splash")).toBeVisible();
+  await expect(campaignCard.getByRole("img", { name: "Campaign Image preview for The Long Walk" })).toBeVisible();
+
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toContain("Remove Campaign Image?");
+    await dialog.accept();
+  });
+  await campaignCard.getByRole("button", { name: "Remove Campaign Image from The Long Walk" }).click();
+  await expect(page.getByText("Campaign Image removed.")).toBeVisible();
+  await campaignCard.getByRole("button", { name: "Edit campaign details" }).click();
+  await expect(campaignCard.getByText("No Campaign Image set.")).toBeVisible();
+  await expect(campaignCard.getByRole("img", { name: /Campaign Image preview/ })).toHaveCount(0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(campaignCard.getByLabel("Campaign Image file")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  expect(playerAssetRequests).toBe(playerAssetRequestsBeforeCampaignImage);
+});
+
 test("GM adds campaign handouts without changing the Player Display", async ({ app, page, context }) => {
   const player = await context.newPage();
   let playerAssetRequests = 0;
@@ -953,7 +1036,7 @@ test("Player Display returns to plain waiting when the open empty campaign is de
   await expect(player.getByText("Waiting for GM - Empty Campaign", { exact: true })).toHaveCount(0);
 });
 
-test("campaign landing cards keep diagnostics and deferred controls out of scope", async ({ app, page }) => {
+test("campaign landing cards keep diagnostics and unrelated deferred controls out of scope", async ({ app, page }) => {
   await page.setViewportSize({ height: 768, width: 1366 });
   await openGm(page, app.baseURL);
   await createCampaign(page, "A Very Long Campaign Name Across The Western Borderlands");
@@ -970,7 +1053,9 @@ test("campaign landing cards keep diagnostics and deferred controls out of scope
   await expect(page.locator(".campaign-card")).toHaveCount(1);
   await expect(page.getByText(/Skipped campaign "Broken Campaign"/)).toBeVisible();
   await expect(page.locator("input[type='search']")).toHaveCount(0);
-  await expect(page.getByLabel(/campaign image/i)).toHaveCount(0);
+  await expect(page.locator(".campaign-card-editor")).toBeHidden();
+  await page.locator(".campaign-card").getByRole("button", { name: "Edit campaign details" }).click();
+  await expect(page.getByLabel("Campaign Image file")).toBeVisible();
   await expect(page.getByRole("button", { name: /member|character|token|fog|note|cloud|dashboard/i })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /member|character|token|fog|note|cloud|dashboard/i })).toHaveCount(0);
   await expect(

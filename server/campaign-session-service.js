@@ -52,6 +52,16 @@ function createCampaignSessionService({ campaignStorage, onStateChange, stateSto
         handout: campaign.handouts.find((candidate) => candidate.id === handout.id)
       };
     },
+    setCampaignImage(campaignId, imageInput) {
+      campaignStorage.setCampaignImage(campaignId, imageInput);
+      const campaign = campaignStorage.getCampaign(campaignId);
+
+      if (stateStore.getState().campaign?.id === campaignId) {
+        return preserveUndoCampaign(campaign);
+      }
+
+      return withAssetUrls(campaign);
+    },
     addMap(campaignId, mapInput) {
       const map = campaignStorage.addMap(campaignId, mapInput);
       const campaign = preserveUndoCampaign(campaignStorage.getCampaign(campaignId));
@@ -97,6 +107,15 @@ function createCampaignSessionService({ campaignStorage, onStateChange, stateSto
     },
     deleteHandout(campaignId, handoutId) {
       return preserveUndoCampaign(campaignStorage.deleteHandout(campaignId, handoutId));
+    },
+    removeCampaignImage(campaignId) {
+      const campaign = campaignStorage.removeCampaignImage(campaignId);
+
+      if (stateStore.getState().campaign?.id === campaignId) {
+        return preserveUndoCampaign(campaign);
+      }
+
+      return withAssetUrls(campaign);
     },
     deleteMap(campaignId, mapId) {
       return preserveUndoCampaign(campaignStorage.deleteMap(campaignId, mapId));

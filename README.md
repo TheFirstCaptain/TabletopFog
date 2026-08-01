@@ -22,6 +22,11 @@ and no encounter or handout is shown, the Player Display shows
 `Waiting for GM - <Campaign Name>`; before a campaign is open, it keeps the
 plain `Waiting for GM.` state.
 
+Campaign Library edit cards now let the GM upload, replace, preview, and remove
+one campaign-level `Campaign Image`. It is stored in the campaign's local
+`campaign-images/` folder and is not a handout, encounter, or shown target.
+Player Display background rendering for that image remains planned separately.
+
 Post-V1 campaign image handouts are complete. The GM can add and browse image
 handouts stored in the campaign's local `handouts/` folder, show one handout to
 players, clear it from the Player Display, rotate the shown handout in
@@ -52,8 +57,7 @@ when browser fullscreen is unavailable.
 The GM campaign landing page now uses calm campaign cards with balanced emoji
 icons, editable names and two-line descriptions, quiet map and
 `Shown to Players` metadata, restrained hover/focus states, and preserved
-invalid-campaign diagnostics. Search/filtering and uploaded campaign images
-remain deferred.
+invalid-campaign diagnostics. Search/filtering remains deferred.
 
 Opening a campaign now shows a full encounter gallery with a compact
 upper-right Add Encounter control, larger map thumbnails, quiet always-available
@@ -139,7 +143,7 @@ default. Fog can be added to hide areas and removed to reveal them during play.
 
 Map upload accepts PNG, JPEG, GIF, and WebP files up to 100 MB and rejects data
 whose image signature, filename extension, and content type do not agree.
-Handout upload follows the same image validation rules.
+Handout and Campaign Image upload follow the same image validation rules.
 The campaign library keeps valid campaigns available when another campaign has
 invalid metadata and shows non-destructive recovery guidance for the skipped
 folder.

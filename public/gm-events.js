@@ -186,6 +186,13 @@ export function wireGmEvents(elements, actions) {
       } else if (button.dataset.action === "cancel-campaign-edit") {
         event.preventDefault();
         card.dataset.editing = "false";
+      } else if (button.dataset.action === "upload-campaign-image") {
+        event.preventDefault();
+        const file = card.querySelector("[name='campaign-image-file']")?.files[0];
+        actions.uploadCampaignImage(button.dataset.campaignId, file);
+      } else if (button.dataset.action === "remove-campaign-image") {
+        event.preventDefault();
+        actions.removeCampaignImage(button.dataset.campaignId);
       }
       return;
     }

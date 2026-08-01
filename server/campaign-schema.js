@@ -1,6 +1,7 @@
 "use strict";
 
 const CAMPAIGN_EXTRA_FIELDS = Symbol("campaignExtraFields");
+const CAMPAIGN_IMAGE_EXTRA_FIELDS = Symbol("campaignImageExtraFields");
 const MAP_EXTRA_FIELDS = Symbol("mapExtraFields");
 const HANDOUT_EXTRA_FIELDS = Symbol("handoutExtraFields");
 const MAX_CAMPAIGN_DESCRIPTION_LENGTH = 160;
@@ -11,11 +12,13 @@ const campaignFields = new Set([
   "name",
   "description",
   "icon",
+  "campaignImage",
   "activeMapId",
   "shownTarget",
   "maps",
   "handouts"
 ]);
+const campaignImageFields = new Set(["name", "originalFileName", "file"]);
 const mapFields = new Set(["id", "name", "originalFileName", "file", "order", "fog"]);
 const handoutFields = new Set(["id", "name", "originalFileName", "file", "order"]);
 const metadataFields = new Set(["description", "icon", "name"]);
@@ -261,6 +264,29 @@ function normalizeCampaignWithOptions(campaignId, rawCampaign, options = {}) {
     });
     return normalizedHandout;
   });
+  const campaignImage =
+    rawCampaign.campaignImage &&
+    typeof rawCampaign.campaignImage === "object" &&
+    !Array.isArray(rawCampaign.campaignImage)
+      ? {
+          name: String(
+            rawCampaign.campaignImage.name ||
+              rawCampaign.campaignImage.originalFileName ||
+              displayNameFromFileName(rawCampaign.campaignImage.file || "Campaign Image")
+          ),
+          originalFileName: rawCampaign.campaignImage.originalFileName
+            ? String(rawCampaign.campaignImage.originalFileName)
+            : undefined,
+          file: String(rawCampaign.campaignImage.file || "")
+        }
+      : null;
+
+  if (campaignImage) {
+    Object.defineProperty(campaignImage, CAMPAIGN_IMAGE_EXTRA_FIELDS, {
+      enumerable: false,
+      value: collectExtraFields(rawCampaign.campaignImage, campaignImageFields)
+    });
+  }
 
   const legacyActiveMapId = typeof rawCampaign.activeMapId === "string" ? rawCampaign.activeMapId : null;
   const hasCanonicalShownTarget = Object.hasOwn(rawCampaign, "shownTarget");
@@ -276,6 +302,7 @@ function normalizeCampaignWithOptions(campaignId, rawCampaign, options = {}) {
     name: String(rawCampaign.name || campaignId),
     description: typeof rawCampaign.description === "string" ? rawCampaign.description : "",
     icon: typeof rawCampaign.icon === "string" ? rawCampaign.icon : "",
+    campaignImage,
     activeMapId: shownTarget?.type === "encounter" ? shownTarget.id : null,
     handouts,
     maps,
@@ -301,6 +328,16 @@ function serializeCampaign(campaign) {
     name: campaign.name,
     ...(campaign.description ? { description: campaign.description } : {}),
     ...(campaign.icon ? { icon: campaign.icon } : {}),
+    campaignImage: campaign.campaignImage
+      ? {
+          ...(campaign.campaignImage[CAMPAIGN_IMAGE_EXTRA_FIELDS] || {}),
+          name: campaign.campaignImage.name,
+          ...(campaign.campaignImage.originalFileName
+            ? { originalFileName: campaign.campaignImage.originalFileName }
+            : {}),
+          file: campaign.campaignImage.file
+        }
+      : null,
     shownTarget: campaign.shownTarget || null,
     handouts: (campaign.handouts || []).map((handout) => ({
       ...(handout[HANDOUT_EXTRA_FIELDS] || {}),

@@ -98,13 +98,13 @@ Expected result:
   initiative, dice, dynamic lighting, cloud login, or other full-VTT controls
   appear in this slice.
 
-### Test: Campaign Waiting Screen Can Use A Campaign Image
+### Test: GM Can Manage A Campaign Image
 
 Prerequisites:
 
 - The local HTTPS server is running.
 - The GM View and Player Display are open.
-- A campaign exists with at least one encounter or handout.
+- A campaign exists with at least one encounter and at least one handout.
 - A representative campaign image file is available.
 
 Steps:
@@ -114,24 +114,60 @@ Steps:
 2. Open the campaign in the GM View without showing an encounter or handout.
 3. Confirm the Player Display shows `Waiting for GM - <Campaign Name>`.
 4. Add a Campaign Image from the create/edit campaign flow.
-5. Confirm the Player Display updates live to show the Campaign Image as a
-   background with the waiting text over it.
-6. Show an encounter or handout to players.
-7. Confirm the Player Display replaces the campaign waiting screen with the
-   explicitly shown target.
-8. Clear the shown target.
-9. Confirm the Player Display returns to the campaign waiting screen.
-10. Remove the Campaign Image from the create/edit campaign flow.
-11. Confirm the Player Display updates live to the campaign waiting text without
-    the background image.
+5. Confirm the GM View shows the Campaign Image preview in the campaign edit
+   card.
+6. Replace the Campaign Image from the same edit flow.
+7. Confirm the GM View preview updates and no encounter or handout is created.
+8. Try an invalid Campaign Image upload and confirm the existing preview remains
+   visible with a GM-facing error.
+9. Show an encounter to players.
+10. Replace or remove the Campaign Image from the campaign edit flow.
+11. Confirm the Player Display stays on the shown encounter.
+12. Show a handout to players.
+13. Replace or remove the Campaign Image from the campaign edit flow.
+14. Confirm the Player Display stays on the shown handout.
+15. Remove the Campaign Image from the create/edit campaign flow.
+16. Confirm the GM View returns to the no-Campaign-Image state.
 
 Expected result:
 
-- The campaign waiting screen appears only while a campaign is open and no
-  encounter or handout is shown to players.
 - The Campaign Image is GM-managed and optional.
+- Campaign Image metadata is stored at campaign scope and does not create an
+  encounter, handout, or shown target.
 - The Player Display still changes only through explicit GM shown-target
-  actions or live updates to the current campaign waiting screen.
+  actions or clear actions in this slice.
+- The Player Display remains read-only.
+- This slice does not render the Campaign Image on the Player Display; that
+  behavior belongs to Campaign Waiting Image Display.
+- No slideshow mode, notes, tokens, initiative, dice, dynamic lighting, cloud
+  login, or other full-VTT controls appear.
+
+### Test: Campaign Waiting Screen Can Use A Campaign Image
+
+Prerequisites:
+
+- The local HTTPS server is running.
+- The GM View and Player Display are open.
+- A campaign exists with a Campaign Image and at least one encounter or handout.
+
+Steps:
+
+1. Open the campaign in the GM View without showing an encounter or handout.
+2. Confirm the Player Display shows the Campaign Image as a background with
+   `Waiting for GM - <Campaign Name>` over it.
+3. Show an encounter or handout to players.
+4. Confirm the Player Display replaces the campaign waiting screen with the
+   explicitly shown target.
+5. Clear the shown target.
+6. Confirm the Player Display returns to the Campaign Image waiting screen.
+7. Remove the Campaign Image from the create/edit campaign flow.
+8. Confirm the Player Display updates live to the campaign waiting text without
+   the background image.
+
+Expected result:
+
+- The campaign waiting image appears only while a campaign is open, no
+  encounter or handout is shown to players, and a Campaign Image exists.
 - The Player Display remains read-only.
 - No slideshow mode, notes, tokens, initiative, dice, dynamic lighting, cloud
   login, or other full-VTT controls appear.

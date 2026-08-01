@@ -39,6 +39,7 @@ test("creates campaigns in safe local folders", (t) => {
   assert.equal(campaign.shownTarget, null);
   assert.deepEqual(campaign.maps, []);
   assert.ok(fs.existsSync(path.join(root, "The Long Walk", "campaign.json")));
+  assert.ok(fs.existsSync(path.join(root, "The Long Walk", "campaign-images")));
   assert.ok(fs.existsSync(path.join(root, "The Long Walk", "maps")));
 });
 
@@ -99,6 +100,24 @@ test("rejects campaign deletes when handouts remain", (t) => {
   assert.equal(fs.existsSync(path.join(root, campaign.id)), true);
   assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
   assert.equal(fs.existsSync(path.join(root, campaign.id, handout.file)), true);
+});
+
+test("deletes otherwise empty campaigns with a Campaign Image", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const campaignImage = storage.setCampaignImage(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "Campaign Splash.png"
+  });
+  const campaignDir = path.join(root, campaign.id);
+
+  assert.equal(fs.existsSync(path.join(campaignDir, campaignImage.file)), true);
+
+  storage.deleteCampaign(campaign.id);
+
+  assert.equal(fs.existsSync(campaignDir), false);
 });
 
 test("lists only folders with valid campaign metadata", (t) => {
@@ -230,6 +249,92 @@ test("adds campaign handouts for every supported image type", (t) => {
     storage.getCampaign(campaign.id).handouts.map((handout) => handout.order),
     [1, 2, 3, 4]
   );
+});
+
+test("sets and replaces one Campaign Image with validated campaign-scope metadata", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+
+  const first = storage.setCampaignImage(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "Campaign Splash #1.png"
+  });
+  const firstAsset = path.join(root, campaign.id, first.file);
+  const second = storage.setCampaignImage(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "Campaign Splash #2.png"
+  });
+  const secondAsset = path.join(root, campaign.id, second.file);
+  const reloaded = storage.getCampaign(campaign.id);
+
+  assert.equal(first.name, "Campaign Splash #1");
+  assert.equal(first.originalFileName, "Campaign Splash #1.png");
+  assert.equal(first.file, "campaign-images/Campaign Splash-1.png");
+  assert.equal(first.assetAvailable, true);
+  assert.equal(fs.existsSync(firstAsset), false);
+  assert.equal(second.name, "Campaign Splash #2");
+  assert.equal(second.originalFileName, "Campaign Splash #2.png");
+  assert.equal(second.file, "campaign-images/Campaign Splash-2.png");
+  assert.equal(fs.existsSync(secondAsset), true);
+  assert.deepEqual(reloaded.campaignImage, {
+    assetAvailable: true,
+    file: "campaign-images/Campaign Splash-2.png",
+    name: "Campaign Splash #2",
+    originalFileName: "Campaign Splash #2.png"
+  });
+  assert.deepEqual(reloaded.maps, []);
+  assert.deepEqual(reloaded.handouts, []);
+});
+
+test("sets Campaign Image for every supported image type", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+
+  VALID_MAP_IMAGES.forEach((fixture) => {
+    const campaignImage = storage.setCampaignImage(campaign.id, {
+      content: fixture.bytes,
+      contentType: `${fixture.contentType}; charset=binary`,
+      originalFileName: fixture.fileName.replace("map", `campaign-${fixture.type.toLowerCase()}`)
+    });
+
+    assert.match(campaignImage.file, /^campaign-images\//);
+    assert.ok(fs.existsSync(path.join(root, campaign.id, campaignImage.file)), fixture.type);
+  });
+});
+
+test("removes Campaign Image metadata and asset", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const campaignImage = storage.setCampaignImage(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "Campaign Splash.png"
+  });
+  const assetPath = path.join(root, campaign.id, campaignImage.file);
+
+  const updated = storage.removeCampaignImage(campaign.id);
+
+  assert.equal(updated.campaignImage, null);
+  assert.equal(fs.existsSync(assetPath), false);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(root, campaign.id, "campaign.json"), "utf8")).campaignImage, null);
+});
+
+test("removing a missing Campaign Image is idempotent", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const campaignPath = path.join(root, campaign.id, "campaign.json");
+  const originalMetadata = fs.readFileSync(campaignPath, "utf8");
+
+  const updated = storage.removeCampaignImage(campaign.id);
+
+  assert.equal(updated.campaignImage, null);
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
 });
 
 test("renames maps without changing stored file paths", (t) => {
@@ -484,6 +589,319 @@ test("campaign reads do not write and later mutations preserve unknown metadata"
   assert.deepEqual(saved.externalMetadata, { source: "future-version" });
   assert.deepEqual(saved.maps[0].viewport, { scale: 1.5 });
   assert.equal(saved.maps[0].name, "Forest Ambush");
+});
+
+test("campaign reads recover missing Campaign Image assets without rewriting metadata", (t) => {
+  const root = createTempRoot(t);
+  const campaignDir = path.join(root, "The Long Walk");
+  const campaignPath = path.join(campaignDir, "campaign.json");
+  fs.mkdirSync(path.join(campaignDir, "campaign-images"), { recursive: true });
+  const originalJson = `${JSON.stringify(
+    {
+      version: 1,
+      name: "The Long Walk",
+      campaignImage: {
+        name: "Campaign Splash",
+        originalFileName: "splash.png",
+        file: "campaign-images/splash.png"
+      },
+      maps: []
+    },
+    null,
+    2
+  )}\n`;
+  fs.writeFileSync(campaignPath, originalJson);
+  const storage = createCampaignStorage({ dataRoot: root });
+
+  const loaded = storage.getCampaign("The Long Walk");
+
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalJson);
+  assert.deepEqual(loaded.campaignImage, {
+    assetAvailable: false,
+    file: "campaign-images/splash.png",
+    name: "Campaign Splash",
+    originalFileName: "splash.png"
+  });
+  assert.deepEqual(loaded.recoveryDiagnostics, [
+    {
+      code: "missing-campaign-image-asset",
+      message: "This Campaign Image could not be found.",
+      severity: "warning"
+    }
+  ]);
+});
+
+test("rejected Campaign Image mutations preserve campaign metadata and assets", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const campaignImage = storage.setCampaignImage(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "Campaign Splash.png"
+  });
+  const campaignPath = path.join(root, campaign.id, "campaign.json");
+  const assetPath = path.join(root, campaign.id, campaignImage.file);
+  const originalMetadata = fs.readFileSync(campaignPath, "utf8");
+
+  const cases = [
+    {
+      action: () =>
+        storage.setCampaignImage(campaign.id, {
+          content: Buffer.from("not-an-image"),
+          contentType: "image/png",
+          originalFileName: "bad.png"
+        }),
+      message: /supported Campaign Image/
+    },
+    {
+      action: () =>
+        storage.setCampaignImage(campaign.id, {
+          content: PNG_BYTES,
+          contentType: "image/jpeg",
+          originalFileName: "bad.png"
+        }),
+      message: /must match its image data/
+    },
+    {
+      action: () =>
+        storage.setCampaignImage(campaign.id, {
+          content: createOversizedMapBytes(MAX_MAP_FILE_BYTES),
+          contentType: "image/png",
+          originalFileName: "huge.png"
+        }),
+      message: /100 MB limit/
+    },
+    {
+      action: () =>
+        storage.setCampaignImage(campaign.id, {
+          content: PNG_BYTES,
+          contentType: "image/png",
+          originalFileName: "???"
+        }),
+      message: /valid Campaign Image file name/
+    }
+  ];
+
+  cases.forEach(({ action, message }) => {
+    assert.throws(action, message);
+    assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+    assert.equal(fs.existsSync(assetPath), true);
+    assert.deepEqual(storage.getCampaign(campaign.id).campaignImage, {
+      assetAvailable: true,
+      file: "campaign-images/Campaign Splash.png",
+      name: "Campaign Splash",
+      originalFileName: "Campaign Splash.png"
+    });
+  });
+});
+
+test("failed Campaign Image persistence removes the new asset and preserves existing storage", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const existing = storage.setCampaignImage(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "existing.png"
+  });
+  const campaignPath = path.join(root, campaign.id, "campaign.json");
+  const existingAssetPath = fs.realpathSync(path.join(root, campaign.id, existing.file));
+  const originalMetadata = fs.readFileSync(campaignPath, "utf8");
+  const originalBytes = fs.readFileSync(existingAssetPath);
+  const originalRenameSync = fs.renameSync;
+  t.after(() => {
+    fs.renameSync = originalRenameSync;
+  });
+  fs.renameSync = (source, destination) => {
+    if (destination === campaignPath) {
+      throw new Error("Injected metadata write failure.");
+    }
+    return originalRenameSync(source, destination);
+  };
+
+  assert.throws(
+    () =>
+      storage.setCampaignImage(campaign.id, {
+        content: PNG_BYTES,
+        contentType: "image/png",
+        originalFileName: "new.png"
+      }),
+    /Injected metadata write failure/
+  );
+
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+  assert.deepEqual(fs.readFileSync(existingAssetPath), originalBytes);
+  assert.equal(fs.existsSync(path.join(root, campaign.id, "campaign-images", "new.png")), false);
+  assert.deepEqual(storage.getCampaign(campaign.id).campaignImage, existing);
+});
+
+test("failed Campaign Image staging removes the new asset and preserves existing storage", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const existing = storage.setCampaignImage(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "existing.png"
+  });
+  const campaignPath = path.join(root, campaign.id, "campaign.json");
+  const existingAssetPath = fs.realpathSync(path.join(root, campaign.id, existing.file));
+  const originalMetadata = fs.readFileSync(campaignPath, "utf8");
+  const originalBytes = fs.readFileSync(existingAssetPath);
+  const originalRenameSync = fs.renameSync;
+  t.after(() => {
+    fs.renameSync = originalRenameSync;
+  });
+  fs.renameSync = (source, destination) => {
+    if (source === existingAssetPath && String(destination).includes(".delete-")) {
+      throw new Error("Injected asset staging failure.");
+    }
+    return originalRenameSync(source, destination);
+  };
+
+  assert.throws(
+    () =>
+      storage.setCampaignImage(campaign.id, {
+        content: PNG_BYTES,
+        contentType: "image/png",
+        originalFileName: "new.png"
+      }),
+    /Injected asset staging failure/
+  );
+
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+  assert.deepEqual(fs.readFileSync(existingAssetPath), originalBytes);
+  assert.equal(fs.existsSync(path.join(root, campaign.id, "campaign-images", "new.png")), false);
+  assert.deepEqual(storage.getCampaign(campaign.id).campaignImage, existing);
+});
+
+test("failed Campaign Image remove persistence restores the asset and preserves storage", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const campaignImage = storage.setCampaignImage(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "splash.png"
+  });
+  const campaignPath = path.join(root, campaign.id, "campaign.json");
+  const assetPath = path.join(root, campaign.id, campaignImage.file);
+  const originalMetadata = fs.readFileSync(campaignPath, "utf8");
+  const originalBytes = fs.readFileSync(assetPath);
+  const originalRenameSync = fs.renameSync;
+  t.after(() => {
+    fs.renameSync = originalRenameSync;
+  });
+  fs.renameSync = (source, destination) => {
+    if (destination === campaignPath) {
+      throw new Error("Injected metadata write failure.");
+    }
+    return originalRenameSync(source, destination);
+  };
+
+  assert.throws(() => storage.removeCampaignImage(campaign.id), /Injected metadata write failure/);
+
+  assert.equal(fs.readFileSync(campaignPath, "utf8"), originalMetadata);
+  assert.deepEqual(fs.readFileSync(assetPath), originalBytes);
+  assert.deepEqual(storage.getCampaign(campaign.id).campaignImage, campaignImage);
+});
+
+test("Campaign Image remove remains committed when post-save temp asset cleanup fails", (t) => {
+  const root = createTempRoot(t);
+  const storage = createCampaignStorage({ dataRoot: root });
+  const campaign = storage.createCampaign("The Long Walk");
+  const campaignImage = storage.setCampaignImage(campaign.id, {
+    content: PNG_BYTES,
+    contentType: "image/png",
+    originalFileName: "splash.png"
+  });
+  const assetPath = path.join(root, campaign.id, campaignImage.file);
+  const originalRmSync = fs.rmSync;
+  t.after(() => {
+    fs.rmSync = originalRmSync;
+  });
+  fs.rmSync = (target, options) => {
+    if (String(target).includes(".delete-")) {
+      throw new Error("Injected asset cleanup failure.");
+    }
+    return originalRmSync(target, options);
+  };
+
+  const updated = storage.removeCampaignImage(campaign.id);
+
+  assert.equal(updated.campaignImage, null);
+  assert.equal(storage.getCampaign(campaign.id).campaignImage, null);
+  assert.equal(fs.existsSync(assetPath), false);
+  assert.equal(
+    fs.readdirSync(path.join(root, campaign.id, "campaign-images")).filter((name) => name.includes(".delete-")).length,
+    1
+  );
+});
+
+test("rejects Campaign Image asset paths outside the campaign-images folder", (t) => {
+  const root = createTempRoot(t);
+  const campaignDir = path.join(root, "The Long Walk");
+  const campaignPath = path.join(campaignDir, "campaign.json");
+  fs.mkdirSync(path.join(campaignDir, "campaign-images"), { recursive: true });
+  fs.mkdirSync(path.join(campaignDir, "handouts"), { recursive: true });
+  fs.mkdirSync(path.join(campaignDir, "maps"), { recursive: true });
+  fs.writeFileSync(path.join(campaignDir, "handouts", "portrait.png"), PNG_BYTES);
+  fs.writeFileSync(
+    campaignPath,
+    `${JSON.stringify(
+      {
+        version: 1,
+        name: "The Long Walk",
+        campaignImage: {
+          name: "Portrait",
+          originalFileName: "portrait.png",
+          file: "handouts/portrait.png"
+        },
+        maps: []
+      },
+      null,
+      2
+    )}\n`
+  );
+  const storage = createCampaignStorage({ dataRoot: root });
+
+  assert.throws(() => storage.getCampaignImageAsset("The Long Walk"), /Invalid Campaign Image asset path/);
+  assert.equal(storage.removeCampaignImage("The Long Walk").campaignImage, null);
+  assert.equal(fs.existsSync(path.join(campaignDir, "handouts", "portrait.png")), true);
+});
+
+test("rejects symlinked Campaign Image assets that escape the campaign-images folder", (t) => {
+  const root = createTempRoot(t);
+  const campaignDir = path.join(root, "The Long Walk");
+  const campaignImageDir = path.join(campaignDir, "campaign-images");
+  const outside = path.join(root, "outside.png");
+  const link = path.join(campaignImageDir, "escape.png");
+  fs.mkdirSync(campaignImageDir, { recursive: true });
+  fs.writeFileSync(outside, PNG_BYTES);
+  fs.symlinkSync(outside, link);
+  fs.writeFileSync(
+    path.join(campaignDir, "campaign.json"),
+    `${JSON.stringify(
+      {
+        version: 1,
+        name: "The Long Walk",
+        campaignImage: {
+          name: "Escape",
+          originalFileName: "escape.png",
+          file: "campaign-images/escape.png"
+        },
+        maps: []
+      },
+      null,
+      2
+    )}\n`
+  );
+  const storage = createCampaignStorage({ dataRoot: root });
+
+  assert.throws(() => storage.getCampaignImageAsset("The Long Walk"), /Invalid Campaign Image asset path/);
+  assert.equal(storage.removeCampaignImage("The Long Walk").campaignImage, null);
+  assert.equal(fs.existsSync(outside), true);
 });
 
 test("updates campaign card metadata while preserving unknown fields", (t) => {

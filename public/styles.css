@@ -425,6 +425,59 @@ h4 {
   margin-bottom: 0;
 }
 
+.campaign-image-editor {
+  display: grid;
+  gap: 0.5rem;
+  border-top: 1px solid rgb(155 123 79 / 45%);
+  padding-top: 0.75rem;
+}
+
+.campaign-image-label {
+  margin-bottom: 0;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.campaign-image-status {
+  margin-bottom: 0;
+}
+
+.campaign-image-preview-frame {
+  display: grid;
+  width: min(100%, 18rem);
+  aspect-ratio: 16 / 10;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--stage);
+}
+
+.campaign-image-preview {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.campaign-image-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.campaign-image-controls input[type="file"] {
+  min-width: 0;
+  min-height: 2.35rem;
+  padding: 0.35rem 0.45rem;
+}
+
+.campaign-image-controls button {
+  min-height: 2.35rem;
+  padding: 0.4rem 0.65rem;
+}
+
 .error-text {
   color: var(--danger);
 }
@@ -1161,6 +1214,7 @@ h4 {
   .inline-form,
   .add-encounter-form,
   .add-handout-form,
+  .campaign-image-controls,
   .player-url-copy-row,
   .workspace-grid {
     grid-template-columns: 1fr;

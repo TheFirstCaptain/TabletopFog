@@ -114,6 +114,24 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
     }
   );
 
+  app.put(
+    "/api/campaigns/:campaignId/campaign-image",
+    requireGm,
+    express.raw({ limit: MAX_MAP_FILE_BYTES, type: "*/*" }),
+    (request, response, next) => {
+      try {
+        const campaign = campaignSession.setCampaignImage(request.params.campaignId, {
+          content: request.body,
+          contentType: request.get("content-type"),
+          originalFileName: request.get("x-file-name")
+        });
+        response.json({ campaign });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
   app.patch("/api/campaigns/:campaignId/maps/:mapId", requireGm, (request, response, next) => {
     try {
       const result = campaignSession.renameMap(request.params.campaignId, request.params.mapId, request.body.name);
@@ -155,6 +173,14 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
       response.json({
         campaign: campaignSession.deleteHandout(request.params.campaignId, request.params.handoutId)
       });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/campaigns/:campaignId/campaign-image", requireGm, (request, response, next) => {
+    try {
+      response.json({ campaign: campaignSession.removeCampaignImage(request.params.campaignId) });
     } catch (error) {
       next(error);
     }
@@ -359,6 +385,15 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
   app.get("/api/campaigns/:campaignId/handouts/:handoutId/asset", requireGm, (request, response, next) => {
     try {
       const { filePath } = campaignStorage.getHandoutAsset(request.params.campaignId, request.params.handoutId);
+      response.sendFile(filePath);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/campaigns/:campaignId/campaign-image/asset", requireGm, (request, response, next) => {
+    try {
+      const { filePath } = campaignStorage.getCampaignImageAsset(request.params.campaignId);
       response.sendFile(filePath);
     } catch (error) {
       next(error);

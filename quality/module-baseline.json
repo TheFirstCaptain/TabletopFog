@@ -3,16 +3,16 @@
   "roots": ["server", "public", "scripts"],
   "modules": {
     "public/gm-api.js": {
-      "baselineLines": 143,
-      "responsibility": "Send GM campaign, campaign deletion, campaign-card metadata, map, campaign handout upload, rename, delete, shown-target, shown-handout rotation, single and batched fog-operation append, clear, and undo API requests and convert failed responses into client errors."
+      "baselineLines": 158,
+      "responsibility": "Send GM campaign, campaign deletion, campaign-card metadata, Campaign Image upload and remove, map, campaign handout upload, rename, delete, shown-target, shown-handout rotation, single and batched fog-operation append, clear, and undo API requests and convert failed responses into client errors."
     },
     "public/gm-controller.js": {
-      "baselineLines": 585,
-      "responsibility": "Coordinate GM campaign library, Player Display URL copy, campaign deletion, campaign-card metadata, campaign Encounters/Handouts content mode, encounter gallery, campaign handout library rename and delete management, explicit encounter and handout shown-target actions, shown-handout rotation, encounter workspace, GM-local map alignment and panning, rectangle, brush, and circle Hide and Reveal fog editing, Clear Fog, Undo fog, map, view, Socket.IO workflows, and conservative full-versus-workspace render selection."
+      "baselineLines": 626,
+      "responsibility": "Coordinate GM campaign library, Player Display URL copy, campaign deletion, campaign-card metadata, Campaign Image upload and remove, campaign Encounters/Handouts content mode, encounter gallery, campaign handout library rename and delete management, explicit encounter and handout shown-target actions, shown-handout rotation, encounter workspace, GM-local map alignment and panning, rectangle, brush, and circle Hide and Reveal fog editing, Clear Fog, Undo fog, map, view, Socket.IO workflows, and conservative full-versus-workspace render selection."
     },
     "public/gm-events.js": {
-      "baselineLines": 262,
-      "responsibility": "Translate static and delegated GM campaign, Player Display URL copy, campaign deletion, campaign-card metadata, campaign content mode, direct encounter gallery administration, campaign handout upload, rename, delete, show, and rotation actions, encounter workspace, GM-local map alignment, rectangle, brush, and circle Hide and Reveal pointer input and hover previews, Brush diameter controls, Clear Fog, Undo fog, and map DOM events into controller actions."
+      "baselineLines": 269,
+      "responsibility": "Translate static and delegated GM campaign, Player Display URL copy, campaign deletion, campaign-card metadata, Campaign Image upload and remove, campaign content mode, direct encounter gallery administration, campaign handout upload, rename, delete, show, and rotation actions, encounter workspace, GM-local map alignment, rectangle, brush, and circle Hide and Reveal pointer input and hover previews, Brush diameter controls, Clear Fog, Undo fog, and map DOM events into controller actions."
     },
     "public/gm-navigation.js": {
       "baselineLines": 43,
@@ -23,8 +23,8 @@
       "responsibility": "Maintain GM campaign library, current campaign, GM-local selected encounter, explicit client screen state, and per-encounter GM-tab map alignment state."
     },
     "public/gm-view.js": {
-      "baselineLines": 989,
-      "responsibility": "Render the GM campaign card library, Player Display URL sharing, campaign recovery messaging, campaign deletion controls, campaign-card metadata editing, campaign Encounters/Handouts content mode, direct encounter gallery administration, campaign handout library with rename/delete management, explicit show, clear, and shown-handout rotation actions, target-aware shown status, encounter workspace shell, workspace-only selected encounter updates, GM-local map alignment controls, Hide and Reveal fog actions, Rectangle, Brush, and Circle fog controls, Brush diameter controls, Clear Fog state and confirmation, Undo fog availability, draft state, messages, status, and shared-canvas map plus semi-transparent fog preview."
+      "baselineLines": 1045,
+      "responsibility": "Render the GM campaign card library, Player Display URL sharing, campaign recovery messaging, campaign deletion controls, campaign-card metadata editing, Campaign Image preview/upload/replace/remove controls, campaign Encounters/Handouts content mode, direct encounter gallery administration, campaign handout library with rename/delete management, explicit show, clear, and shown-handout rotation actions, target-aware shown status, encounter workspace shell, workspace-only selected encounter updates, GM-local map alignment controls, Hide and Reveal fog actions, Rectangle, Brush, and Circle fog controls, Brush diameter controls, Clear Fog state and confirmation, Undo fog availability, draft state, messages, status, and shared-canvas map plus semi-transparent fog preview."
     },
     "public/gm.js": {
       "baselineLines": 19,
@@ -75,36 +75,36 @@
       "responsibility": "Prepare certificates, resolve LAN addresses, and start the local server workflow."
     },
     "server/campaign-files.js": {
-      "baselineLines": 132,
-      "responsibility": "Resolve campaign data-root paths, campaign, map, and handout asset paths, directory discovery, atomic JSON writes, and contained map and handout asset realpath checks."
+      "baselineLines": 164,
+      "responsibility": "Resolve campaign data-root paths, campaign, Campaign Image, map, and handout asset paths, directory discovery, atomic JSON writes, and contained Campaign Image, map, and handout asset realpath checks."
     },
     "server/campaign-schema.js": {
-      "baselineLines": 406,
-      "responsibility": "Normalize and recovery-normalize campaign metadata, shown targets including shown-handout rotation, legacy active-map ids, maps, handouts, and persisted rectangle and circle fog operations, serialize supported storage shape, preserve forward-compatible unknown fields, validate campaign metadata patches, and normalize safe campaign, map, and handout names."
+      "baselineLines": 443,
+      "responsibility": "Normalize and recovery-normalize campaign metadata, Campaign Image metadata, shown targets including shown-handout rotation, legacy active-map ids, maps, handouts, and persisted rectangle and circle fog operations, serialize supported storage shape, preserve forward-compatible unknown fields, validate campaign metadata patches, and normalize safe campaign, map, handout, and Campaign Image names."
     },
     "server/campaign-session-service.js": {
-      "baselineLines": 160,
-      "responsibility": "Coordinate campaign/session mutation workflows between campaign storage, runtime state, and Socket.IO broadcasts for campaign open/create/delete, campaign metadata updates, map and handout mutations, shown-target changes, shown-handout rotation, compatibility active-map changes, and persisted fog append, clear, and undo operations."
+      "baselineLines": 179,
+      "responsibility": "Coordinate campaign/session mutation workflows between campaign storage, runtime state, and Socket.IO broadcasts for campaign open/create/delete, campaign metadata updates, Campaign Image mutations, map and handout mutations, shown-target changes, shown-handout rotation, compatibility active-map changes, and persisted fog append, clear, and undo operations."
     },
     "server/campaign-storage.js": {
-      "baselineLines": 593,
-      "responsibility": "Coordinate campaign storage workflows, recovery diagnostics, public storage API methods, shown-target mutation, shown-handout rotation, and recovery, map and handout rename/delete asset mutation transactions, persisted map fog updates, campaign library summaries, and calls into focused schema and filesystem modules."
+      "baselineLines": 743,
+      "responsibility": "Coordinate campaign storage workflows, recovery diagnostics, public storage API methods, shown-target mutation, shown-handout rotation, and recovery, Campaign Image set/remove asset mutation transactions, map and handout rename/delete asset mutation transactions, persisted map fog updates, campaign library summaries, and calls into focused schema and filesystem modules."
     },
     "server/certs.js": {
       "baselineLines": 43,
       "responsibility": "Resolve and load HTTPS certificate credentials."
     },
     "server/http-routes.js": {
-      "baselineLines": 379,
-      "responsibility": "Register Express middleware, GM and Player Display pages, campaign, map, handout upload, rename, delete, shown-target, shown-handout rotation, compatibility active-map, persisted single and batched fog operation append, clear, undo, current-target player asset, static-file, and error routes while preserving GM-only mutation guards and delegating mutation orchestration to the campaign session service."
+      "baselineLines": 414,
+      "responsibility": "Register Express middleware, GM and Player Display pages, campaign, Campaign Image upload/remove/GM asset, map, handout upload, rename, delete, shown-target, shown-handout rotation, compatibility active-map, persisted single and batched fog operation append, clear, undo, current-target player asset, static-file, and error routes while preserving GM-only mutation guards and delegating mutation orchestration to the campaign session service."
     },
     "server/index.js": {
       "baselineLines": 85,
       "responsibility": "Compose campaign storage, state store, HTTP route registration, Socket.IO synchronization, HTTPS credentials, public exports, and local startup guidance."
     },
     "server/map-image.js": {
-      "baselineLines": 100,
-      "responsibility": "Validate supported map and handout image signatures, metadata, and size limits."
+      "baselineLines": 106,
+      "responsibility": "Validate supported map, handout, and Campaign Image signatures, metadata, and size limits."
     },
     "server/role-projection.js": {
       "baselineLines": 79,

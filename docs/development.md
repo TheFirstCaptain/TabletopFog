@@ -83,9 +83,10 @@ Use `TABLETOPFOG_DATA_DIR` to point development or smoke tests at a temporary da
 TABLETOPFOG_DATA_DIR=/private/tmp/tabletopfog-data npm run local
 ```
 
-Campaign folders contain `campaign.json`, a `maps/` folder with copied map
-assets, and a `handouts/` folder with copied campaign handout image assets.
-These files are intended to be inspectable outside the app.
+Campaign folders contain `campaign.json`, a `campaign-images/` folder with the
+optional copied Campaign Image, a `maps/` folder with copied map assets, and a
+`handouts/` folder with copied campaign handout image assets. These files are
+intended to be inspectable outside the app.
 
 Map upload supports PNG, JPEG, GIF, and WebP files up to 100 MB. The server
 checks image signatures, filename extensions, and content types before writing a
@@ -93,6 +94,10 @@ map file or changing campaign metadata.
 
 Handout upload uses the same supported image types, 100 MB limit, signature
 checks, extension checks, and content-type checks as map upload.
+
+Campaign Image upload uses the same supported image types, 100 MB limit,
+signature checks, extension checks, and content-type checks as map and handout
+upload.
 
 ### Campaign Storage Format
 
@@ -102,6 +107,8 @@ The current local storage format is intentionally simple and inspectable:
 <data-root>/
   <Campaign Folder>/
     campaign.json
+    campaign-images/
+      <copied Campaign Image asset>
     handouts/
       <copied handout image assets>
     maps/
@@ -109,9 +116,12 @@ The current local storage format is intentionally simple and inspectable:
 ```
 
 `campaign.json` currently uses `version: 1`, a display `name`, optional
-campaign card metadata such as `description` and `icon`, a canonical
-`shownTarget` field, a `maps` array, and a `handouts` array. `shownTarget` is
-either `null`, `{ "type": "encounter", "id": "<map-id>" }`, or
+campaign card metadata such as `description` and `icon`, an optional
+`campaignImage` record, a canonical `shownTarget` field, a `maps` array, and a
+`handouts` array. `campaignImage` is either `null` or one campaign-scope image
+record with display `name`, optional `originalFileName`, and relative `file`
+under `campaign-images/`. `shownTarget` is either `null`,
+`{ "type": "encounter", "id": "<map-id>" }`, or
 `{ "type": "handout", "id": "<handout-id>", "rotation": 0 }`. Shown handout
 rotation is normalized to `0`, `90`, `180`, or `270` and defaults to `0` when
 missing or invalid. Legacy campaign files with `activeMapId` are still read as
@@ -145,16 +155,17 @@ invalid, or when the saved `Shown to Players` handout asset is missing or
 invalid, the server restores a safe empty Player Display state and reports the
 problem to the GM.
 
-Missing handout assets are reported to the GM as recovery diagnostics and do
-not change the Player Display.
+Missing handout assets and missing Campaign Image assets are reported to the GM
+as recovery diagnostics and do not change the Player Display.
 
 Recovery reads do not rewrite `campaign.json`, delete assets, or strip unknown
 metadata. A later successful explicit GM mutation, such as rename, reorder,
-show, fog edit, clear, handout upload, handout rename, or unshown handout
-delete, writes the current supported storage shape back to disk and preserves
-unknown campaign, map, and handout metadata where the compatibility policy
-supports it. Treat broader field renames, storage migrations, or moving from
-JSON files to another datastore as reviewed future work, not automatic repair.
+show, fog edit, clear, Campaign Image upload or remove, handout upload, handout
+rename, or unshown handout delete, writes the current supported storage shape
+back to disk and preserves unknown campaign, Campaign Image, map, and handout
+metadata where the compatibility policy supports it. Treat broader field
+renames, storage migrations, or moving from JSON files to another datastore as
+reviewed future work, not automatic repair.
 
 ## Validation Commands
 

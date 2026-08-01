@@ -36,6 +36,11 @@ export function createGmApi(fetchRequest) {
         method: "PATCH"
       });
     },
+    deleteCampaignImage(campaignId) {
+      return request(`/api/campaigns/${encodeURIComponent(campaignId)}/campaign-image`, {
+        method: "DELETE"
+      });
+    },
     deleteMap(campaignId, mapId) {
       return request(`/api/campaigns/${encodeURIComponent(campaignId)}/maps/${encodeURIComponent(mapId)}`, {
         body: JSON.stringify({ selectedMapId: null }),
@@ -137,6 +142,16 @@ export function createGmApi(fetchRequest) {
           "x-file-name": file.name
         },
         method: "POST"
+      });
+    },
+    async uploadCampaignImage(campaignId, file) {
+      return request(`/api/campaigns/${encodeURIComponent(campaignId)}/campaign-image`, {
+        body: await file.arrayBuffer(),
+        headers: {
+          "content-type": file.type || "application/octet-stream",
+          "x-file-name": file.name
+        },
+        method: "PUT"
       });
     }
   };

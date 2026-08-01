@@ -306,6 +306,12 @@ test("player projection includes minimal campaign waiting context", () => {
       id: "The Long Walk",
       name: "The Long Walk",
       description: "GM-only description.",
+      campaignImage: {
+        assetUrl: "/api/campaigns/The%20Long%20Walk/campaign-image/asset",
+        file: "campaign-images/splash.png",
+        name: "Campaign Splash",
+        originalFileName: "splash.png"
+      },
       recoveryDiagnostics: [{ message: "GM-only diagnostic." }],
       shownTarget: null,
       handouts: [
@@ -363,7 +369,10 @@ test("player projection includes minimal campaign waiting context", () => {
   assert.equal(Object.hasOwn(waiting.campaign, "maps"), false);
   assert.equal(Object.hasOwn(waiting.campaign, "handouts"), false);
   assert.equal(Object.hasOwn(waiting.campaign, "description"), false);
+  assert.equal(Object.hasOwn(waiting.campaign, "campaignImage"), false);
   assert.equal(Object.hasOwn(waiting.campaign, "recoveryDiagnostics"), false);
+  assert.equal(JSON.stringify(waiting).includes("campaign-images/splash.png"), false);
+  assert.equal(JSON.stringify(waiting).includes("campaign-image/asset"), false);
   assert.equal(JSON.stringify(waiting).includes("maps/forest.png"), false);
   assert.equal(JSON.stringify(waiting).includes("handouts/portrait.png"), false);
 
@@ -558,6 +567,170 @@ test("deletes empty campaigns through GM API only", async (t) => {
     assert.equal(fs.existsSync(path.join(dataRoot, "Filled Campaign", "campaign.json")), true);
     assert.equal(stateStore.getState().campaign.id, "Filled Campaign");
   } finally {
+    await close(server, io);
+  }
+});
+
+test("manages Campaign Image through GM API only without exposing it to players", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const { server, io } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+  const campaignId = "The Long Walk";
+  const player = createClient(url, {
+    forceNew: true,
+    rejectUnauthorized: false,
+    reconnection: false,
+    transports: ["websocket"],
+    extraHeaders: {
+      referer: `${url}/player`
+    }
+  });
+
+  try {
+    await waitForPlayerState(
+      player,
+      (state) => Object.hasOwn(state, "campaign") && state.campaign === null,
+      "empty startup player projection"
+    );
+
+    const campaignWaiting = waitForPlayerState(
+      player,
+      (state) => state.campaign?.name === campaignId && state.shownTarget === null,
+      "campaign waiting before image"
+    );
+    await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: campaignId }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    await campaignWaiting;
+
+    const playerUpload = await requestHttps(`${url}/api/campaigns/${encodeURIComponent(campaignId)}/campaign-image`, {
+      body: PNG_BYTES,
+      headers: playerHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "splash.png"
+      }),
+      method: "PUT"
+    });
+    assert.equal(playerUpload.statusCode, 403);
+
+    const uploadedState = waitForPlayerState(
+      player,
+      (state) =>
+        state.campaign?.name === campaignId && state.shownTarget === null && !JSON.stringify(state).includes("splash"),
+      "player projection after Campaign Image upload"
+    );
+    const uploaded = await requestHttps(`${url}/api/campaigns/${encodeURIComponent(campaignId)}/campaign-image`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "splash.png"
+      }),
+      method: "PUT"
+    });
+    const playerStateAfterUpload = await uploadedState;
+
+    assert.equal(uploaded.statusCode, 200);
+    assert.deepEqual(uploaded.json.campaign.campaignImage, {
+      assetAvailable: true,
+      assetUrl: `/api/campaigns/${encodeURIComponent(campaignId)}/campaign-image/asset`,
+      file: "campaign-images/splash.png",
+      name: "splash",
+      originalFileName: "splash.png"
+    });
+    assert.equal(JSON.stringify(playerStateAfterUpload).includes("campaignImage"), false);
+    assert.equal(JSON.stringify(playerStateAfterUpload).includes("campaign-images"), false);
+
+    const asset = await getHttps(`${url}/api/campaigns/${encodeURIComponent(campaignId)}/campaign-image/asset`, {
+      headers: gmHeaders(port)
+    });
+    const playerAsset = await getHttps(`${url}/api/campaigns/${encodeURIComponent(campaignId)}/campaign-image/asset`, {
+      headers: playerHeaders(port)
+    });
+    assert.equal(asset.statusCode, 200);
+    assert.deepEqual(asset.rawBody, PNG_BYTES);
+    assert.equal(playerAsset.statusCode, 403);
+
+    const handout = await requestHttps(`${url}/api/campaigns/${encodeURIComponent(campaignId)}/handouts`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "portrait.png"
+      }),
+      method: "POST"
+    });
+    const shownHandout = waitForPlayerState(
+      player,
+      (state) => state.shownTarget?.type === "handout" && state.shownTarget.id === handout.json.handout.id,
+      "shown handout before Campaign Image replace"
+    );
+    await requestHttps(`${url}/api/campaigns/${encodeURIComponent(campaignId)}/shown-target`, {
+      body: JSON.stringify({ target: { id: handout.json.handout.id, type: "handout" } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+    const shownHandoutState = await shownHandout;
+    assert.deepEqual(shownHandoutState.shownTarget, {
+      assetUrl: "/api/player/shown-target/asset",
+      campaignId,
+      id: handout.json.handout.id,
+      name: "portrait",
+      rotation: 0,
+      type: "handout",
+      version: `${campaignId}/handout/${handout.json.handout.id}`
+    });
+
+    const handoutAfterReplace = waitForPlayerState(
+      player,
+      (state) => state.shownTarget?.type === "handout" && !JSON.stringify(state).includes("new-splash"),
+      "shown handout after Campaign Image replace"
+    );
+    const replaced = await requestHttps(`${url}/api/campaigns/${encodeURIComponent(campaignId)}/campaign-image`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "new-splash.png"
+      }),
+      method: "PUT"
+    });
+    const handoutStateAfterReplace = await handoutAfterReplace;
+    assert.equal(replaced.statusCode, 200);
+    assert.equal(replaced.json.campaign.campaignImage.file, "campaign-images/new-splash.png");
+    assert.deepEqual(handoutStateAfterReplace.shownTarget, shownHandoutState.shownTarget);
+    assert.equal(JSON.stringify(handoutStateAfterReplace).includes("campaignImage"), false);
+    assert.equal(fs.existsSync(path.join(dataRoot, campaignId, "campaign-images", "splash.png")), false);
+    assert.equal(fs.existsSync(path.join(dataRoot, campaignId, "campaign-images", "new-splash.png")), true);
+
+    const playerDelete = await requestHttps(`${url}/api/campaigns/${encodeURIComponent(campaignId)}/campaign-image`, {
+      headers: playerHeaders(port),
+      method: "DELETE"
+    });
+    const handoutAfterRemove = waitForPlayerState(
+      player,
+      (state) => state.shownTarget?.type === "handout" && !JSON.stringify(state).includes("campaignImage"),
+      "shown handout after Campaign Image remove"
+    );
+    const removed = await requestHttps(`${url}/api/campaigns/${encodeURIComponent(campaignId)}/campaign-image`, {
+      headers: gmHeaders(port),
+      method: "DELETE"
+    });
+    const handoutStateAfterRemove = await handoutAfterRemove;
+    assert.equal(playerDelete.statusCode, 403);
+    assert.equal(removed.statusCode, 200);
+    assert.equal(removed.json.campaign.campaignImage, null);
+    assert.deepEqual(handoutStateAfterRemove.shownTarget, shownHandoutState.shownTarget);
+    assert.equal(fs.existsSync(path.join(dataRoot, campaignId, "campaign-images", "new-splash.png")), false);
+  } finally {
+    player.close();
     await close(server, io);
   }
 });
