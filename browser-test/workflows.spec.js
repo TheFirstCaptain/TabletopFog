@@ -192,6 +192,26 @@ async function canvasViewport(page, selector) {
   }));
 }
 
+async function handoutPreviewViewport(card) {
+  return card.locator(".handout-thumbnail").evaluate((thumbnail) => {
+    const frame = thumbnail.closest(".handout-thumbnail-frame");
+    const imageBox = thumbnail.getBoundingClientRect();
+    const frameBox = frame.getBoundingClientRect();
+    return {
+      contained:
+        imageBox.left >= frameBox.left - 1 &&
+        imageBox.right <= frameBox.right + 1 &&
+        imageBox.top >= frameBox.top - 1 &&
+        imageBox.bottom <= frameBox.bottom + 1,
+      frameHeight: frameBox.height,
+      frameWidth: frameBox.width,
+      imageHeight: imageBox.height,
+      imageWidth: imageBox.width,
+      rotation: Number(thumbnail.dataset.rotation)
+    };
+  });
+}
+
 async function markEncounterGalleryNodes(page) {
   await page.evaluate(() => {
     window.__tabletopFogMarkedEncounterCards = Array.from(document.querySelectorAll(".encounter-card"));
@@ -307,6 +327,9 @@ test("GM adds campaign handouts without changing the Player Display", async ({ a
 
   await uploadHandoutFile(page, await sizedPngFile(page, "NPC Portrait.png", 80, 40), "NPC Portrait");
   await expect(page.locator(".handout-card").filter({ hasText: "NPC Portrait" }).getByRole("img")).toBeVisible();
+  await uploadHandoutFile(page, await sizedPngFile(page, "Unshown Clue.png", 80, 40), "Unshown Clue");
+  const unshownHandoutCard = page.locator(".handout-card").filter({ hasText: "Unshown Clue" });
+  await expect(unshownHandoutCard.locator(".handout-thumbnail")).toHaveAttribute("data-rotation", "0");
   await expect(page.locator("#handout-library").getByText(/^\d+ handouts?$/)).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Rotate|Delete handout/i })).toHaveCount(0);
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
@@ -319,7 +342,7 @@ test("GM adds campaign handouts without changing the Player Display", async ({ a
     .evaluate((button) => button.getBoundingClientRect().height);
   expect(unshownHandoutButtonHeight).toBeCloseTo(shownEncounterActionHeight, 1);
   await handoutCard.getByRole("button", { name: "Show NPC Portrait to players" }).click();
-  await expect(page.getByText("Shown to Players: Handout - NPC Portrait", { exact: true })).toBeVisible();
+  await expect(page.locator("#shown-target-status")).toHaveText("Shown to Players: Handout - NPC Portrait");
   await expect(player.getByRole("img", { name: "Handout: NPC Portrait" })).toBeVisible();
   const shownHandoutButton = handoutCard.getByRole("button", {
     name: "Shown to Players - clear NPC Portrait from Player Display"
@@ -376,46 +399,89 @@ test("GM adds campaign handouts without changing the Player Display", async ({ a
     sameLeftRow: true,
     sameRightRow: true
   });
+  const handoutActionSpacing = await page.evaluate(() => {
+    function titleToActionGap(card) {
+      const title = card.querySelector(".handout-name").getBoundingClientRect();
+      const running = card.querySelector(".encounter-running").getBoundingClientRect();
+      return running.top - title.bottom;
+    }
+
+    const shownCard = [...document.querySelectorAll(".handout-card")].find((card) =>
+      card.textContent.includes("NPC Portrait")
+    );
+    const unshownCard = [...document.querySelectorAll(".handout-card")].find((card) =>
+      card.textContent.includes("Unshown Clue")
+    );
+    return {
+      shownGap: titleToActionGap(shownCard),
+      unshownGap: titleToActionGap(unshownCard)
+    };
+  });
+  expect(handoutActionSpacing.shownGap).toBeCloseTo(handoutActionSpacing.unshownGap, 1);
   await expect(player.getByRole("button", { name: /Rotate/i })).toHaveCount(0);
 
   const unrotatedHandoutViewport = await canvasViewport(player, "#player-map");
+  const unrotatedHandoutPreview = await handoutPreviewViewport(handoutCard);
   expect(unrotatedHandoutViewport.rotation).toBe(0);
   expect(unrotatedHandoutViewport.drawWidth / unrotatedHandoutViewport.drawHeight).toBeCloseTo(2, 1);
+  expect(unrotatedHandoutPreview).toMatchObject({ contained: true, rotation: 0 });
   const playerAssetRequestsBeforeRotate = playerAssetRequests;
   await handoutCard.getByRole("button", { name: "Rotate NPC Portrait right on Player Display" }).click();
   await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("90");
+  await expect.poll(() => handoutCard.locator(".handout-thumbnail").getAttribute("data-rotation")).toBe("90");
+  await expect(unshownHandoutCard.locator(".handout-thumbnail")).toHaveAttribute("data-rotation", "0");
   const rotatedRightViewport = await canvasViewport(player, "#player-map");
+  const rotatedRightPreview = await handoutPreviewViewport(handoutCard);
   expect(rotatedRightViewport.drawWidth / rotatedRightViewport.drawHeight).toBeCloseTo(0.5, 1);
+  expect(rotatedRightPreview).toMatchObject({ contained: true, rotation: 90 });
+  expect(rotatedRightPreview.imageHeight).toBeLessThanOrEqual(rotatedRightPreview.frameHeight + 1);
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeRotate);
   await handoutCard.getByRole("button", { name: "Rotate NPC Portrait right on Player Display" }).click();
   await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("180");
+  await expect.poll(() => handoutCard.locator(".handout-thumbnail").getAttribute("data-rotation")).toBe("180");
+  expect(await handoutPreviewViewport(handoutCard)).toMatchObject({ contained: true, rotation: 180 });
   await handoutCard.getByRole("button", { name: "Rotate NPC Portrait right on Player Display" }).click();
   await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("270");
+  await expect.poll(() => handoutCard.locator(".handout-thumbnail").getAttribute("data-rotation")).toBe("270");
+  await expect(unshownHandoutCard.locator(".handout-thumbnail")).toHaveAttribute("data-rotation", "0");
+  expect(await handoutPreviewViewport(handoutCard)).toMatchObject({ contained: true, rotation: 270 });
   await handoutCard.getByRole("button", { name: "Rotate NPC Portrait right on Player Display" }).click();
   await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("0");
+  await expect.poll(() => handoutCard.locator(".handout-thumbnail").getAttribute("data-rotation")).toBe("0");
+  expect(await handoutPreviewViewport(handoutCard)).toMatchObject({ contained: true, rotation: 0 });
   await handoutCard.getByRole("button", { name: "Rotate NPC Portrait left on Player Display" }).click();
   await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("270");
+  await expect.poll(() => handoutCard.locator(".handout-thumbnail").getAttribute("data-rotation")).toBe("270");
+  expect(await handoutPreviewViewport(handoutCard)).toMatchObject({ contained: true, rotation: 270 });
 
   await page.getByRole("button", { name: "Encounters" }).click();
-  await expect(page.getByText("Shown to Players: Handout - NPC Portrait", { exact: true })).toBeVisible();
+  await expect(page.locator("#shown-target-status")).toHaveText("Shown to Players: Handout - NPC Portrait");
   await page.getByRole("button", { name: "Open forest for prep" }).click();
-  await expect(page.getByText("Shown to Players: Handout - NPC Portrait", { exact: true })).toBeVisible();
+  await expect(page.locator("#shown-target-status")).toHaveText("Shown to Players: Handout - NPC Portrait");
   await expect(player.getByRole("img", { name: "Handout: NPC Portrait" })).toBeVisible();
   await page.getByRole("button", { name: "Show to Players from workspace" }).click();
   await expect(page.getByText("Shown to Players: Encounter - forest", { exact: true })).toBeVisible();
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   await expect(player.locator("#player-map")).toHaveAttribute("data-rotation", "0");
+  await page.getByRole("button", { name: "Back to Campaign" }).click();
+  await page.getByRole("button", { name: "Handouts" }).click();
+  await expect(
+    page.locator(".handout-card").filter({ hasText: "NPC Portrait" }).locator(".handout-thumbnail")
+  ).toHaveAttribute("data-rotation", "0");
 
-  const handoutPresentation = await page.locator(".handout-card").evaluate((card) => {
-    const list = card.closest(".handout-list");
-    const library = card.closest(".handout-library");
-    const thumbnail = card.querySelector(".handout-thumbnail");
-    return {
-      display: getComputedStyle(list).display,
-      fit: getComputedStyle(thumbnail).objectFit,
-      hasTopBorder: getComputedStyle(library).borderTopStyle !== "none"
-    };
-  });
+  const handoutPresentation = await page
+    .locator(".handout-card")
+    .filter({ hasText: "NPC Portrait" })
+    .evaluate((card) => {
+      const list = card.closest(".handout-list");
+      const library = card.closest(".handout-library");
+      const thumbnail = card.querySelector(".handout-thumbnail");
+      return {
+        display: getComputedStyle(list).display,
+        fit: getComputedStyle(thumbnail).objectFit,
+        hasTopBorder: getComputedStyle(library).borderTopStyle !== "none"
+      };
+    });
   expect(handoutPresentation).toEqual({ display: "grid", fit: "contain", hasTopBorder: false });
 
   await page.reload();
@@ -430,7 +496,7 @@ test("GM adds campaign handouts without changing the Player Display", async ({ a
     .filter({ hasText: "NPC Portrait" })
     .getByRole("button", { name: "Show NPC Portrait to players" })
     .click();
-  await expect(page.getByText("Shown to Players: Handout - NPC Portrait", { exact: true })).toBeVisible();
+  await expect(page.locator("#shown-target-status")).toHaveText("Shown to Players: Handout - NPC Portrait");
   await expect(player.getByRole("img", { name: "Handout: NPC Portrait" })).toBeVisible();
   await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("0");
   await page
@@ -439,9 +505,26 @@ test("GM adds campaign handouts without changing the Player Display", async ({ a
     .getByRole("button", { name: "Rotate NPC Portrait right on Player Display" })
     .click();
   await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("90");
+  await expect
+    .poll(() =>
+      page
+        .locator(".handout-card")
+        .filter({ hasText: "NPC Portrait" })
+        .locator(".handout-thumbnail")
+        .getAttribute("data-rotation")
+    )
+    .toBe("90");
   await player.reload();
   await expect(player.getByRole("img", { name: "Handout: NPC Portrait" })).toBeVisible();
   await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("90");
+  await page.reload();
+  await expectGmHeader(page, "Campaign Library");
+  await page.getByRole("button", { name: "Open" }).click();
+  await page.getByRole("button", { name: "Handouts" }).click();
+  await expect(page.locator("#shown-target-status")).toHaveText("Shown to Players: Handout - NPC Portrait");
+  const restoredHandoutCard = page.locator(".handout-card").filter({ hasText: "NPC Portrait" });
+  await expect(restoredHandoutCard.locator(".handout-thumbnail")).toHaveAttribute("data-rotation", "90");
+  expect(await handoutPreviewViewport(restoredHandoutCard)).toMatchObject({ contained: true, rotation: 90 });
   await page
     .locator(".handout-card")
     .filter({ hasText: "NPC Portrait" })

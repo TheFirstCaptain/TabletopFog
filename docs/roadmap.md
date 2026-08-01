@@ -33,6 +33,7 @@ Tracked as [F-010](./features/F-010.md). Planned child features:
   validation.
 - Complete: [F-010E](./features/F-010E.md), handout rename and delete.
 - Complete: [F-010H](./features/F-010H.md), handout gallery card polish.
+- Complete: [F-010I](./features/F-010I.md), GM handout rotation preview.
 
 Initial acceptance direction:
 

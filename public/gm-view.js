@@ -47,6 +47,24 @@ function isShownTarget(campaign, type, id) {
   return campaign.shownTarget?.type === type && campaign.shownTarget.id === id;
 }
 
+function shownHandoutRotation(campaign, handoutId) {
+  if (!isShownTarget(campaign, "handout", handoutId)) return 0;
+  return [0, 90, 180, 270].includes(campaign.shownTarget.rotation) ? campaign.shownTarget.rotation : 0;
+}
+
+function setHandoutPreviewRotationScale(image) {
+  const rotation = Number(image.dataset.rotation || 0);
+  if (![90, 270].includes(rotation) || !image.naturalWidth || !image.naturalHeight) {
+    image.style.setProperty("--handout-preview-rotation-scale", "1");
+    return;
+  }
+
+  const frameAspectRatio = 16 / 10;
+  const imageAspectRatio = image.naturalWidth / image.naturalHeight;
+  const scale = imageAspectRatio <= 1 ? 1 : 1 / Math.min(imageAspectRatio, frameAspectRatio);
+  image.style.setProperty("--handout-preview-rotation-scale", String(scale));
+}
+
 function shownTargetLabel(campaign) {
   if (campaign.shownTarget?.type === "encounter") {
     const encounter = campaign.maps.find((map) => map.id === campaign.shownTarget.id);
@@ -473,11 +491,20 @@ export function createGmView(document) {
       item.dataset.handoutId = handout.id;
       if (isShownTarget(campaign, "handout", handout.id)) item.dataset.shown = "true";
       const shownToPlayers = isShownTarget(campaign, "handout", handout.id);
+      const rotation = shownHandoutRotation(campaign, handout.id);
 
       const thumbnail = document.createElement("img");
       thumbnail.className = "handout-thumbnail";
       thumbnail.src = handout.assetUrl;
       thumbnail.alt = `Handout thumbnail for ${handout.name}`;
+      thumbnail.dataset.rotation = String(rotation);
+      thumbnail.addEventListener("load", () => setHandoutPreviewRotationScale(thumbnail));
+      if (thumbnail.complete) setHandoutPreviewRotationScale(thumbnail);
+
+      const thumbnailFrame = document.createElement("div");
+      thumbnailFrame.className = "handout-thumbnail-frame";
+      thumbnailFrame.dataset.rotation = String(rotation);
+      thumbnailFrame.append(thumbnail);
 
       const title = document.createElement("h4");
       title.className = "handout-name";
@@ -570,7 +597,7 @@ export function createGmView(document) {
         admin.append(reason);
       }
 
-      item.append(thumbnail, title, running, admin);
+      item.append(thumbnailFrame, title, running, admin);
       elements.handoutList.append(item);
     });
   }

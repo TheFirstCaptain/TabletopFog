@@ -514,6 +514,10 @@ h4 {
   gap: 0.8rem;
 }
 
+.handout-card {
+  align-content: start;
+}
+
 .encounter-empty,
 .handout-empty {
   grid-column: 1 / -1;
@@ -560,18 +564,47 @@ h4 {
 }
 
 .encounter-thumbnail,
-.handout-thumbnail {
+.handout-thumbnail-frame {
   display: block;
   width: 100%;
   aspect-ratio: 16 / 10;
-  object-fit: cover;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--stage);
 }
 
+.encounter-thumbnail {
+  object-fit: cover;
+}
+
+.handout-thumbnail-frame {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
 .handout-thumbnail {
+  display: block;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
+  transform: rotate(calc(var(--handout-preview-rotation, 0) * 1deg)) scale(var(--handout-preview-rotation-scale, 1));
+}
+
+.handout-thumbnail[data-rotation="0"] {
+  --handout-preview-rotation: 0;
+}
+
+.handout-thumbnail[data-rotation="90"] {
+  --handout-preview-rotation: 90;
+}
+
+.handout-thumbnail[data-rotation="180"] {
+  --handout-preview-rotation: 180;
+}
+
+.handout-thumbnail[data-rotation="270"] {
+  --handout-preview-rotation: 270;
 }
 
 .encounter-summary {
