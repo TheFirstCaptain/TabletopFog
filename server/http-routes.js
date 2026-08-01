@@ -65,9 +65,7 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
         return;
       }
 
-      const campaign = campaignStorage.addAssetUrls(
-        campaignStorage.updateCampaignMetadata(request.params.campaignId, request.body)
-      );
+      const campaign = campaignSession.updateCampaignMetadata(request.params.campaignId, request.body);
       response.json({ campaign });
     } catch (error) {
       next(error);

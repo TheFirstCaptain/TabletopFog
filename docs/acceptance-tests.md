@@ -52,6 +52,52 @@ Expected result:
 
 ## Post-V1: Campaign Waiting Screen
 
+### Test: Campaign Waiting Screen Shows Campaign Name
+
+Prerequisites:
+
+- The local HTTPS server is running.
+- The GM View and Player Display are open.
+- A campaign exists with at least one encounter and at least one handout.
+
+Steps:
+
+1. Confirm the Player Display shows the plain `Waiting for GM.` state before a
+   campaign is open.
+2. Open the campaign in the GM View without showing an encounter or handout.
+3. Confirm the Player Display shows `Waiting for GM - <Campaign Name>`.
+4. Add, open, or select an encounter for prep without showing it to players.
+5. Confirm the Player Display still shows
+   `Waiting for GM - <Campaign Name>`.
+6. Browse campaign handouts without showing one to players.
+7. Confirm the Player Display still shows
+   `Waiting for GM - <Campaign Name>`.
+8. Show an encounter to players.
+9. Confirm the Player Display replaces the campaign waiting screen with the
+   encounter.
+10. Clear the shown encounter.
+11. Confirm the Player Display returns to
+    `Waiting for GM - <Campaign Name>`.
+12. Show a handout to players.
+13. Confirm the Player Display replaces the campaign waiting screen with the
+    handout.
+14. Clear the shown handout.
+15. Confirm the Player Display returns to
+    `Waiting for GM - <Campaign Name>`.
+
+Expected result:
+
+- The campaign waiting screen appears only while a campaign is open and no
+  encounter or handout is shown to players.
+- Opening, editing, selecting, or browsing prep content does not change what
+  players see.
+- The Player Display still changes only through explicit GM shown-target
+  actions or clear actions.
+- The Player Display remains read-only.
+- No Campaign Image upload, image background, slideshow mode, notes, tokens,
+  initiative, dice, dynamic lighting, cloud login, or other full-VTT controls
+  appear in this slice.
+
 ### Test: Campaign Waiting Screen Can Use A Campaign Image
 
 Prerequisites:

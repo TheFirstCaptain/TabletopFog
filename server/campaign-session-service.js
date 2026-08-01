@@ -105,6 +105,15 @@ function createCampaignSessionService({ campaignStorage, onStateChange, stateSto
       return setCampaign(campaignStorage.getCampaign(campaignId));
     },
     getCampaignLibrary,
+    updateCampaignMetadata(campaignId, metadata) {
+      const campaign = campaignStorage.updateCampaignMetadata(campaignId, metadata);
+
+      if (stateStore.getState().campaign?.id === campaignId) {
+        return preserveUndoCampaign(campaign);
+      }
+
+      return withAssetUrls(campaign);
+    },
     renameHandout(campaignId, handoutId, name) {
       const handout = campaignStorage.renameHandout(campaignId, handoutId, name);
       const campaign = preserveUndoCampaign(campaignStorage.getCampaign(campaignId));

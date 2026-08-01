@@ -300,6 +300,209 @@ test("creates campaigns through GM API and lists them", async (t) => {
   }
 });
 
+test("player projection includes minimal campaign waiting context", () => {
+  const state = {
+    campaign: {
+      id: "The Long Walk",
+      name: "The Long Walk",
+      description: "GM-only description.",
+      recoveryDiagnostics: [{ message: "GM-only diagnostic." }],
+      shownTarget: null,
+      handouts: [
+        {
+          id: "portrait",
+          name: "Portrait",
+          file: "handouts/portrait.png",
+          order: 1
+        }
+      ],
+      maps: [
+        {
+          id: "forest",
+          name: "Forest",
+          file: "maps/forest.png",
+          fogOperations: [{ type: "hide-rectangle", rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 } }],
+          order: 1
+        }
+      ]
+    },
+    updatedAt: "2026-08-01T00:00:00.000Z",
+    version: 7
+  };
+
+  const noCampaign = projectStateForRole({ ...state, campaign: null }, "player");
+  const waiting = projectStateForRole(state, "player");
+  const encounter = projectStateForRole(
+    {
+      ...state,
+      campaign: {
+        ...state.campaign,
+        shownTarget: { id: "forest", type: "encounter" }
+      }
+    },
+    "player"
+  );
+  const handout = projectStateForRole(
+    {
+      ...state,
+      campaign: {
+        ...state.campaign,
+        shownTarget: { id: "portrait", rotation: 0, type: "handout" }
+      }
+    },
+    "player"
+  );
+
+  assert.equal(noCampaign.campaign, null);
+  assert.equal(noCampaign.shownTarget, null);
+  assert.equal(noCampaign.activeMap, null);
+
+  assert.deepEqual(waiting.campaign, { id: "The Long Walk", name: "The Long Walk" });
+  assert.equal(waiting.shownTarget, null);
+  assert.equal(waiting.activeMap, null);
+  assert.equal(Object.hasOwn(waiting.campaign, "maps"), false);
+  assert.equal(Object.hasOwn(waiting.campaign, "handouts"), false);
+  assert.equal(Object.hasOwn(waiting.campaign, "description"), false);
+  assert.equal(Object.hasOwn(waiting.campaign, "recoveryDiagnostics"), false);
+  assert.equal(JSON.stringify(waiting).includes("maps/forest.png"), false);
+  assert.equal(JSON.stringify(waiting).includes("handouts/portrait.png"), false);
+
+  assert.deepEqual(encounter.campaign, { id: "The Long Walk", name: "The Long Walk" });
+  assert.equal(encounter.shownTarget.type, "encounter");
+  assert.equal(encounter.activeMap.id, "forest");
+  assert.deepEqual(handout.campaign, { id: "The Long Walk", name: "The Long Walk" });
+  assert.equal(handout.shownTarget.type, "handout");
+  assert.equal(handout.activeMap, null);
+});
+
+test("player sync receives campaign waiting context through shown target transitions", async (t) => {
+  const { server, io } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot: createTempRoot(t)
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+  const player = createClient(url, {
+    forceNew: true,
+    rejectUnauthorized: false,
+    reconnection: false,
+    transports: ["websocket"],
+    extraHeaders: {
+      referer: `${url}/player`
+    }
+  });
+
+  try {
+    const startupState = await waitForPlayerState(
+      player,
+      (state) => Object.hasOwn(state, "campaign") && state.campaign === null,
+      "empty startup player projection"
+    );
+
+    assert.equal(startupState.shownTarget, null);
+    assert.equal(startupState.activeMap, null);
+
+    const campaignWaiting = waitForPlayerState(
+      player,
+      (state) => state.campaign?.name === "The Long Walk" && state.shownTarget === null,
+      "campaign waiting projection"
+    );
+    await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: "The Long Walk" }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+    const waitingState = await campaignWaiting;
+
+    assert.deepEqual(waitingState.campaign, { id: "The Long Walk", name: "The Long Walk" });
+    assert.equal(JSON.stringify(waitingState).includes("maps"), false);
+    assert.equal(JSON.stringify(waitingState).includes("handouts"), false);
+
+    const map = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/maps`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "forest.png"
+      }),
+      method: "POST"
+    });
+    const handout = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/handouts`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "portrait.png"
+      }),
+      method: "POST"
+    });
+
+    const shownEncounter = waitForPlayerState(
+      player,
+      (state) => state.shownTarget?.type === "encounter" && state.shownTarget.id === map.json.map.id,
+      "shown encounter projection"
+    );
+    await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/shown-target`, {
+      body: JSON.stringify({ target: { id: map.json.map.id, type: "encounter" } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+    const shownEncounterState = await shownEncounter;
+
+    assert.deepEqual(shownEncounterState.campaign, { id: "The Long Walk", name: "The Long Walk" });
+    assert.equal(shownEncounterState.activeMap.id, map.json.map.id);
+
+    const clearedEncounter = waitForPlayerState(
+      player,
+      (state) => state.campaign?.name === "The Long Walk" && state.shownTarget === null,
+      "cleared encounter campaign waiting projection"
+    );
+    await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/shown-target`, {
+      body: JSON.stringify({ target: null }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+    const clearedEncounterState = await clearedEncounter;
+
+    assert.equal(clearedEncounterState.activeMap, null);
+    assert.deepEqual(clearedEncounterState.campaign, { id: "The Long Walk", name: "The Long Walk" });
+
+    const shownHandout = waitForPlayerState(
+      player,
+      (state) => state.shownTarget?.type === "handout" && state.shownTarget.id === handout.json.handout.id,
+      "shown handout projection"
+    );
+    await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/shown-target`, {
+      body: JSON.stringify({ target: { id: handout.json.handout.id, type: "handout" } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+    const shownHandoutState = await shownHandout;
+
+    assert.deepEqual(shownHandoutState.campaign, { id: "The Long Walk", name: "The Long Walk" });
+    assert.equal(shownHandoutState.activeMap, null);
+
+    const clearedHandout = waitForPlayerState(
+      player,
+      (state) => state.campaign?.name === "The Long Walk" && state.shownTarget === null,
+      "cleared handout campaign waiting projection"
+    );
+    await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/shown-target`, {
+      body: JSON.stringify({ target: null }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+    const clearedHandoutState = await clearedHandout;
+
+    assert.deepEqual(clearedHandoutState.campaign, { id: "The Long Walk", name: "The Long Walk" });
+    assert.equal(JSON.stringify(clearedHandoutState).includes("maps/forest.png"), false);
+    assert.equal(JSON.stringify(clearedHandoutState).includes("handouts/portrait.png"), false);
+  } finally {
+    player.close();
+    await close(server, io);
+  }
+});
+
 test("deletes empty campaigns through GM API only", async (t) => {
   const dataRoot = createTempRoot(t);
   const { server, io, stateStore } = createTabletopFogServer({
@@ -366,22 +569,51 @@ test("deleting the open empty campaign clears shared campaign state", async (t) 
   });
   const port = await listen(server);
   const url = `https://127.0.0.1:${port}`;
+  const player = createClient(url, {
+    forceNew: true,
+    rejectUnauthorized: false,
+    reconnection: false,
+    transports: ["websocket"],
+    extraHeaders: {
+      referer: `${url}/player`
+    }
+  });
 
   try {
+    await waitForPlayerState(
+      player,
+      (state) => Object.hasOwn(state, "campaign") && state.campaign === null,
+      "empty startup player projection"
+    );
+    const campaignWaiting = waitForPlayerState(
+      player,
+      (state) => state.campaign?.name === "Empty Campaign" && state.shownTarget === null,
+      "empty campaign waiting projection"
+    );
     await requestHttps(`${url}/api/campaigns`, {
       body: JSON.stringify({ name: "Empty Campaign" }),
       headers: gmHeaders(port, { "content-type": "application/json" }),
       method: "POST"
     });
+    await campaignWaiting;
+
+    const noCampaignWaiting = waitForPlayerState(
+      player,
+      (state) => Object.hasOwn(state, "campaign") && state.campaign === null && state.shownTarget === null,
+      "no-campaign waiting projection after delete"
+    );
     const deleted = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("Empty Campaign")}`, {
       headers: gmHeaders(port),
       method: "DELETE"
     });
+    const playerState = await noCampaignWaiting;
 
     assert.equal(deleted.statusCode, 200);
     assert.deepEqual(deleted.json.campaigns, []);
     assert.equal(stateStore.getState().campaign, null);
+    assert.equal(playerState.activeMap, null);
   } finally {
+    player.close();
     await close(server, io);
   }
 });
@@ -394,8 +626,22 @@ test("updates campaign card metadata through GM API only", async (t) => {
   });
   const port = await listen(server);
   const url = `https://127.0.0.1:${port}`;
+  const player = createClient(url, {
+    forceNew: true,
+    rejectUnauthorized: false,
+    reconnection: false,
+    transports: ["websocket"],
+    extraHeaders: {
+      referer: `${url}/player`
+    }
+  });
 
   try {
+    await waitForPlayerState(
+      player,
+      (state) => Object.hasOwn(state, "campaign") && state.campaign === null,
+      "empty startup player projection"
+    );
     await requestHttps(`${url}/api/campaigns`, {
       body: JSON.stringify({ name: "The Long Walk" }),
       headers: gmHeaders(port, { "content-type": "application/json" }),
@@ -434,11 +680,17 @@ test("updates campaign card metadata through GM API only", async (t) => {
       headers: gmHeaders(port, { "content-type": "application/json" }),
       method: "PATCH"
     });
+    const renamedWaiting = waitForPlayerState(
+      player,
+      (state) => state.campaign?.name === "The Longest Walk" && state.shownTarget === null,
+      "renamed campaign waiting projection"
+    );
     const partialName = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/metadata`, {
       body: JSON.stringify({ name: "The Longest Walk" }),
       headers: gmHeaders(port, { "content-type": "application/json" }),
       method: "PATCH"
     });
+    const renamedPlayerState = await renamedWaiting;
     const invalidType = await requestHttps(`${url}/api/campaigns/${encodeURIComponent("The Long Walk")}/metadata`, {
       body: JSON.stringify({ description: ["bad"] }),
       headers: gmHeaders(port, { "content-type": "application/json" }),
@@ -476,8 +728,12 @@ test("updates campaign card metadata through GM API only", async (t) => {
     assert.match(unknownField.json.error, /name, description, or icon/);
     assert.equal(JSON.parse(fs.readFileSync(campaignPath, "utf8")).name, "The Longest Walk");
     assert.equal(fs.existsSync(path.join(dataRoot, "The Longest Walk", "campaign.json")), false);
-    assert.equal(stateStore.getState().campaign.description, undefined);
+    assert.deepEqual(renamedPlayerState.campaign, { id: "The Long Walk", name: "The Longest Walk" });
+    assert.equal(stateStore.getState().campaign.name, "The Longest Walk");
+    assert.equal(stateStore.getState().campaign.description, "Roads through a haunted borderland.");
+    assert.equal(stateStore.getState().campaign.icon, "🔥");
   } finally {
+    player.close();
     await close(server, io);
   }
 });
@@ -712,7 +968,7 @@ test("manages maps and broadcasts active map state", async (t) => {
     assert.equal(playerState.shownTarget.id, first.json.map.id);
     assert.equal(playerState.shownTarget.campaignId, "The Long Walk");
     assert.equal(playerState.shownTarget.version, `The Long Walk/encounter/${first.json.map.id}`);
-    assert.equal(playerState.campaign, undefined);
+    assert.deepEqual(playerState.campaign, { id: "The Long Walk", name: "The Long Walk" });
     assert.equal(playerState.shownTarget.assetUrl, "/api/player/shown-target/asset");
     assert.equal(playerState.activeMap.id, first.json.map.id);
     assert.equal(playerDeleteState.shownTarget.id, first.json.map.id);
@@ -1253,7 +1509,7 @@ test("projects in-memory fog only to the appropriate role and shown encounter", 
         [cave.json.map.id, caveFog]
       ]
     );
-    assert.equal(playerState.campaign, undefined);
+    assert.deepEqual(playerState.campaign, { id: "The Long Walk", name: "The Long Walk" });
     assert.equal(playerState.activeMap.id, forest.json.map.id);
     assert.deepEqual(playerState.activeMap.fogOperations, forestFog);
     assert.notEqual(playerState.activeMap.fogOperations, forestFog);
@@ -2314,7 +2570,7 @@ test("restores shown encounter and fog to players only after GM opens the campai
     );
 
     assert.equal(secondServer.stateStore.getState().campaign, null);
-    assert.equal(startupState.campaign, undefined);
+    assert.equal(startupState.campaign, null);
 
     const library = await requestHttps(`${secondUrl}/api/campaigns`, {
       headers: gmHeaders(secondPort)
@@ -2339,7 +2595,7 @@ test("restores shown encounter and fog to players only after GM opens the campai
     assert.equal(opened.json.campaign.activeMapId, forestMapId);
     assert.deepEqual(opened.json.campaign.maps.find((map) => map.id === forestMapId).fogOperations, forestFog);
     assert.deepEqual(opened.json.campaign.maps.find((map) => map.id === caveMapId).fogOperations, caveFog);
-    assert.equal(restoredPlayerState.campaign, undefined);
+    assert.deepEqual(restoredPlayerState.campaign, { id: "The Long Walk", name: "The Long Walk" });
     assert.equal(restoredPlayerState.activeMap.id, forestMapId);
     assert.equal(restoredPlayerState.activeMap.name, "forest");
     assert.equal(restoredPlayerState.shownTarget.assetUrl, "/api/player/shown-target/asset");
@@ -2424,7 +2680,7 @@ test("restores shown encounter with malformed fog as a GM-diagnosed empty fog st
         severity: "warning"
       }
     ]);
-    assert.equal(playerState.campaign, undefined);
+    assert.deepEqual(playerState.campaign, { id: "The Long Walk", name: "The Long Walk" });
     assert.equal(playerState.activeMap.id, "forest");
     assert.deepEqual(playerState.activeMap.fogOperations, []);
     assert.equal(stateStore.getState().campaign.activeMapId, "forest");
@@ -2499,7 +2755,7 @@ test("restores missing shown map asset as empty Player Display without path leak
         severity: "warning"
       }
     ]);
-    assert.equal(playerState.campaign, undefined);
+    assert.deepEqual(playerState.campaign, { id: "The Long Walk", name: "The Long Walk" });
     assert.equal(playerState.activeMap, null);
     assert.equal(JSON.stringify(playerState).includes(dataRoot), false);
     assert.equal(stateStore.getState().campaign.activeMapId, null);
@@ -2575,7 +2831,7 @@ test("restores missing shown handout asset as empty Player Display without path 
         severity: "warning"
       }
     ]);
-    assert.equal(playerState.campaign, undefined);
+    assert.deepEqual(playerState.campaign, { id: "The Long Walk", name: "The Long Walk" });
     assert.equal(playerState.shownTarget, null);
     assert.equal(JSON.stringify(playerState).includes(dataRoot), false);
     assert.equal(stateStore.getState().campaign.shownTarget, null);

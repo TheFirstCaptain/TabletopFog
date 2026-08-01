@@ -39,8 +39,8 @@
       "responsibility": "Maintain Player Display-local handout rotation state, reset it on shown-target identity changes, compose it with shared shown-handout rotation, and render the resulting read-only target without server, storage, or Socket.IO mutations."
     },
     "public/player.js": {
-      "baselineLines": 134,
-      "responsibility": "Coordinate read-only player shown-target image and opaque encounter-fog rendering, connection state, local viewport controls, target-neutral status copy, player-local handout rotation controls, and player-local fullscreen behavior."
+      "baselineLines": 140,
+      "responsibility": "Coordinate read-only player shown-target image and opaque encounter-fog rendering, campaign-specific waiting text, connection state, local viewport controls, target-neutral status copy, player-local handout rotation controls, and player-local fullscreen behavior."
     },
     "scripts/check-harness-compliance.js": {
       "baselineLines": 45,
@@ -83,8 +83,8 @@
       "responsibility": "Normalize and recovery-normalize campaign metadata, shown targets including shown-handout rotation, legacy active-map ids, maps, handouts, and persisted rectangle and circle fog operations, serialize supported storage shape, preserve forward-compatible unknown fields, validate campaign metadata patches, and normalize safe campaign, map, and handout names."
     },
     "server/campaign-session-service.js": {
-      "baselineLines": 151,
-      "responsibility": "Coordinate campaign/session mutation workflows between campaign storage, runtime state, and Socket.IO broadcasts for campaign open/create/delete, map and handout mutations, shown-target changes, shown-handout rotation, compatibility active-map changes, and persisted fog append, clear, and undo operations."
+      "baselineLines": 160,
+      "responsibility": "Coordinate campaign/session mutation workflows between campaign storage, runtime state, and Socket.IO broadcasts for campaign open/create/delete, campaign metadata updates, map and handout mutations, shown-target changes, shown-handout rotation, compatibility active-map changes, and persisted fog append, clear, and undo operations."
     },
     "server/campaign-storage.js": {
       "baselineLines": 593,
@@ -95,7 +95,7 @@
       "responsibility": "Resolve and load HTTPS certificate credentials."
     },
     "server/http-routes.js": {
-      "baselineLines": 381,
+      "baselineLines": 379,
       "responsibility": "Register Express middleware, GM and Player Display pages, campaign, map, handout upload, rename, delete, shown-target, shown-handout rotation, compatibility active-map, persisted single and batched fog operation append, clear, undo, current-target player asset, static-file, and error routes while preserving GM-only mutation guards and delegating mutation orchestration to the campaign session service."
     },
     "server/index.js": {
@@ -107,8 +107,8 @@
       "responsibility": "Validate supported map and handout image signatures, metadata, and size limits."
     },
     "server/role-projection.js": {
-      "baselineLines": 78,
-      "responsibility": "Classify GM versus player requests from route referers, enforce GM-only HTTP mutations, and project full GM state or read-only shown-target encounter, handout rotation, and fog state."
+      "baselineLines": 79,
+      "responsibility": "Classify GM versus player requests from route referers, enforce GM-only HTTP mutations, and project full GM state or read-only minimal campaign waiting context, shown-target encounter, handout rotation, and fog state."
     },
     "server/socket-sync.js": {
       "baselineLines": 29,

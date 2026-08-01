@@ -67,7 +67,7 @@ encounters or handouts, with an optional GM-managed Campaign Image.
 
 Tracked as [F-011](./features/F-011.md). Planned child features:
 
-- Proposed: [F-011A](./features/F-011A.md), campaign-specific waiting state.
+- Complete: [F-011A](./features/F-011A.md), campaign-specific waiting state.
 - Proposed: [F-011B](./features/F-011B.md), Campaign Image management.
 - Proposed: [F-011C](./features/F-011C.md), Campaign waiting image display.
 

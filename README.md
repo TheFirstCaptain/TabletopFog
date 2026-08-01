@@ -16,8 +16,11 @@ workflows.
 
 The HTTPS app serves separate GM View and Player Display pages, stores local
 campaign folders, lets the GM manage map-backed encounter cards and campaign
-handouts, and syncs only the current shown target to the read-only Player
-Display over Socket.IO.
+handouts, and syncs the current shown target plus minimal campaign waiting
+context to the read-only Player Display over Socket.IO. When a campaign is open
+and no encounter or handout is shown, the Player Display shows
+`Waiting for GM - <Campaign Name>`; before a campaign is open, it keeps the
+plain `Waiting for GM.` state.
 
 Post-V1 campaign image handouts are complete. The GM can add and browse image
 handouts stored in the campaign's local `handouts/` folder, show one handout to

@@ -23,6 +23,7 @@ function projectStateForRole(state, role) {
 
   return {
     activeMap: shownTarget?.type === "encounter" ? shownTarget : null,
+    campaign: campaign ? { id: campaign.id, name: campaign.name } : null,
     shownTarget,
     updatedAt: state.updatedAt,
     version: state.version

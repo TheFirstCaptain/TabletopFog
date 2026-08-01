@@ -16,6 +16,7 @@ const display = document.querySelector(".player-display");
 const fullscreenToggle = document.querySelector("#fullscreen-toggle");
 const fullscreenMessage = document.querySelector("#fullscreen-message");
 let rendererReady = false;
+let currentCampaignName = "";
 
 function setConnectionStatus(text, state) {
   status.textContent = text;
@@ -49,6 +50,10 @@ function updateFullscreenControl() {
   const fullscreen = isDisplayFullscreen();
   fullscreenToggle.textContent = fullscreen ? "Exit fullscreen" : "Enter fullscreen";
   fullscreenToggle.setAttribute("aria-pressed", fullscreen ? "true" : "false");
+}
+
+function getWaitingMessage() {
+  return currentCampaignName ? `Waiting for GM - ${currentCampaignName}` : "Waiting for GM.";
 }
 
 async function toggleFullscreen() {
@@ -85,7 +90,7 @@ renderer = createMapCanvasRenderer({
     message.dataset.state = state;
     message.setAttribute("role", state === "error" ? "alert" : "status");
 
-    if (state === "empty") message.textContent = "Waiting for GM.";
+    if (state === "empty") message.textContent = getWaitingMessage();
     if (state === "loading") message.textContent = "Loading image...";
     if (state === "ready") message.textContent = map.name;
     if (state === "error") message.textContent = "Image could not be loaded.";
@@ -126,6 +131,7 @@ socket.on("disconnect", () => {
 });
 
 socket.on("state:sync", (state) => {
+  currentCampaignName = typeof state.campaign?.name === "string" ? state.campaign.name : "";
   handoutRotation.setTarget(state.shownTarget);
 });
 

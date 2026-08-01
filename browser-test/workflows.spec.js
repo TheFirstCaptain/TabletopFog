@@ -582,7 +582,7 @@ test("GM adds campaign handouts without changing the Player Display", async ({ a
     .getByRole("button", { name: "Shown to Players - clear NPC Portrait from Player Display" })
     .click();
   await expect(page.getByText("Shown to Players: None", { exact: true })).toBeVisible();
-  await expect(player.getByText("Waiting for GM.", { exact: true })).toBeVisible();
+  await expect(player.getByText("Waiting for GM - The Long Walk", { exact: true })).toBeVisible();
   await expect(player.getByRole("button", { name: /Rotate left|Rotate right/ })).toHaveCount(0);
 
   await page.setViewportSize({ height: 844, width: 390 });
@@ -869,6 +869,90 @@ test("GM deletes only empty campaigns after confirmation", async ({ app, page, c
   await expect(page.locator(".campaign-card").filter({ hasText: "Campaign With Maps" })).toBeVisible();
 });
 
+test("Player Display uses campaign waiting text between shown targets", async ({ app, page, context }) => {
+  const player = await context.newPage();
+
+  await openGm(page, app.baseURL);
+  await player.goto(`${app.baseURL}/player`);
+  await expect(player.getByText("Waiting for GM.", { exact: true })).toBeVisible();
+
+  await createCampaign(page, "The Long Walk");
+  await expect(player.getByText("Waiting for GM - The Long Walk", { exact: true })).toBeVisible();
+  await expect(player.getByRole("button", { name: /Show|Shown|Delete|Rename/i })).toHaveCount(0);
+
+  await addMap(page, "forest.png");
+  await expect(player.getByText("Waiting for GM - The Long Walk", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Open forest for prep" }).click();
+  await expect(page.getByLabel("Breadcrumb")).toHaveText("Campaign Library / The Long Walk / forest");
+  await expect(player.getByText("Waiting for GM - The Long Walk", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Back to Campaign" }).click();
+
+  await page.getByRole("button", { name: "Handouts" }).click();
+  await expect(player.getByText("Waiting for GM - The Long Walk", { exact: true })).toBeVisible();
+  await uploadHandoutFile(page, await sizedPngFile(page, "NPC Portrait.png", 80, 40), "NPC Portrait");
+  await expect(player.getByText("Waiting for GM - The Long Walk", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Encounters" }).click();
+  await page.getByRole("button", { name: "Show to Players", exact: true }).click();
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  await expect(player.getByText("Waiting for GM - The Long Walk", { exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Shown to Players - clear forest from Player Display" }).click();
+  await expect(player.getByText("Waiting for GM - The Long Walk", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Handouts" }).click();
+  await page
+    .locator(".handout-card")
+    .filter({ hasText: "NPC Portrait" })
+    .getByRole("button", { name: "Show NPC Portrait to players" })
+    .click();
+  await expect(player.getByRole("img", { name: "Handout: NPC Portrait" })).toBeVisible();
+  await expect(player.getByText("Waiting for GM - The Long Walk", { exact: true })).toHaveCount(0);
+  await page
+    .locator(".handout-card")
+    .filter({ hasText: "NPC Portrait" })
+    .getByRole("button", { name: "Shown to Players - clear NPC Portrait from Player Display" })
+    .click();
+  await expect(player.getByText("Waiting for GM - The Long Walk", { exact: true })).toBeVisible();
+
+  await page.evaluate(async () => {
+    const response = await fetch(`/api/campaigns/${encodeURIComponent("The Long Walk")}/metadata`, {
+      body: JSON.stringify({ name: "The Longer Walk" }),
+      headers: { "content-type": "application/json" },
+      method: "PATCH"
+    });
+
+    if (!response.ok) throw new Error("Metadata update failed.");
+  });
+  await expect(player.getByText("Waiting for GM - The Longer Walk", { exact: true })).toBeVisible();
+  await expect(player.getByRole("button", { name: /Show|Shown|Delete|Rename/i })).toHaveCount(0);
+});
+
+test("Player Display returns to plain waiting when the open empty campaign is deleted", async ({
+  app,
+  page,
+  context
+}) => {
+  const player = await context.newPage();
+
+  await openGm(page, app.baseURL);
+  await player.goto(`${app.baseURL}/player`);
+  await createCampaign(page, "Empty Campaign");
+  await expect(player.getByText("Waiting for GM - Empty Campaign", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Back to Campaign Library" }).click();
+
+  page.once("dialog", async (dialog) => {
+    await dialog.accept();
+  });
+  await page
+    .locator(".campaign-card")
+    .filter({ hasText: "Empty Campaign" })
+    .getByRole("button", { name: "Delete Empty Campaign" })
+    .click();
+
+  await expect(player.getByText("Waiting for GM.", { exact: true })).toBeVisible();
+  await expect(player.getByText("Waiting for GM - Empty Campaign", { exact: true })).toHaveCount(0);
+});
+
 test("campaign landing cards keep diagnostics and deferred controls out of scope", async ({ app, page }) => {
   await page.setViewportSize({ height: 768, width: 1366 });
   await openGm(page, app.baseURL);
@@ -952,7 +1036,7 @@ test("GM sees recovery diagnostics while Player Display receives safe restored s
     .getByRole("button", { name: "Open" })
     .click();
   await expect(page.getByText("Recovered 2 campaign issues. Original campaign files were not changed.")).toBeVisible();
-  await expect(player.getByText("Waiting for GM.")).toBeVisible();
+  await expect(player.getByText("Waiting for GM - Missing Asset Campaign")).toBeVisible();
   await expect(player.getByText(app.dataRoot)).toHaveCount(0);
 });
 
@@ -1345,7 +1429,7 @@ test("encounter gallery presentation remains browsable and responsive", async ({
   await expect(longCard.locator(".status-pill").filter({ hasText: "Shown to Players" })).toHaveCount(0);
   await expect(longShownButton).toBeEnabled();
   await longShownButton.click();
-  await expect(player.getByText("Waiting for GM.", { exact: true })).toBeVisible();
+  await expect(player.getByText("Waiting for GM - Gallery Campaign", { exact: true })).toBeVisible();
   await expect(player.getByRole("img", { name: `Map: ${longEncounterName}` })).toBeHidden();
   await expect(page.locator(".status-pill").filter({ hasText: "Shown to Players" })).toHaveCount(0);
   await expect(longCard.getByRole("button", { name: "Show to Players", exact: true })).toBeVisible();
@@ -1709,7 +1793,7 @@ test("GM workspace shell previews selected encounter without changing the player
   );
   await expect(page.locator("#selected-encounter-status")).toContainText("Shown to Players");
   await page.getByRole("button", { name: "Shown to Players - clear from Player Display" }).click();
-  await expect(player.getByText("Waiting for GM.", { exact: true })).toBeVisible();
+  await expect(player.getByText("Waiting for GM - The Long Walk", { exact: true })).toBeVisible();
   await expect(player.getByRole("img", { name: `Map: ${longWorkspaceEncounterName}` })).toBeHidden();
   await expect(page.locator("#selected-encounter-status")).toContainText("Shown to Players: None");
   await expect(page.getByRole("button", { name: "Show to Players from workspace" })).toBeVisible();
