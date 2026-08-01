@@ -34,9 +34,13 @@
       "baselineLines": 640,
       "responsibility": "Render shown map or handout images, shown-handout quarter-turn rotation, and ordered rectangle and circle fog operations on a DPR-aware canvas with contain geometry, reusable map-relative fog mask composition, normalized map-rectangle, fixed-size map-circle, and drag-sized map-circle conversion, local zoom and pan, target-aware accessible labels, guarded image loading, pointer input, diagnostics, and deterministic cleanup."
     },
+    "public/player-handout-rotation.js": {
+      "baselineLines": 50,
+      "responsibility": "Maintain Player Display-local handout rotation state, reset it on shown-target identity changes, compose it with shared shown-handout rotation, and render the resulting read-only target without server, storage, or Socket.IO mutations."
+    },
     "public/player.js": {
-      "baselineLines": 122,
-      "responsibility": "Coordinate read-only player shown-target image and opaque encounter-fog rendering, connection state, local viewport controls, target-neutral status copy, and player-local fullscreen behavior."
+      "baselineLines": 134,
+      "responsibility": "Coordinate read-only player shown-target image and opaque encounter-fog rendering, connection state, local viewport controls, target-neutral status copy, player-local handout rotation controls, and player-local fullscreen behavior."
     },
     "scripts/check-harness-compliance.js": {
       "baselineLines": 45,

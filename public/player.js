@@ -1,4 +1,5 @@
 import { createMapCanvasRenderer } from "./map-canvas.js";
+import { createPlayerHandoutRotation } from "./player-handout-rotation.js";
 
 const socket = io();
 const status = document.querySelector("#connection-status");
@@ -8,6 +9,9 @@ const zoomOut = document.querySelector("#zoom-out");
 const fitMap = document.querySelector("#fit-map");
 const zoomLevel = document.querySelector("#zoom-level");
 const zoomIn = document.querySelector("#zoom-in");
+const viewportControls = document.querySelector("#viewport-controls");
+const rotateHandoutLeft = document.querySelector("#rotate-handout-left");
+const rotateHandoutRight = document.querySelector("#rotate-handout-right");
 const display = document.querySelector(".player-display");
 const fullscreenToggle = document.querySelector("#fullscreen-toggle");
 const fullscreenMessage = document.querySelector("#fullscreen-message");
@@ -24,6 +28,13 @@ function setControls(viewport = { panX: 0, panY: 0, zoom: 1 }) {
   zoomOut.disabled = !rendererReady || viewport.zoom <= 0.5;
   zoomIn.disabled = !rendererReady || viewport.zoom >= 3;
   fitMap.disabled = !rendererReady || (viewport.zoom === 1 && viewport.panX === 0 && viewport.panY === 0);
+
+  const localRotationAvailable = rendererReady && handoutRotation.isHandoutShown();
+  viewportControls.dataset.handoutControls = String(localRotationAvailable);
+  rotateHandoutLeft.hidden = !localRotationAvailable;
+  rotateHandoutRight.hidden = !localRotationAvailable;
+  rotateHandoutLeft.disabled = !localRotationAvailable;
+  rotateHandoutRight.disabled = !localRotationAvailable;
 }
 
 function isDisplayFullscreen() {
@@ -59,6 +70,12 @@ async function toggleFullscreen() {
 }
 
 let renderer;
+const handoutRotation = createPlayerHandoutRotation({
+  render(target) {
+    renderer.setMap(target);
+  }
+});
+
 renderer = createMapCanvasRenderer({
   canvas,
   fogOpacity: 0.92,
@@ -83,6 +100,8 @@ renderer = createMapCanvasRenderer({
 zoomOut.addEventListener("click", () => renderer.zoomOut());
 fitMap.addEventListener("click", () => renderer.resetViewport());
 zoomIn.addEventListener("click", () => renderer.zoomIn());
+rotateHandoutLeft.addEventListener("click", () => handoutRotation.rotate("left"));
+rotateHandoutRight.addEventListener("click", () => handoutRotation.rotate("right"));
 fullscreenToggle.addEventListener("click", toggleFullscreen);
 document.addEventListener("fullscreenchange", updateFullscreenControl);
 document.addEventListener("fullscreenerror", () => setFullscreenMessage("Fullscreen is unavailable in this browser."));
@@ -107,14 +126,7 @@ socket.on("disconnect", () => {
 });
 
 socket.on("state:sync", (state) => {
-  renderer.setMap(
-    state.shownTarget
-      ? {
-          ...state.shownTarget,
-          fogOperations: state.shownTarget.fogOperations || []
-        }
-      : null
-  );
+  handoutRotation.setTarget(state.shownTarget);
 });
 
 window.addEventListener("pagehide", (event) => {

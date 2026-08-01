@@ -418,16 +418,47 @@ test("GM adds campaign handouts without changing the Player Display", async ({ a
     };
   });
   expect(handoutActionSpacing.shownGap).toBeCloseTo(handoutActionSpacing.unshownGap, 1);
-  await expect(player.getByRole("button", { name: /Rotate/i })).toHaveCount(0);
+  const secondPlayer = await context.newPage();
+  await secondPlayer.goto(`${app.baseURL}/player`);
+  await expect(secondPlayer.getByRole("img", { name: "Handout: NPC Portrait" })).toBeVisible();
+  await expect(player.getByRole("button", { name: "Rotate left" })).toBeVisible();
+  await expect(player.getByRole("button", { name: "Rotate right" })).toBeVisible();
+  await expect(secondPlayer.getByRole("button", { name: "Rotate left" })).toBeVisible();
+  await expect(player.getByRole("button", { name: /Show|Shown|Delete|Rename/i })).toHaveCount(0);
 
   const unrotatedHandoutViewport = await canvasViewport(player, "#player-map");
   const unrotatedHandoutPreview = await handoutPreviewViewport(handoutCard);
   expect(unrotatedHandoutViewport.rotation).toBe(0);
   expect(unrotatedHandoutViewport.drawWidth / unrotatedHandoutViewport.drawHeight).toBeCloseTo(2, 1);
   expect(unrotatedHandoutPreview).toMatchObject({ contained: true, rotation: 0 });
+  await player.getByRole("button", { name: "Rotate right" }).click();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("90");
+  await expect.poll(() => secondPlayer.locator("#player-map").getAttribute("data-rotation")).toBe("0");
+  await expect(handoutCard.locator(".handout-thumbnail")).toHaveAttribute("data-rotation", "0");
+  await player.getByRole("button", { name: "Zoom in" }).click();
+  await expect(player.locator("#zoom-level")).toHaveText("125%");
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("90");
+  await player.getByRole("button", { name: "Fit map" }).click();
+  await expect(player.locator("#zoom-level")).toHaveText("100%");
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("90");
+  await player.getByRole("button", { name: "Rotate right" }).click();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("180");
+  await player.getByRole("button", { name: "Rotate right" }).click();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("270");
+  await player.getByRole("button", { name: "Rotate right" }).click();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("0");
+  await player.getByRole("button", { name: "Rotate left" }).click();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("270");
+  await player.getByRole("button", { name: "Rotate right" }).click();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("0");
+  await expect.poll(() => secondPlayer.locator("#player-map").getAttribute("data-rotation")).toBe("0");
+  expect(
+    JSON.parse(fs.readFileSync(path.join(app.dataRoot, "The Long Walk", "campaign.json"), "utf8")).shownTarget.rotation
+  ).toBe(0);
   const playerAssetRequestsBeforeRotate = playerAssetRequests;
   await handoutCard.getByRole("button", { name: "Rotate NPC Portrait right on Player Display" }).click();
   await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("90");
+  await expect.poll(() => secondPlayer.locator("#player-map").getAttribute("data-rotation")).toBe("90");
   await expect.poll(() => handoutCard.locator(".handout-thumbnail").getAttribute("data-rotation")).toBe("90");
   await expect(unshownHandoutCard.locator(".handout-thumbnail")).toHaveAttribute("data-rotation", "0");
   const rotatedRightViewport = await canvasViewport(player, "#player-map");
@@ -463,6 +494,7 @@ test("GM adds campaign handouts without changing the Player Display", async ({ a
   await expect(page.getByText("Shown to Players: Encounter - forest", { exact: true })).toBeVisible();
   await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
   await expect(player.locator("#player-map")).toHaveAttribute("data-rotation", "0");
+  await expect(player.getByRole("button", { name: /Rotate left|Rotate right/ })).toHaveCount(0);
   await page.getByRole("button", { name: "Back to Campaign" }).click();
   await page.getByRole("button", { name: "Handouts" }).click();
   await expect(
@@ -499,6 +531,8 @@ test("GM adds campaign handouts without changing the Player Display", async ({ a
   await expect(page.locator("#shown-target-status")).toHaveText("Shown to Players: Handout - NPC Portrait");
   await expect(player.getByRole("img", { name: "Handout: NPC Portrait" })).toBeVisible();
   await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("0");
+  await expect(player.getByRole("button", { name: "Rotate left" })).toBeVisible();
+  await expect(player.getByRole("button", { name: "Rotate right" })).toBeVisible();
   await page
     .locator(".handout-card")
     .filter({ hasText: "NPC Portrait" })
@@ -517,14 +551,31 @@ test("GM adds campaign handouts without changing the Player Display", async ({ a
   await player.reload();
   await expect(player.getByRole("img", { name: "Handout: NPC Portrait" })).toBeVisible();
   await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("90");
+  await player.getByRole("button", { name: "Rotate right" }).click();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("180");
+  await page
+    .locator(".handout-card")
+    .filter({ hasText: "NPC Portrait" })
+    .getByRole("button", { name: "Rotate NPC Portrait right on Player Display" })
+    .click();
+  await expect.poll(() => player.locator("#player-map").getAttribute("data-rotation")).toBe("270");
+  await expect
+    .poll(() =>
+      page
+        .locator(".handout-card")
+        .filter({ hasText: "NPC Portrait" })
+        .locator(".handout-thumbnail")
+        .getAttribute("data-rotation")
+    )
+    .toBe("180");
   await page.reload();
   await expectGmHeader(page, "Campaign Library");
   await page.getByRole("button", { name: "Open" }).click();
   await page.getByRole("button", { name: "Handouts" }).click();
   await expect(page.locator("#shown-target-status")).toHaveText("Shown to Players: Handout - NPC Portrait");
   const restoredHandoutCard = page.locator(".handout-card").filter({ hasText: "NPC Portrait" });
-  await expect(restoredHandoutCard.locator(".handout-thumbnail")).toHaveAttribute("data-rotation", "90");
-  expect(await handoutPreviewViewport(restoredHandoutCard)).toMatchObject({ contained: true, rotation: 90 });
+  await expect(restoredHandoutCard.locator(".handout-thumbnail")).toHaveAttribute("data-rotation", "180");
+  expect(await handoutPreviewViewport(restoredHandoutCard)).toMatchObject({ contained: true, rotation: 180 });
   await page
     .locator(".handout-card")
     .filter({ hasText: "NPC Portrait" })
@@ -532,6 +583,7 @@ test("GM adds campaign handouts without changing the Player Display", async ({ a
     .click();
   await expect(page.getByText("Shown to Players: None", { exact: true })).toBeVisible();
   await expect(player.getByText("Waiting for GM.", { exact: true })).toBeVisible();
+  await expect(player.getByRole("button", { name: /Rotate left|Rotate right/ })).toHaveCount(0);
 
   await page.setViewportSize({ height: 844, width: 390 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -584,7 +636,9 @@ test("handout display polish preserves status, reconnect, viewports, and encount
   await expect(player.locator("#viewport-controls")).toHaveAttribute("aria-label", "Image view controls");
   await expect(player.getByText("Use arrow keys to pan a zoomed image.")).toHaveClass(/visually-hidden/);
   await expect(player.locator("input, select, textarea, [contenteditable=true], [data-action]")).toHaveCount(0);
-  await expect(player.getByRole("button", { name: /Show|Shown|Rotate|Delete|Rename/i })).toHaveCount(0);
+  await expect(player.getByRole("button", { name: "Rotate left" })).toBeVisible();
+  await expect(player.getByRole("button", { name: "Rotate right" })).toBeVisible();
+  await expect(player.getByRole("button", { name: /Show|Shown|Delete|Rename/i })).toHaveCount(0);
 
   for (const viewport of [
     { height: 768, width: 1024 },
@@ -595,6 +649,18 @@ test("handout display polish preserves status, reconnect, viewports, and encount
     await expect(player.getByRole("img", { name: "Handout: Clue Handout" })).toBeVisible();
     await waitForCanvasFrame(player, "#player-map");
     expect(await player.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    expect(
+      await player.locator("#viewport-controls").evaluate((controls) => {
+        const controlsBox = controls.getBoundingClientRect();
+        const buttons = [...controls.querySelectorAll("button:not([hidden])")].map((button) =>
+          button.getBoundingClientRect()
+        );
+        return (
+          controlsBox.right <= document.documentElement.clientWidth + 1 &&
+          buttons.every((button) => button.width > 0 && button.height >= 34)
+        );
+      })
+    ).toBe(true);
     const metrics = await canvasViewport(player, "#player-map");
     expect(metrics.drawWidth).toBeLessThanOrEqual(
       await player.locator("#player-map").evaluate((canvas) => canvas.clientWidth)
@@ -3047,7 +3113,9 @@ test("player reports a shown handout image load failure", async ({ app, page, co
   await expect(player.getByText("Image could not be loaded.", { exact: true })).toBeVisible();
   await expect(player.getByRole("img", { name: "Handout: Broken Clue" })).toBeHidden();
   await expect(player.getByRole("button", { name: "Zoom in" })).toBeDisabled();
-  await expect(player.getByRole("button", { name: /Show|Shown|Rotate|Delete|Rename/i })).toHaveCount(0);
+  await expect(player.getByRole("button", { name: /Show|Shown|Rotate left|Rotate right|Delete|Rename/i })).toHaveCount(
+    0
+  );
 });
 
 test("stale image completion cannot replace a newer active map", async ({ app, page, context }) => {

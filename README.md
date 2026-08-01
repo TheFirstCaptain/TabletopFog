@@ -23,9 +23,11 @@ Post-V1 campaign image handouts are complete. The GM can add and browse image
 handouts stored in the campaign's local `handouts/` folder, show one handout to
 players, clear it from the Player Display, rotate the shown handout in
 90-degree increments, rename or delete unshown handouts, and replace a shown
-handout by showing an encounter again. Rename and delete are blocked while a
-handout is currently `Shown to Players`. The Campaign screen includes a compact
-`Shown to Players` status so the GM can tell whether players are seeing
+handout by showing an encounter again. The Player Display can also rotate a
+shown handout locally in 90-degree increments without changing the GM View,
+campaign storage, or another Player Display. Rename and delete are blocked
+while a handout is currently `Shown to Players`. The Campaign screen includes a
+compact `Shown to Players` status so the GM can tell whether players are seeing
 nothing, an encounter, or a handout without switching collections.
 
 The quality gate runs Chromium characterization for current GM/player workflows
@@ -38,11 +40,11 @@ player map stage remains dark for map contrast. No hosted font service is
 required.
 
 GM View and Player Display now share a canvas rendering foundation with centered
-contain scaling. Player Zoom out, Fit map, Zoom in, drag, and pinch controls
-change only that browser's local viewport; they do not mutate campaign state or
-change the GM View or another Player Display. The Player Display also has a
-player-local fullscreen control with quiet fallback messaging when browser
-fullscreen is unavailable.
+contain scaling. Player Zoom out, Fit map, Zoom in, drag, pinch, handout
+rotation, and fullscreen controls change only that browser's local presentation;
+they do not mutate campaign state or change the GM View or another Player
+Display. The Player Display fullscreen control has quiet fallback messaging
+when browser fullscreen is unavailable.
 
 The GM campaign landing page now uses calm campaign cards with balanced emoji
 icons, editable names and two-line descriptions, quiet map and

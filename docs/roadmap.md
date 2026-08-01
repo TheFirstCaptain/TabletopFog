@@ -32,8 +32,13 @@ Tracked as [F-010](./features/F-010.md). Planned child features:
 - Complete: [F-010D](./features/F-010D.md), handout display polish and
   validation.
 - Complete: [F-010E](./features/F-010E.md), handout rename and delete.
+- Complete: [F-010F](./features/F-010F.md), encounter selected prep card
+  polish.
+- Complete: [F-010G](./features/F-010G.md), encounter shown button polish.
 - Complete: [F-010H](./features/F-010H.md), handout gallery card polish.
 - Complete: [F-010I](./features/F-010I.md), GM handout rotation preview.
+- Complete: [F-010J](./features/F-010J.md), player-local handout rotation
+  controls.
 
 Initial acceptance direction:
 
@@ -49,8 +54,11 @@ Initial acceptance direction:
 - The Player Display remains read-only and can use its existing fullscreen
   behavior while a handout is shown.
 - The GM can rotate the shown handout in 90-degree increments.
-- No PDFs, text notes, overlay mode, slideshow mode, player-side rotation,
-  cloud hosting, authentication, or full-VTT features are introduced.
+- The Player Display can locally rotate a shown handout in 90-degree
+  increments without changing shared campaign state, the GM View, or another
+  Player Display.
+- No PDFs, text notes, overlay mode, slideshow mode, shared player-side
+  mutation, cloud hosting, authentication, or full-VTT features are introduced.
 
 ## Milestone 0: Harness and Repo Structure
 
