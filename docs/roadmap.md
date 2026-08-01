@@ -60,6 +60,35 @@ Initial acceptance direction:
 - No PDFs, text notes, overlay mode, slideshow mode, shared player-side
   mutation, cloud hosting, authentication, or full-VTT features are introduced.
 
+## Post-V1: Campaign Waiting Screen
+
+Goal: Let the Player Display show campaign-specific waiting context between
+encounters or handouts, with an optional GM-managed Campaign Image.
+
+Tracked as [F-011](./features/F-011.md). Planned child features:
+
+- Proposed: [F-011A](./features/F-011A.md), campaign-specific waiting state.
+- Proposed: [F-011B](./features/F-011B.md), Campaign Image management.
+- Proposed: [F-011C](./features/F-011C.md), Campaign waiting image display.
+
+Initial acceptance direction:
+
+- The Player Display keeps `Waiting for GM.` when no campaign is open.
+- When a campaign is open and no encounter or handout is shown, the Player
+  Display shows `Waiting for GM - <Campaign Name>`.
+- The GM can upload, replace, and remove one Campaign Image from the
+  create/edit campaign flow.
+- If a Campaign Image exists, the campaign waiting screen uses it as a
+  background with waiting text over it.
+- Showing an encounter or handout replaces the campaign waiting screen.
+- Clearing the shown encounter or handout returns to the campaign waiting
+  screen for the open campaign.
+- Campaign Image changes update the Player Display live only when the waiting
+  screen is active.
+- The Player Display remains read-only.
+- No slideshow mode, notes, non-image media, tokens, initiative, dice, dynamic
+  lighting, cloud login, or other full-VTT features are introduced.
+
 ## Milestone 0: Harness and Repo Structure
 
 Goal: Create the documentation and validation harness for future AI-assisted development.

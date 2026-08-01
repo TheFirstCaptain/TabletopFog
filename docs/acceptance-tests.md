@@ -50,7 +50,7 @@ Expected result:
   map controls, tokens, notes, initiative, dynamic lighting, and cloud features
   are not part of V1.0.
 
-## Post-V1: Campaign Image Handouts
+## Post-V1: Campaign Waiting Screen
 
 ### Test: Campaign Waiting Screen Can Use A Campaign Image
 
@@ -89,6 +89,8 @@ Expected result:
 - The Player Display remains read-only.
 - No slideshow mode, notes, tokens, initiative, dice, dynamic lighting, cloud
   login, or other full-VTT controls appear.
+
+## Post-V1: Campaign Image Handouts
 
 ### Test: GM Can Show A Campaign Handout To Players
 
