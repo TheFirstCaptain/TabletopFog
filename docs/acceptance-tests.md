@@ -308,8 +308,8 @@ Steps:
 7. Confirm the handout card, asset, metadata, and Player Display are unchanged.
 8. Delete the renamed unshown handout and accept the confirmation.
 9. Confirm the handout card is removed, the copied asset is removed, the
-   handout count updates, and the Player Display still shows the previously
-   shown target.
+   remaining handout card list updates, and the Player Display still shows the
+   previously shown target.
 10. Confirm rename and delete controls are disabled for the currently shown
     handout with guidance to clear it from the Player Display first.
 

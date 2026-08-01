@@ -82,7 +82,6 @@ export function createGmView(document) {
     gmZoomIn: document.querySelector("#gm-zoom-in"),
     gmZoomLevel: document.querySelector("#gm-zoom-level"),
     gmZoomOut: document.querySelector("#gm-zoom-out"),
-    handoutCount: document.querySelector("#handout-count"),
     handoutFile: document.querySelector("#handout-file"),
     handoutForm: document.querySelector("#handout-form"),
     handoutLibrary: document.querySelector("#handout-library"),
@@ -459,7 +458,6 @@ export function createGmView(document) {
     const handouts = campaign.handouts || [];
     elements.handoutList.replaceChildren();
     elements.handoutForm.hidden = false;
-    elements.handoutCount.textContent = `${handouts.length} handout${handouts.length === 1 ? "" : "s"}`;
 
     if (handouts.length === 0) {
       const empty = document.createElement("p");
@@ -485,15 +483,6 @@ export function createGmView(document) {
       title.className = "handout-name";
       title.textContent = handout.name;
 
-      const status = document.createElement("div");
-      status.className = "encounter-status";
-      if (shownToPlayers) {
-        const shown = document.createElement("span");
-        shown.className = "status-pill";
-        shown.textContent = "Shown to Players";
-        status.append(shown);
-      }
-
       const running = document.createElement("div");
       running.className = "encounter-running";
       running.append(
@@ -512,25 +501,25 @@ export function createGmView(document) {
         rotationControls.append(
           createButton(document, {
             action: "rotate-shown-handout",
-            className: "secondary",
+            className: "secondary handout-rotate-button",
             direction: "left",
             handoutId: handout.id,
-            text: "Rotate left"
+            text: "↰"
           }),
           createButton(document, {
             action: "rotate-shown-handout",
-            className: "secondary",
+            className: "secondary handout-rotate-button",
             direction: "right",
             handoutId: handout.id,
-            text: "Rotate right"
+            text: "↱"
           })
         );
-        rotationControls
-          .querySelector("[data-direction='left']")
-          .setAttribute("aria-label", `Rotate ${handout.name} left on Player Display`);
-        rotationControls
-          .querySelector("[data-direction='right']")
-          .setAttribute("aria-label", `Rotate ${handout.name} right on Player Display`);
+        const rotateLeft = rotationControls.querySelector("[data-direction='left']");
+        const rotateRight = rotationControls.querySelector("[data-direction='right']");
+        rotateLeft.setAttribute("aria-label", `Rotate ${handout.name} left on Player Display`);
+        rotateRight.setAttribute("aria-label", `Rotate ${handout.name} right on Player Display`);
+        rotateLeft.title = "Rotate left 90 degrees";
+        rotateRight.title = "Rotate right 90 degrees";
         running.append(rotationControls);
       } else {
         runningButton.setAttribute("aria-label", `Show ${handout.name} to players`);
@@ -581,7 +570,7 @@ export function createGmView(document) {
         admin.append(reason);
       }
 
-      item.append(thumbnail, title, status, running, admin);
+      item.append(thumbnail, title, running, admin);
       elements.handoutList.append(item);
     });
   }

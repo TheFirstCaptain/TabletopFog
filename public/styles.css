@@ -574,15 +574,6 @@ h4 {
   object-fit: contain;
 }
 
-.handout-library {
-  border-top: 1px solid rgb(155 123 79 / 45%);
-  padding-top: 1rem;
-}
-
-.handout-count {
-  margin-bottom: 0.75rem;
-}
-
 .encounter-summary {
   display: grid;
   gap: 0.55rem;
@@ -602,9 +593,16 @@ h4 {
 }
 
 .handout-rotation-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  display: contents;
+}
+
+.handout-rotate-button {
+  width: 2.4rem;
+  min-width: 2.4rem;
+  padding: 0;
+  flex: 0 0 auto;
+  font-size: 1.2rem;
+  line-height: 1;
 }
 
 .encounter-admin,
