@@ -382,6 +382,7 @@ Implementation notes:
 
 These ideas may be revisited after V1 succeeds:
 
+- Campaign waiting screen image for always-on displays.
 - Initiative tracker module.
 - Encounter tracker integration.
 - Multiple campaigns open at once.

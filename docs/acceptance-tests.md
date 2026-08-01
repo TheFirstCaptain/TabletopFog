@@ -52,6 +52,44 @@ Expected result:
 
 ## Post-V1: Campaign Image Handouts
 
+### Test: Campaign Waiting Screen Can Use A Campaign Image
+
+Prerequisites:
+
+- The local HTTPS server is running.
+- The GM View and Player Display are open.
+- A campaign exists with at least one encounter or handout.
+- A representative campaign image file is available.
+
+Steps:
+
+1. Confirm the Player Display shows the plain `Waiting for GM.` state before a
+   campaign is open.
+2. Open the campaign in the GM View without showing an encounter or handout.
+3. Confirm the Player Display shows `Waiting for GM - <Campaign Name>`.
+4. Add a Campaign Image from the create/edit campaign flow.
+5. Confirm the Player Display updates live to show the Campaign Image as a
+   background with the waiting text over it.
+6. Show an encounter or handout to players.
+7. Confirm the Player Display replaces the campaign waiting screen with the
+   explicitly shown target.
+8. Clear the shown target.
+9. Confirm the Player Display returns to the campaign waiting screen.
+10. Remove the Campaign Image from the create/edit campaign flow.
+11. Confirm the Player Display updates live to the campaign waiting text without
+    the background image.
+
+Expected result:
+
+- The campaign waiting screen appears only while a campaign is open and no
+  encounter or handout is shown to players.
+- The Campaign Image is GM-managed and optional.
+- The Player Display still changes only through explicit GM shown-target
+  actions or live updates to the current campaign waiting screen.
+- The Player Display remains read-only.
+- No slideshow mode, notes, tokens, initiative, dice, dynamic lighting, cloud
+  login, or other full-VTT controls appear.
+
 ### Test: GM Can Show A Campaign Handout To Players
 
 Prerequisites:
