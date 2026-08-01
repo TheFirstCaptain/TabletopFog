@@ -82,6 +82,10 @@
       "baselineLines": 406,
       "responsibility": "Normalize and recovery-normalize campaign metadata, shown targets including shown-handout rotation, legacy active-map ids, maps, handouts, and persisted rectangle and circle fog operations, serialize supported storage shape, preserve forward-compatible unknown fields, validate campaign metadata patches, and normalize safe campaign, map, and handout names."
     },
+    "server/campaign-session-service.js": {
+      "baselineLines": 151,
+      "responsibility": "Coordinate campaign/session mutation workflows between campaign storage, runtime state, and Socket.IO broadcasts for campaign open/create/delete, map and handout mutations, shown-target changes, shown-handout rotation, compatibility active-map changes, and persisted fog append, clear, and undo operations."
+    },
     "server/campaign-storage.js": {
       "baselineLines": 593,
       "responsibility": "Coordinate campaign storage workflows, recovery diagnostics, public storage API methods, shown-target mutation, shown-handout rotation, and recovery, map and handout rename/delete asset mutation transactions, persisted map fog updates, campaign library summaries, and calls into focused schema and filesystem modules."
@@ -91,8 +95,8 @@
       "responsibility": "Resolve and load HTTPS certificate credentials."
     },
     "server/http-routes.js": {
-      "baselineLines": 507,
-      "responsibility": "Register Express middleware, GM and Player Display pages, campaign, map, handout upload, rename, delete, shown-target, shown-handout rotation, compatibility active-map, persisted single and batched fog operation append, clear, undo, current-target player asset, static-file, and error routes while preserving GM-only mutation guards."
+      "baselineLines": 381,
+      "responsibility": "Register Express middleware, GM and Player Display pages, campaign, map, handout upload, rename, delete, shown-target, shown-handout rotation, compatibility active-map, persisted single and batched fog operation append, clear, undo, current-target player asset, static-file, and error routes while preserving GM-only mutation guards and delegating mutation orchestration to the campaign session service."
     },
     "server/index.js": {
       "baselineLines": 85,

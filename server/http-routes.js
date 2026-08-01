@@ -5,10 +5,13 @@ const path = require("node:path");
 const express = require("express");
 
 const { FOG_OPERATION_TYPES, normalizeFogOperation } = require("./campaign-schema");
+const { createCampaignSessionService } = require("./campaign-session-service");
 const { MAX_MAP_FILE_BYTES } = require("./map-image");
 const { requireGm } = require("./role-projection");
 
 function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, publicDir }) {
+  const campaignSession = createCampaignSessionService({ campaignStorage, onStateChange, stateStore });
+
   app.use(express.json());
 
   app.get("/", (_request, response) => {
@@ -25,13 +28,7 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
 
   app.get("/api/campaigns", requireGm, (_request, response, next) => {
     try {
-      const library = campaignStorage.getCampaignLibrary
-        ? campaignStorage.getCampaignLibrary()
-        : { campaigns: campaignStorage.listCampaigns(), diagnostics: [] };
-      response.json({
-        ...library,
-        dataRoot: campaignStorage.dataRoot
-      });
+      response.json(campaignSession.getCampaignLibrary());
     } catch (error) {
       next(error);
     }
@@ -39,10 +36,7 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
 
   app.post("/api/campaigns", requireGm, (request, response, next) => {
     try {
-      const campaign = withAssetUrls(campaignStorage, campaignStorage.createCampaign(request.body.name));
-      const state = stateStore.setCampaign(campaign);
-      onStateChange(state);
-      response.status(201).json({ campaign: state.campaign });
+      response.status(201).json({ campaign: campaignSession.createCampaign(request.body.name) });
     } catch (error) {
       next(error);
     }
@@ -50,10 +44,7 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
 
   app.get("/api/campaigns/:campaignId", requireGm, (request, response, next) => {
     try {
-      const campaign = withAssetUrls(campaignStorage, campaignStorage.getCampaign(request.params.campaignId));
-      const state = stateStore.setCampaign(campaign);
-      onStateChange(state);
-      response.json({ campaign: state.campaign });
+      response.json({ campaign: campaignSession.getCampaign(request.params.campaignId) });
     } catch (error) {
       next(error);
     }
@@ -61,20 +52,7 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
 
   app.delete("/api/campaigns/:campaignId", requireGm, (request, response, next) => {
     try {
-      campaignStorage.deleteCampaign(request.params.campaignId);
-
-      if (stateStore.getState().campaign?.id === request.params.campaignId) {
-        const state = stateStore.setCampaign(null);
-        onStateChange(state);
-      }
-
-      const library = campaignStorage.getCampaignLibrary
-        ? campaignStorage.getCampaignLibrary()
-        : { campaigns: campaignStorage.listCampaigns(), diagnostics: [] };
-      response.json({
-        ...library,
-        dataRoot: campaignStorage.dataRoot
-      });
+      response.json(campaignSession.deleteCampaign(request.params.campaignId));
     } catch (error) {
       next(error);
     }
@@ -87,8 +65,7 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
         return;
       }
 
-      const campaign = withAssetUrls(
-        campaignStorage,
+      const campaign = campaignStorage.addAssetUrls(
         campaignStorage.updateCampaignMetadata(request.params.campaignId, request.body)
       );
       response.json({ campaign });
@@ -103,17 +80,14 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
     express.raw({ limit: MAX_MAP_FILE_BYTES, type: "*/*" }),
     (request, response, next) => {
       try {
-        const map = campaignStorage.addMap(request.params.campaignId, {
+        const result = campaignSession.addMap(request.params.campaignId, {
           content: request.body,
           contentType: request.get("content-type"),
           originalFileName: request.get("x-file-name")
         });
-        const campaign = withAssetUrls(campaignStorage, campaignStorage.getCampaign(request.params.campaignId));
-        const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
-        onStateChange(state);
         response.status(201).json({
-          campaign: state.campaign,
-          map: state.campaign.maps.find((candidate) => candidate.id === map.id)
+          campaign: result.campaign,
+          map: result.map
         });
       } catch (error) {
         next(error);
@@ -127,17 +101,14 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
     express.raw({ limit: MAX_MAP_FILE_BYTES, type: "*/*" }),
     (request, response, next) => {
       try {
-        const handout = campaignStorage.addHandout(request.params.campaignId, {
+        const result = campaignSession.addHandout(request.params.campaignId, {
           content: request.body,
           contentType: request.get("content-type"),
           originalFileName: request.get("x-file-name")
         });
-        const campaign = withAssetUrls(campaignStorage, campaignStorage.getCampaign(request.params.campaignId));
-        const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
-        onStateChange(state);
         response.status(201).json({
-          campaign: state.campaign,
-          handout: state.campaign.handouts.find((candidate) => candidate.id === handout.id)
+          campaign: result.campaign,
+          handout: result.handout
         });
       } catch (error) {
         next(error);
@@ -147,13 +118,10 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
 
   app.patch("/api/campaigns/:campaignId/maps/:mapId", requireGm, (request, response, next) => {
     try {
-      const map = campaignStorage.renameMap(request.params.campaignId, request.params.mapId, request.body.name);
-      const campaign = withAssetUrls(campaignStorage, campaignStorage.getCampaign(request.params.campaignId));
-      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
-      onStateChange(state);
+      const result = campaignSession.renameMap(request.params.campaignId, request.params.mapId, request.body.name);
       response.json({
-        campaign: state.campaign,
-        map: state.campaign.maps.find((candidate) => candidate.id === map.id)
+        campaign: result.campaign,
+        map: result.map
       });
     } catch (error) {
       next(error);
@@ -162,17 +130,14 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
 
   app.patch("/api/campaigns/:campaignId/handouts/:handoutId", requireGm, (request, response, next) => {
     try {
-      const handout = campaignStorage.renameHandout(
+      const result = campaignSession.renameHandout(
         request.params.campaignId,
         request.params.handoutId,
         request.body.name
       );
-      const campaign = withAssetUrls(campaignStorage, campaignStorage.getCampaign(request.params.campaignId));
-      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
-      onStateChange(state);
       response.json({
-        campaign: state.campaign,
-        handout: state.campaign.handouts.find((candidate) => candidate.id === handout.id)
+        campaign: result.campaign,
+        handout: result.handout
       });
     } catch (error) {
       next(error);
@@ -181,13 +146,7 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
 
   app.delete("/api/campaigns/:campaignId/maps/:mapId", requireGm, (request, response, next) => {
     try {
-      const campaign = withAssetUrls(
-        campaignStorage,
-        campaignStorage.deleteMap(request.params.campaignId, request.params.mapId)
-      );
-      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
-      onStateChange(state);
-      response.json({ campaign: state.campaign });
+      response.json({ campaign: campaignSession.deleteMap(request.params.campaignId, request.params.mapId) });
     } catch (error) {
       next(error);
     }
@@ -195,13 +154,9 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
 
   app.delete("/api/campaigns/:campaignId/handouts/:handoutId", requireGm, (request, response, next) => {
     try {
-      const campaign = withAssetUrls(
-        campaignStorage,
-        campaignStorage.deleteHandout(request.params.campaignId, request.params.handoutId)
-      );
-      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
-      onStateChange(state);
-      response.json({ campaign: state.campaign });
+      response.json({
+        campaign: campaignSession.deleteHandout(request.params.campaignId, request.params.handoutId)
+      });
     } catch (error) {
       next(error);
     }
@@ -209,13 +164,7 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
 
   app.put("/api/campaigns/:campaignId/maps/reorder", requireGm, (request, response, next) => {
     try {
-      const campaign = withAssetUrls(
-        campaignStorage,
-        campaignStorage.reorderMaps(request.params.campaignId, request.body.mapIds)
-      );
-      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
-      onStateChange(state);
-      response.json({ campaign: state.campaign });
+      response.json({ campaign: campaignSession.reorderMaps(request.params.campaignId, request.body.mapIds) });
     } catch (error) {
       next(error);
     }
@@ -239,13 +188,7 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
         return;
       }
 
-      const campaign = withAssetUrls(
-        campaignStorage,
-        campaignStorage.setShownTarget(request.params.campaignId, target)
-      );
-      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
-      onStateChange(state);
-      response.json({ campaign: state.campaign });
+      response.json({ campaign: campaignSession.setShownTarget(request.params.campaignId, target) });
     } catch (error) {
       next(error);
     }
@@ -254,13 +197,7 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
   app.post("/api/campaigns/:campaignId/shown-target/rotation", requireGm, (request, response, next) => {
     try {
       const direction = request.body?.direction;
-      const campaign = withAssetUrls(
-        campaignStorage,
-        campaignStorage.rotateShownHandout(request.params.campaignId, direction)
-      );
-      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
-      onStateChange(state);
-      response.json({ campaign: state.campaign });
+      response.json({ campaign: campaignSession.rotateShownHandout(request.params.campaignId, direction) });
     } catch (error) {
       if (/shown handout/.test(error.message)) {
         response.status(409).json({ error: error.message });
@@ -286,14 +223,7 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
         return;
       }
 
-      const target = request.body.mapId === null ? null : { id: request.body.mapId, type: "encounter" };
-      const campaign = withAssetUrls(
-        campaignStorage,
-        campaignStorage.setShownTarget(request.params.campaignId, target)
-      );
-      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
-      onStateChange(state);
-      response.json({ campaign: state.campaign });
+      response.json({ campaign: campaignSession.setLegacyActiveMap(request.params.campaignId, request.body.mapId) });
     } catch (error) {
       next(error);
     }
@@ -311,19 +241,9 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
         return;
       }
 
-      const target = getCurrentMapState(stateStore, request.params.campaignId, request.params.mapId);
       const operation = normalizeFogOperation(request.body);
-      const campaign = withAssetUrls(
-        campaignStorage,
-        campaignStorage.setMapFog(request.params.campaignId, request.params.mapId, [
-          ...(target.fogOperations || []),
-          operation
-        ])
-      );
-      stateStore.appendFogOperation(request.params.campaignId, request.params.mapId, operation);
-      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
-      onStateChange(state);
-      response.status(201).json({ campaign: state.campaign });
+      const campaign = campaignSession.appendFogOperation(request.params.campaignId, request.params.mapId, operation);
+      response.status(201).json({ campaign });
     } catch (error) {
       if (/Invalid fog operation|Map not found/.test(error.message)) {
         response.status(400).json({ error: error.message });
@@ -351,18 +271,8 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
         }
         return normalizeFogOperation(operation);
       });
-      const target = getCurrentMapState(stateStore, request.params.campaignId, request.params.mapId);
-      const campaign = withAssetUrls(
-        campaignStorage,
-        campaignStorage.setMapFog(request.params.campaignId, request.params.mapId, [
-          ...(target.fogOperations || []),
-          ...operations
-        ])
-      );
-      stateStore.appendFogOperations(request.params.campaignId, request.params.mapId, operations);
-      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
-      onStateChange(state);
-      response.status(201).json({ campaign: state.campaign });
+      const campaign = campaignSession.appendFogOperations(request.params.campaignId, request.params.mapId, operations);
+      response.status(201).json({ campaign });
     } catch (error) {
       if (/Invalid fog operation|Map not found|At least one fog operation|Only hide and reveal/.test(error.message)) {
         response.status(400).json({ error: error.message });
@@ -374,15 +284,7 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
 
   app.delete("/api/campaigns/:campaignId/maps/:mapId/fog-operations", requireGm, (request, response, next) => {
     try {
-      getCurrentMapState(stateStore, request.params.campaignId, request.params.mapId);
-      const campaign = withAssetUrls(
-        campaignStorage,
-        campaignStorage.setMapFog(request.params.campaignId, request.params.mapId, [])
-      );
-      stateStore.clearFogOperations(request.params.campaignId, request.params.mapId);
-      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
-      onStateChange(state);
-      response.json({ campaign: state.campaign });
+      response.json({ campaign: campaignSession.clearFogOperations(request.params.campaignId, request.params.mapId) });
     } catch (error) {
       if (/Invalid fog operation target|Map not found/.test(error.message)) {
         response.status(400).json({ error: error.message });
@@ -394,15 +296,7 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
 
   app.post("/api/campaigns/:campaignId/maps/:mapId/fog-operations/undo", requireGm, (request, response, next) => {
     try {
-      const previousOperations = stateStore.getNextFogUndoOperations(request.params.campaignId, request.params.mapId);
-      const campaign = withAssetUrls(
-        campaignStorage,
-        campaignStorage.setMapFog(request.params.campaignId, request.params.mapId, previousOperations)
-      );
-      stateStore.consumeFogUndo(request.params.campaignId, request.params.mapId);
-      const state = stateStore.setCampaign(campaign, { preserveFogUndo: true });
-      onStateChange(state);
-      response.json({ campaign: state.campaign });
+      response.json({ campaign: campaignSession.undoFogOperation(request.params.campaignId, request.params.mapId) });
     } catch (error) {
       if (/No fog action to undo/.test(error.message)) {
         response.status(409).json({ error: "No fog action to undo." });
@@ -480,26 +374,6 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
       error: error.message || "Unexpected server error."
     });
   });
-}
-
-function withAssetUrls(campaignStorage, campaign) {
-  return campaignStorage.addAssetUrls(campaign);
-}
-
-function getCurrentMapState(stateStore, campaignId, mapId) {
-  const campaign = stateStore.getState().campaign;
-
-  if (!campaign || campaign.id !== campaignId) {
-    throw new Error("Invalid fog operation target.");
-  }
-
-  const map = campaign.maps.find((candidate) => candidate.id === mapId);
-
-  if (!map) {
-    throw new Error("Invalid fog operation target.");
-  }
-
-  return map;
 }
 
 module.exports = {
