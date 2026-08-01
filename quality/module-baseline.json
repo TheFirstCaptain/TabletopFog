@@ -39,8 +39,8 @@
       "responsibility": "Maintain Player Display-local handout rotation state, reset it on shown-target identity changes, compose it with shared shown-handout rotation, and render the resulting read-only target without server, storage, or Socket.IO mutations."
     },
     "public/player.js": {
-      "baselineLines": 140,
-      "responsibility": "Coordinate read-only player shown-target image and opaque encounter-fog rendering, campaign-specific waiting text, connection state, local viewport controls, target-neutral status copy, player-local handout rotation controls, and player-local fullscreen behavior."
+      "baselineLines": 184,
+      "responsibility": "Coordinate read-only player shown-target image and opaque encounter-fog rendering, campaign-specific waiting text, Campaign Image waiting background loading and fallback, connection state, local viewport controls, target-neutral status copy, player-local handout rotation controls, and player-local fullscreen behavior."
     },
     "scripts/check-harness-compliance.js": {
       "baselineLines": 45,
@@ -95,8 +95,8 @@
       "responsibility": "Resolve and load HTTPS certificate credentials."
     },
     "server/http-routes.js": {
-      "baselineLines": 414,
-      "responsibility": "Register Express middleware, GM and Player Display pages, campaign, Campaign Image upload/remove/GM asset, map, handout upload, rename, delete, shown-target, shown-handout rotation, compatibility active-map, persisted single and batched fog operation append, clear, undo, current-target player asset, static-file, and error routes while preserving GM-only mutation guards and delegating mutation orchestration to the campaign session service."
+      "baselineLines": 431,
+      "responsibility": "Register Express middleware, GM and Player Display pages, campaign, Campaign Image upload/remove/GM asset, map, handout upload, rename, delete, shown-target, shown-handout rotation, compatibility active-map, persisted single and batched fog operation append, clear, undo, current-target player asset, current waiting-image player asset, static-file, and error routes while preserving GM-only mutation guards and delegating mutation orchestration to the campaign session service."
     },
     "server/index.js": {
       "baselineLines": 85,
@@ -107,8 +107,8 @@
       "responsibility": "Validate supported map, handout, and Campaign Image signatures, metadata, and size limits."
     },
     "server/role-projection.js": {
-      "baselineLines": 79,
-      "responsibility": "Classify GM versus player requests from route referers, enforce GM-only HTTP mutations, and project full GM state or read-only minimal campaign waiting context, shown-target encounter, handout rotation, and fog state."
+      "baselineLines": 96,
+      "responsibility": "Classify GM versus player requests from route referers, enforce GM-only HTTP mutations, and project full GM state or read-only minimal campaign waiting context, current-state-gated Campaign Image waiting descriptor, shown-target encounter, handout rotation, and fog state."
     },
     "server/socket-sync.js": {
       "baselineLines": 29,

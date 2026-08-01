@@ -1179,13 +1179,48 @@ h4 {
   color: var(--stage-text);
 }
 
+.map-stage::after {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgb(0 0 0 / 38%);
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+}
+
+.map-stage[data-waiting-image="true"]::after {
+  opacity: 1;
+}
+
+.waiting-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
 .player-message {
+  position: relative;
+  z-index: 2;
   color: var(--stage-text);
   font-size: 1.25rem;
   font-weight: 700;
+  overflow-wrap: anywhere;
+  padding: 0 1rem;
+  text-align: center;
+}
+
+.map-stage[data-waiting-image="true"] .player-message {
+  color: #fff7dd;
+  text-shadow: 0 2px 10px rgb(0 0 0 / 88%);
 }
 
 .player-map {
+  position: relative;
+  z-index: 3;
   touch-action: none;
   cursor: grab;
 }

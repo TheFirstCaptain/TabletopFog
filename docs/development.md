@@ -155,8 +155,10 @@ invalid, or when the saved `Shown to Players` handout asset is missing or
 invalid, the server restores a safe empty Player Display state and reports the
 problem to the GM.
 
-Missing handout assets and missing Campaign Image assets are reported to the GM
-as recovery diagnostics and do not change the Player Display.
+Missing handout assets are reported to the GM as recovery diagnostics and do
+not change the Player Display. Missing Campaign Image assets are reported to
+the GM as recovery diagnostics; when the Player Display is on the campaign
+waiting screen, it falls back to waiting text without the background image.
 
 Recovery reads do not rewrite `campaign.json`, delete assets, or strip unknown
 metadata. A later successful explicit GM mutation, such as rename, reorder,

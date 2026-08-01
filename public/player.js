@@ -15,8 +15,11 @@ const rotateHandoutRight = document.querySelector("#rotate-handout-right");
 const display = document.querySelector(".player-display");
 const fullscreenToggle = document.querySelector("#fullscreen-toggle");
 const fullscreenMessage = document.querySelector("#fullscreen-message");
+const mapStage = document.querySelector(".map-stage");
+const waitingImage = document.querySelector("#waiting-image");
 let rendererReady = false;
 let currentCampaignName = "";
+let waitingImageGeneration = 0;
 
 function setConnectionStatus(text, state) {
   status.textContent = text;
@@ -54,6 +57,42 @@ function updateFullscreenControl() {
 
 function getWaitingMessage() {
   return currentCampaignName ? `Waiting for GM - ${currentCampaignName}` : "Waiting for GM.";
+}
+
+function withCacheKey(assetUrl, version) {
+  const separator = assetUrl.includes("?") ? "&" : "?";
+  return `${assetUrl}${separator}version=${encodeURIComponent(version || "current")}`;
+}
+
+function clearWaitingImage() {
+  waitingImageGeneration += 1;
+  waitingImage.onload = null;
+  waitingImage.onerror = null;
+  waitingImage.removeAttribute("src");
+  waitingImage.hidden = true;
+  mapStage.dataset.waitingImage = "false";
+}
+
+function setWaitingImage(image) {
+  if (!image?.assetUrl) {
+    clearWaitingImage();
+    return;
+  }
+
+  const generation = ++waitingImageGeneration;
+  waitingImage.onload = () => {
+    if (generation !== waitingImageGeneration) return;
+    waitingImage.hidden = false;
+    mapStage.dataset.waitingImage = "true";
+  };
+  waitingImage.onerror = () => {
+    if (generation !== waitingImageGeneration) return;
+    waitingImage.hidden = true;
+    mapStage.dataset.waitingImage = "false";
+  };
+  waitingImage.hidden = true;
+  mapStage.dataset.waitingImage = "loading";
+  waitingImage.src = withCacheKey(image.assetUrl, image.version);
 }
 
 async function toggleFullscreen() {
@@ -132,6 +171,11 @@ socket.on("disconnect", () => {
 
 socket.on("state:sync", (state) => {
   currentCampaignName = typeof state.campaign?.name === "string" ? state.campaign.name : "";
+  if (state.shownTarget) {
+    clearWaitingImage();
+  } else {
+    setWaitingImage(state.campaign?.waitingImage);
+  }
   handoutRotation.setTarget(state.shownTarget);
 });
 

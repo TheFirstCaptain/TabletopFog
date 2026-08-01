@@ -23,11 +23,27 @@ function projectStateForRole(state, role) {
 
   return {
     activeMap: shownTarget?.type === "encounter" ? shownTarget : null,
-    campaign: campaign ? { id: campaign.id, name: campaign.name } : null,
+    campaign: campaign ? getCampaignProjection(campaign, shownTarget, state.version) : null,
     shownTarget,
     updatedAt: state.updatedAt,
     version: state.version
   };
+}
+
+function getCampaignProjection(campaign, shownTarget, stateVersion) {
+  const projection = {
+    id: campaign.id,
+    name: campaign.name
+  };
+
+  if (!shownTarget && campaign.campaignImage && campaign.campaignImage.assetAvailable !== false) {
+    projection.waitingImage = {
+      assetUrl: "/api/player/waiting-image/asset",
+      version: `${campaign.id}/campaign-image/${stateVersion}`
+    };
+  }
+
+  return projection;
 }
 
 function getShownTargetProjection(campaign) {
@@ -72,6 +88,7 @@ function requireGm(request, response, next) {
 }
 
 module.exports = {
+  getCampaignProjection,
   getRoleFromReferer,
   getShownTargetProjection,
   projectStateForRole,

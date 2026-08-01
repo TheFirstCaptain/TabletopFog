@@ -361,6 +361,147 @@ test("GM manages a Campaign Image from campaign edit cards without changing show
   expect(playerAssetRequests).toBe(playerAssetRequestsBeforeCampaignImage);
 });
 
+test("Player Display uses Campaign Image as the campaign waiting background", async ({ app, page, context }) => {
+  const player = await context.newPage();
+  let waitingImageRequests = 0;
+  await player.route("**/api/player/waiting-image/asset*", (route) => {
+    waitingImageRequests += 1;
+    return route.continue();
+  });
+
+  await openGm(page, app.baseURL);
+  await player.goto(`${app.baseURL}/player`);
+  await createCampaign(page);
+  await expect(player.getByText("Waiting for GM - The Long Walk", { exact: true })).toBeVisible();
+  await expect(player.locator("#waiting-image")).toBeHidden();
+  await expect(player.locator(".map-stage")).toHaveAttribute("data-waiting-image", "false");
+
+  await page.getByRole("button", { name: "Back to Campaign Library" }).click();
+  const campaignCard = page.locator(".campaign-card").filter({ hasText: "The Long Walk" });
+  await campaignCard.getByRole("button", { name: "Edit campaign details" }).click();
+  await campaignCard
+    .getByLabel("Campaign Image file")
+    .setInputFiles(await sizedPngFile(page, "Campaign Splash.png", 96, 54, "#102030", "#c09030"));
+  await campaignCard.getByRole("button", { name: "Upload image" }).click();
+
+  await expect(player.locator("#waiting-image")).toBeVisible();
+  await expect(player.locator(".map-stage")).toHaveAttribute("data-waiting-image", "true");
+  await expect(player.getByText("Waiting for GM - The Long Walk", { exact: true })).toBeVisible();
+  const firstWaitingSrc = await player.locator("#waiting-image").getAttribute("src");
+  expect(firstWaitingSrc).toContain("/api/player/waiting-image/asset");
+  expect(waitingImageRequests).toBeGreaterThan(0);
+
+  await campaignCard.getByRole("button", { name: "Edit campaign details" }).click();
+  await campaignCard
+    .getByLabel("Campaign Image file")
+    .setInputFiles(await sizedPngFile(page, "New Splash.png", 96, 54, "#301020", "#30a0c0"));
+  await campaignCard.getByRole("button", { name: "Replace image" }).click();
+  await expect(player.locator("#waiting-image")).toBeVisible();
+  let replacedWaitingSrc = "";
+  await expect
+    .poll(async () => {
+      replacedWaitingSrc = await player.locator("#waiting-image").getAttribute("src");
+      return replacedWaitingSrc;
+    })
+    .not.toBe(firstWaitingSrc);
+  expect(replacedWaitingSrc).toContain("/api/player/waiting-image/asset");
+
+  await campaignCard.getByRole("button", { name: "Open" }).click();
+  await addMap(page, "forest.png");
+  await page.getByRole("button", { name: "Show to Players", exact: true }).click();
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  await expect(player.locator("#waiting-image")).toBeHidden();
+  await expect(player.locator(".map-stage")).toHaveAttribute("data-waiting-image", "false");
+  const waitingRequestsWhileEncounterShown = waitingImageRequests;
+
+  await page.getByRole("button", { name: "Back to Campaign Library" }).click();
+  await campaignCard.getByRole("button", { name: "Edit campaign details" }).click();
+  await campaignCard
+    .getByLabel("Campaign Image file")
+    .setInputFiles(await sizedPngFile(page, "Encounter Hidden Splash.png", 96, 54, "#203010", "#c04080"));
+  await campaignCard.getByRole("button", { name: "Replace image" }).click();
+  await expect(player.getByRole("img", { name: "Map: forest" })).toBeVisible();
+  await expect(player.locator("#waiting-image")).toBeHidden();
+  expect(waitingImageRequests).toBe(waitingRequestsWhileEncounterShown);
+
+  await campaignCard.getByRole("button", { name: "Open" }).click();
+  await page.getByRole("button", { name: "Shown to Players - clear forest from Player Display" }).click();
+  await expect(player.locator("#waiting-image")).toBeVisible();
+  await expect(player.getByText("Waiting for GM - The Long Walk", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Handouts" }).click();
+  await uploadHandoutFile(page, await sizedPngFile(page, "NPC Portrait.png", 80, 40), "NPC Portrait");
+  await page
+    .locator(".handout-card")
+    .filter({ hasText: "NPC Portrait" })
+    .getByRole("button", { name: "Show NPC Portrait to players" })
+    .click();
+  await expect(player.getByRole("img", { name: "Handout: NPC Portrait" })).toBeVisible();
+  await expect(player.locator("#waiting-image")).toBeHidden();
+  await expect(player.locator(".map-stage")).toHaveAttribute("data-waiting-image", "false");
+  const waitingRequestsWhileHandoutShown = waitingImageRequests;
+
+  await page.getByRole("button", { name: "Back to Campaign Library" }).click();
+  await campaignCard.getByRole("button", { name: "Edit campaign details" }).click();
+  page.once("dialog", async (dialog) => {
+    await dialog.accept();
+  });
+  await campaignCard.getByRole("button", { name: "Remove Campaign Image from The Long Walk" }).click();
+  await expect(player.getByRole("img", { name: "Handout: NPC Portrait" })).toBeVisible();
+  await expect(player.locator("#waiting-image")).toBeHidden();
+  expect(waitingImageRequests).toBe(waitingRequestsWhileHandoutShown);
+
+  await campaignCard.getByRole("button", { name: "Open" }).click();
+  await page.getByRole("button", { name: "Handouts" }).click();
+  await page
+    .locator(".handout-card")
+    .filter({ hasText: "NPC Portrait" })
+    .getByRole("button", { name: "Shown to Players - clear NPC Portrait from Player Display" })
+    .click();
+  await expect(player.getByText("Waiting for GM - The Long Walk", { exact: true })).toBeVisible();
+  await expect(player.locator("#waiting-image")).toBeHidden();
+  await expect(player.locator(".map-stage")).toHaveAttribute("data-waiting-image", "false");
+  await expect(player.getByRole("button", { name: /Show|Shown|Delete|Rename/i })).toHaveCount(0);
+
+  for (const size of [
+    { width: 390, height: 844 },
+    { width: 820, height: 1180 },
+    { width: 1920, height: 1080 }
+  ]) {
+    await player.setViewportSize(size);
+    await expect(player.getByText("Waiting for GM - The Long Walk", { exact: true })).toBeVisible();
+    expect(await player.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  }
+});
+
+test("Player Display falls back to waiting text when Campaign Image fails to load", async ({ app, page, context }) => {
+  const player = await context.newPage();
+
+  await player.route("**/api/player/waiting-image/asset*", (route) =>
+    route.fulfill({
+      body: Buffer.from("not-an-image"),
+      contentType: "image/png",
+      status: 200
+    })
+  );
+
+  await openGm(page, app.baseURL);
+  await player.goto(`${app.baseURL}/player`);
+  await createCampaign(page);
+  await page.getByRole("button", { name: "Back to Campaign Library" }).click();
+  const campaignCard = page.locator(".campaign-card").filter({ hasText: "The Long Walk" });
+  await campaignCard.getByRole("button", { name: "Edit campaign details" }).click();
+  await campaignCard
+    .getByLabel("Campaign Image file")
+    .setInputFiles(await sizedPngFile(page, "Campaign Splash.png", 96, 54));
+  await campaignCard.getByRole("button", { name: "Upload image" }).click();
+
+  await expect(player.getByText("Waiting for GM - The Long Walk", { exact: true })).toBeVisible();
+  await expect(player.locator("#waiting-image")).toBeHidden();
+  await expect(player.locator(".map-stage")).toHaveAttribute("data-waiting-image", "false");
+  await expect(player.getByText(/Image could not be loaded/i)).toHaveCount(0);
+});
+
 test("GM adds campaign handouts without changing the Player Display", async ({ app, page, context }) => {
   const player = await context.newPage();
   let playerAssetRequests = 0;

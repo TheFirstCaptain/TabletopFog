@@ -363,7 +363,14 @@ test("player projection includes minimal campaign waiting context", () => {
   assert.equal(noCampaign.shownTarget, null);
   assert.equal(noCampaign.activeMap, null);
 
-  assert.deepEqual(waiting.campaign, { id: "The Long Walk", name: "The Long Walk" });
+  assert.deepEqual(waiting.campaign, {
+    id: "The Long Walk",
+    name: "The Long Walk",
+    waitingImage: {
+      assetUrl: "/api/player/waiting-image/asset",
+      version: "The Long Walk/campaign-image/7"
+    }
+  });
   assert.equal(waiting.shownTarget, null);
   assert.equal(waiting.activeMap, null);
   assert.equal(Object.hasOwn(waiting.campaign, "maps"), false);
@@ -382,6 +389,95 @@ test("player projection includes minimal campaign waiting context", () => {
   assert.deepEqual(handout.campaign, { id: "The Long Walk", name: "The Long Walk" });
   assert.equal(handout.shownTarget.type, "handout");
   assert.equal(handout.activeMap, null);
+});
+
+test("player projection includes only current waiting image descriptor while waiting", () => {
+  const state = {
+    campaign: {
+      id: "The Long Walk",
+      name: "The Long Walk",
+      campaignImage: {
+        assetUrl: "/api/campaigns/The%20Long%20Walk/campaign-image/asset",
+        file: "campaign-images/splash.png",
+        name: "Campaign Splash",
+        originalFileName: "splash.png"
+      },
+      recoveryDiagnostics: [{ message: "GM-only diagnostic." }],
+      shownTarget: null,
+      handouts: [
+        {
+          id: "portrait",
+          name: "Portrait",
+          file: "handouts/portrait.png",
+          order: 1
+        }
+      ],
+      maps: [
+        {
+          id: "forest",
+          name: "Forest",
+          file: "maps/forest.png",
+          fogOperations: [],
+          order: 1
+        }
+      ]
+    },
+    updatedAt: "2026-08-01T00:00:00.000Z",
+    version: 7
+  };
+
+  const waiting = projectStateForRole(state, "player");
+  const missing = projectStateForRole(
+    {
+      ...state,
+      campaign: {
+        ...state.campaign,
+        campaignImage: {
+          ...state.campaign.campaignImage,
+          assetAvailable: false
+        }
+      }
+    },
+    "player"
+  );
+  const encounter = projectStateForRole(
+    {
+      ...state,
+      campaign: {
+        ...state.campaign,
+        shownTarget: { id: "forest", type: "encounter" }
+      }
+    },
+    "player"
+  );
+  const handout = projectStateForRole(
+    {
+      ...state,
+      campaign: {
+        ...state.campaign,
+        shownTarget: { id: "portrait", rotation: 0, type: "handout" }
+      }
+    },
+    "player"
+  );
+
+  assert.deepEqual(waiting.campaign, {
+    id: "The Long Walk",
+    name: "The Long Walk",
+    waitingImage: {
+      assetUrl: "/api/player/waiting-image/asset",
+      version: "The Long Walk/campaign-image/7"
+    }
+  });
+  assert.equal(JSON.stringify(waiting).includes("campaignImage"), false);
+  assert.equal(JSON.stringify(waiting).includes("campaign-images/splash.png"), false);
+  assert.equal(JSON.stringify(waiting).includes("/api/campaigns/The%20Long%20Walk/campaign-image/asset"), false);
+  assert.equal(JSON.stringify(waiting).includes("GM-only diagnostic"), false);
+  assert.deepEqual(missing.campaign, { id: "The Long Walk", name: "The Long Walk" });
+  assert.equal(Object.hasOwn(encounter.campaign, "waitingImage"), false);
+  assert.equal(encounter.shownTarget.type, "encounter");
+  assert.equal(Object.hasOwn(handout.campaign, "waitingImage"), false);
+  assert.equal(handout.shownTarget.type, "handout");
 });
 
 test("player sync receives campaign waiting context through shown target transitions", async (t) => {
@@ -731,6 +827,117 @@ test("manages Campaign Image through GM API only without exposing it to players"
     assert.equal(fs.existsSync(path.join(dataRoot, campaignId, "campaign-images", "new-splash.png")), false);
   } finally {
     player.close();
+    await close(server, io);
+  }
+});
+
+test("serves player waiting image only for current empty campaign waiting state", async (t) => {
+  const dataRoot = createTempRoot(t);
+  const { server, io } = createTabletopFogServer({
+    credentials: createTestCertificate(t),
+    dataRoot
+  });
+  const port = await listen(server);
+  const url = `https://127.0.0.1:${port}`;
+  const campaignId = "The Long Walk";
+
+  try {
+    const noCampaign = await getHttps(`${url}/api/player/waiting-image/asset`, {
+      headers: playerHeaders(port)
+    });
+    assert.equal(noCampaign.statusCode, 404);
+
+    await requestHttps(`${url}/api/campaigns`, {
+      body: JSON.stringify({ name: campaignId }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "POST"
+    });
+
+    const noImage = await getHttps(`${url}/api/player/waiting-image/asset`, {
+      headers: playerHeaders(port)
+    });
+    assert.equal(noImage.statusCode, 404);
+
+    const uploaded = await requestHttps(`${url}/api/campaigns/${encodeURIComponent(campaignId)}/campaign-image`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "splash.png"
+      }),
+      method: "PUT"
+    });
+    assert.equal(uploaded.statusCode, 200);
+
+    const waitingImage = await getHttps(`${url}/api/player/waiting-image/asset`, {
+      headers: playerHeaders(port)
+    });
+    assert.equal(waitingImage.statusCode, 200);
+    assert.deepEqual(waitingImage.rawBody, PNG_BYTES);
+
+    const map = await requestHttps(`${url}/api/campaigns/${encodeURIComponent(campaignId)}/maps`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "forest.png"
+      }),
+      method: "POST"
+    });
+    await requestHttps(`${url}/api/campaigns/${encodeURIComponent(campaignId)}/shown-target`, {
+      body: JSON.stringify({ target: { id: map.json.map.id, type: "encounter" } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+
+    const shownEncounter = await getHttps(`${url}/api/player/waiting-image/asset`, {
+      headers: playerHeaders(port)
+    });
+    assert.equal(shownEncounter.statusCode, 404);
+
+    await requestHttps(`${url}/api/campaigns/${encodeURIComponent(campaignId)}/shown-target`, {
+      body: JSON.stringify({ target: null }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+    const handout = await requestHttps(`${url}/api/campaigns/${encodeURIComponent(campaignId)}/handouts`, {
+      body: PNG_BYTES,
+      headers: gmHeaders(port, {
+        "content-length": String(PNG_BYTES.length),
+        "content-type": "image/png",
+        "x-file-name": "portrait.png"
+      }),
+      method: "POST"
+    });
+    await requestHttps(`${url}/api/campaigns/${encodeURIComponent(campaignId)}/shown-target`, {
+      body: JSON.stringify({ target: { id: handout.json.handout.id, type: "handout" } }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+
+    const shownHandout = await getHttps(`${url}/api/player/waiting-image/asset`, {
+      headers: playerHeaders(port)
+    });
+    assert.equal(shownHandout.statusCode, 404);
+
+    await requestHttps(`${url}/api/campaigns/${encodeURIComponent(campaignId)}/shown-target`, {
+      body: JSON.stringify({ target: null }),
+      headers: gmHeaders(port, { "content-type": "application/json" }),
+      method: "PUT"
+    });
+    fs.rmSync(path.join(dataRoot, campaignId, uploaded.json.campaign.campaignImage.file));
+    await requestHttps(`${url}/api/campaigns/${encodeURIComponent(campaignId)}`, {
+      headers: gmHeaders(port),
+      method: "GET"
+    });
+
+    const missingAsset = await getHttps(`${url}/api/player/waiting-image/asset`, {
+      headers: playerHeaders(port)
+    });
+    assert.equal(missingAsset.statusCode, 404);
+    assert.equal(missingAsset.body.includes(dataRoot), false);
+    assert.equal(missingAsset.body.includes("campaign-images"), false);
+  } finally {
     await close(server, io);
   }
 });

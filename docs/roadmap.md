@@ -65,11 +65,11 @@ Initial acceptance direction:
 Goal: Let the Player Display show campaign-specific waiting context between
 encounters or handouts, with an optional GM-managed Campaign Image.
 
-Tracked as [F-011](./features/F-011.md). Planned child features:
+Tracked as [F-011](./features/F-011.md). Child features:
 
 - Complete: [F-011A](./features/F-011A.md), campaign-specific waiting state.
 - Complete: [F-011B](./features/F-011B.md), Campaign Image management.
-- Proposed: [F-011C](./features/F-011C.md), Campaign waiting image display.
+- Active: [F-011C](./features/F-011C.md), Campaign waiting image display.
 
 Initial acceptance direction:
 
@@ -411,7 +411,6 @@ Implementation notes:
 
 These ideas may be revisited after V1 succeeds:
 
-- Campaign waiting screen image for always-on displays.
 - Initiative tracker module.
 - Encounter tracker integration.
 - Multiple campaigns open at once.

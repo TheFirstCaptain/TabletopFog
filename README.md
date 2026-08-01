@@ -24,8 +24,11 @@ plain `Waiting for GM.` state.
 
 Campaign Library edit cards now let the GM upload, replace, preview, and remove
 one campaign-level `Campaign Image`. It is stored in the campaign's local
-`campaign-images/` folder and is not a handout, encounter, or shown target.
-Player Display background rendering for that image remains planned separately.
+`campaign-images/` folder and is not a handout, encounter, or shown target. When
+the open campaign has no encounter or handout shown, the Player Display uses
+that Campaign Image as a waiting background with the campaign waiting text over
+it. Replacing or removing the Campaign Image updates that waiting screen live,
+but does not change a currently shown encounter or handout.
 
 Post-V1 campaign image handouts are complete. The GM can add and browse image
 handouts stored in the campaign's local `handouts/` folder, show one handout to

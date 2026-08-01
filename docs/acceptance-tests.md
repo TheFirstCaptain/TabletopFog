@@ -160,14 +160,29 @@ Steps:
    explicitly shown target.
 5. Clear the shown target.
 6. Confirm the Player Display returns to the Campaign Image waiting screen.
-7. Remove the Campaign Image from the create/edit campaign flow.
-8. Confirm the Player Display updates live to the campaign waiting text without
-   the background image.
+7. Replace the Campaign Image from the create/edit campaign flow.
+8. Confirm the Player Display updates live to the new Campaign Image waiting
+   background without a stale cached image.
+9. Show an encounter or handout to players.
+10. Replace or remove the Campaign Image from the create/edit campaign flow.
+11. Confirm the Player Display remains on the shown encounter or handout and
+    does not request or show the waiting image.
+12. Clear the shown target.
+13. Confirm the Player Display returns to the current Campaign Image waiting
+    state.
+14. Simulate a missing or corrupt Campaign Image asset.
+15. Confirm the Player Display keeps `Waiting for GM - <Campaign Name>` without
+    the background image and does not expose filesystem paths.
+16. Remove the Campaign Image from the create/edit campaign flow.
+17. Confirm the Player Display updates live to the campaign waiting text without
+    the background image.
 
 Expected result:
 
 - The campaign waiting image appears only while a campaign is open, no
   encounter or handout is shown to players, and a Campaign Image exists.
+- Missing, unavailable, or decode-failing Campaign Images fall back to the
+  text-only campaign waiting screen with GM-only diagnostics.
 - The Player Display remains read-only.
 - No slideshow mode, notes, tokens, initiative, dice, dynamic lighting, cloud
   login, or other full-VTT controls appear.

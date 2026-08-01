@@ -355,6 +355,23 @@ function registerHttpRoutes({ app, campaignStorage, stateStore, onStateChange, p
     }
   });
 
+  app.get("/api/player/waiting-image/asset", (_request, response) => {
+    try {
+      const state = stateStore.getState();
+      const campaign = state.campaign;
+
+      if (!campaign || campaign.shownTarget || !campaign.campaignImage) {
+        response.status(404).json({ error: "No waiting image." });
+        return;
+      }
+
+      const { filePath } = campaignStorage.getCampaignImageAsset(campaign.id);
+      response.sendFile(filePath);
+    } catch (_error) {
+      response.status(404).json({ error: "No waiting image." });
+    }
+  });
+
   app.get("/api/player/active-map/asset", (_request, response, next) => {
     try {
       const state = stateStore.getState();
