@@ -46,6 +46,28 @@ test("module baseline accepts an exact recorded inventory", (t) => {
   assert.deepEqual(result.errors, []);
 });
 
+test("module baseline accepts recorded cohesion pressure", (t) => {
+  const rootDir = createFixture(t, {
+    "server/index.js": "one\n"
+  });
+  const result = validateModuleBaseline(
+    rootDir,
+    baseline({
+      "server/index.js": {
+        baselineLines: 1,
+        responsibility: "Coordinate broad server composition.",
+        cohesionPressure: {
+          engineeringId: "E-123",
+          reason: "Composition remains broad enough to need a scheduled review.",
+          plannedSplit: "Move route setup into focused server composition helpers."
+        }
+      }
+    })
+  );
+
+  assert.deepEqual(result.errors, []);
+});
+
 test("module baseline rejects growth and requires recording shrinkage", (t) => {
   const rootDir = createFixture(t, {
     "server/grown.js": "one\ntwo\nthree\n",
@@ -74,7 +96,8 @@ test("module baseline rejects incomplete inventory and responsibilities", (t) =>
       "server/known.js": {
         baselineLines: -1,
         responsibility: "",
-        temporaryException: { engineeringId: "", reason: "" }
+        temporaryException: { engineeringId: "", reason: "" },
+        cohesionPressure: { engineeringId: "", reason: "", plannedSplit: "" }
       },
       "server/missing.js": { baselineLines: 1, responsibility: "Missing fixture." }
     })
@@ -83,6 +106,9 @@ test("module baseline rejects incomplete inventory and responsibilities", (t) =>
   assert.ok(result.errors.some((error) => error.includes("server/known.js has no responsibility")));
   assert.ok(result.errors.some((error) => error.includes("server/known.js has an invalid baseline line count")));
   assert.ok(result.errors.some((error) => error.includes("server/known.js has an invalid temporary exception")));
+  assert.ok(
+    result.errors.some((error) => error.includes("server/known.js has an invalid cohesion-pressure reference"))
+  );
   assert.ok(result.errors.some((error) => error.includes("Unrecorded module: server/unrecorded.js")));
   assert.ok(result.errors.some((error) => error.includes("Missing module: server/missing.js")));
 });

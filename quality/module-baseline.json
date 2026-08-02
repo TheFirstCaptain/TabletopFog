@@ -63,8 +63,8 @@
       "responsibility": "Run repository harness validation and report actionable compliance failures."
     },
     "scripts/check-module-baseline.js": {
-      "baselineLines": 144,
-      "responsibility": "Validate the production JavaScript inventory and physical-line ratchet."
+      "baselineLines": 153,
+      "responsibility": "Validate the production JavaScript inventory, physical-line ratchet, and optional cohesion-pressure metadata."
     },
     "scripts/create-dev-cert.js": {
       "baselineLines": 209,

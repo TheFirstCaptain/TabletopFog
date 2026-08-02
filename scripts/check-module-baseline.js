@@ -79,6 +79,15 @@ function validateModuleBaseline(rootDir, baseline) {
       errors.push(`${filePath} has an invalid temporary exception.`);
     }
 
+    if (
+      entry.cohesionPressure &&
+      (!/^E-\d{3}$/.test(String(entry.cohesionPressure.engineeringId || "")) ||
+        !String(entry.cohesionPressure.reason || "").trim() ||
+        !String(entry.cohesionPressure.plannedSplit || "").trim())
+    ) {
+      errors.push(`${filePath} has an invalid cohesion-pressure reference.`);
+    }
+
     if (!Number.isInteger(entry.baselineLines) || entry.baselineLines < 0) {
       errors.push(`${filePath} has an invalid baseline line count.`);
       return;
