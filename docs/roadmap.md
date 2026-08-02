@@ -69,7 +69,7 @@ Tracked as [F-011](./features/F-011.md). Child features:
 
 - Complete: [F-011A](./features/F-011A.md), campaign-specific waiting state.
 - Complete: [F-011B](./features/F-011B.md), Campaign Image management.
-- Active: [F-011C](./features/F-011C.md), Campaign waiting image display.
+- Complete: [F-011C](./features/F-011C.md), Campaign waiting image display.
 
 Initial acceptance direction:
 

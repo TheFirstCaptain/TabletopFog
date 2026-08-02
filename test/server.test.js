@@ -220,6 +220,7 @@ test("serves GM and player pages over HTTPS", async (t) => {
     const gmScript = await getHttps(`https://127.0.0.1:${port}/gm.js`);
     const gmState = await getHttps(`https://127.0.0.1:${port}/gm-state.js`);
     const gmView = await getHttps(`https://127.0.0.1:${port}/gm-view.js`);
+    const gmCampaignLibraryRenderer = await getHttps(`https://127.0.0.1:${port}/gm-campaign-library-renderer.js`);
     const styles = await getHttps(`https://127.0.0.1:${port}/styles.css`);
     const font = await getHttps(`https://127.0.0.1:${port}/assets/fonts/EBGaramond-Variable-Latin.woff2`);
     const fontLicense = await getHttps(`https://127.0.0.1:${port}/assets/fonts/OFL.txt`);
@@ -231,6 +232,7 @@ test("serves GM and player pages over HTTPS", async (t) => {
     assert.equal(gmScript.statusCode, 200);
     assert.equal(gmState.statusCode, 200);
     assert.equal(gmView.statusCode, 200);
+    assert.equal(gmCampaignLibraryRenderer.statusCode, 200);
     assert.equal(styles.statusCode, 200);
     assert.equal(font.statusCode, 200);
     assert.match(font.headers["content-type"], /^font\/woff2/);
@@ -255,7 +257,8 @@ test("serves GM and player pages over HTTPS", async (t) => {
     assert.match(gmResponse.body, /<script type="module" src="\/gm\.js"><\/script>/);
     assert.match(gmScript.body, /createGmController/);
     assert.match(gmState.body, /payload\.diagnostics \|\| \[\]/);
-    assert.match(gmView.body, /Skipped campaign/);
+    assert.match(gmView.body, /createCampaignLibraryRenderer/);
+    assert.match(gmCampaignLibraryRenderer.body, /Skipped campaign/);
     assert.match(styles.body, /@font-face/);
     assert.match(styles.body, /EBGaramond-Variable-Latin\.woff2/);
     assert.match(styles.body, /font-display: swap/);

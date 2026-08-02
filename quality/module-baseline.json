@@ -6,25 +6,41 @@
       "baselineLines": 158,
       "responsibility": "Send GM campaign, campaign deletion, campaign-card metadata, Campaign Image upload and remove, map, campaign handout upload, rename, delete, shown-target, shown-handout rotation, single and batched fog-operation append, clear, and undo API requests and convert failed responses into client errors."
     },
+    "public/gm-campaign-library-renderer.js": {
+      "baselineLines": 238,
+      "responsibility": "Render GM campaign library diagnostics, empty states, campaign cards, campaign metadata editing controls, Campaign Image preview/upload/replace/remove controls, campaign deletion guards, and campaign-card messages without owning workflow actions."
+    },
     "public/gm-controller.js": {
       "baselineLines": 626,
       "responsibility": "Coordinate GM campaign library, Player Display URL copy, campaign deletion, campaign-card metadata, Campaign Image upload and remove, campaign Encounters/Handouts content mode, encounter gallery, campaign handout library rename and delete management, explicit encounter and handout shown-target actions, shown-handout rotation, encounter workspace, GM-local map alignment and panning, rectangle, brush, and circle Hide and Reveal fog editing, Clear Fog, Undo fog, map, view, Socket.IO workflows, and conservative full-versus-workspace render selection."
+    },
+    "public/gm-encounter-renderer.js": {
+      "baselineLines": 126,
+      "responsibility": "Render GM encounter gallery cards, selected and shown encounter state, encounter thumbnail/open controls, Show to Players actions, rename/reorder controls, and shown-encounter delete guards without owning workflow actions."
     },
     "public/gm-events.js": {
       "baselineLines": 269,
       "responsibility": "Translate static and delegated GM campaign, Player Display URL copy, campaign deletion, campaign-card metadata, Campaign Image upload and remove, campaign content mode, direct encounter gallery administration, campaign handout upload, rename, delete, show, and rotation actions, encounter workspace, GM-local map alignment, rectangle, brush, and circle Hide and Reveal pointer input and hover previews, Brush diameter controls, Clear Fog, Undo fog, and map DOM events into controller actions."
     },
+    "public/gm-handout-renderer.js": {
+      "baselineLines": 140,
+      "responsibility": "Render GM handout library empty states, handout cards, thumbnail rotation previews, Show to Players actions, shown-handout rotation controls, rename/delete controls, and shown-handout management guards without owning workflow actions."
+    },
     "public/gm-navigation.js": {
       "baselineLines": 43,
       "responsibility": "Render explicit GM navigation screen state, informational breadcrumbs, Back-action visibility, and campaign-level surface visibility across the campaign library, campaign encounter and handout gallery, and encounter workspace."
+    },
+    "public/gm-render-helpers.js": {
+      "baselineLines": 61,
+      "responsibility": "Provide shared GM renderer DOM helpers and pure presentation helpers for buttons, shown-target checks and labels, handout preview rotation scaling, default campaign icon, and recovery summary messages."
     },
     "public/gm-state.js": {
       "baselineLines": 115,
       "responsibility": "Maintain GM campaign library, current campaign, GM-local selected encounter, explicit client screen state, and per-encounter GM-tab map alignment state."
     },
     "public/gm-view.js": {
-      "baselineLines": 1045,
-      "responsibility": "Render the GM campaign card library, Player Display URL sharing, campaign recovery messaging, campaign deletion controls, campaign-card metadata editing, Campaign Image preview/upload/replace/remove controls, campaign Encounters/Handouts content mode, direct encounter gallery administration, campaign handout library with rename/delete management, explicit show, clear, and shown-handout rotation actions, target-aware shown status, encounter workspace shell, workspace-only selected encounter updates, GM-local map alignment controls, Hide and Reveal fog actions, Rectangle, Brush, and Circle fog controls, Brush diameter controls, Clear Fog state and confirmation, Undo fog availability, draft state, messages, status, and shared-canvas map plus semi-transparent fog preview."
+      "baselineLines": 517,
+      "responsibility": "Compose focused GM render modules with navigation and shared canvas rendering; maintain Player Display URL sharing, campaign content mode visibility, target-aware shown status, encounter workspace shell, workspace-only selected encounter updates, GM-local map alignment controls, Hide and Reveal fog actions, Rectangle, Brush, and Circle fog controls, Brush diameter controls, Clear Fog state and confirmation, Undo fog availability, draft state, messages, status, and semi-transparent fog preview."
     },
     "public/gm.js": {
       "baselineLines": 19,
