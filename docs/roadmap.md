@@ -89,6 +89,25 @@ Initial acceptance direction:
 - No slideshow mode, notes, non-image media, tokens, initiative, dice, dynamic
   lighting, cloud login, or other full-VTT features are introduced.
 
+## Post-V1: Shared Area Templates
+
+Goal: Let the GM place temporary visual templates, such as spell circles or
+cones, on the currently shown encounter so the table can see area effects
+without adding rules automation or player-side mutation.
+
+Tracked as [F-012](./features/F-012.md). Current status: Proposed.
+
+Initial direction:
+
+- Start with GM-created templates only.
+- Treat templates as visual overlays, not rules-derived affected squares.
+- Keep template state separate from fog and map assets.
+- Prefer temporary runtime state before considering persistence.
+- Support circles, cones, and other shape types through map-relative geometry.
+- Do not treat multiple Player Displays, player identities, spell databases,
+  targeting, damage, conditions, tokens, initiative, dice, dynamic lighting,
+  cloud login, or full-VTT behavior as prerequisites.
+
 ## Milestone 0: Harness and Repo Structure
 
 Goal: Create the documentation and validation harness for future AI-assisted development.

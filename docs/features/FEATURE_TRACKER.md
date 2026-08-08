@@ -97,3 +97,4 @@ Use this tracker to preserve feature state across sessions and agent handoffs. K
 | F-011A | Campaign-Specific Waiting State | Complete | Done | [F-011A.md](./F-011A.md) | 2026-08-01 | Player Display now shows campaign-name waiting text while a campaign is open and no encounter or handout is shown. |
 | F-011B | Campaign Image Management | Complete | Done | [F-011B.md](./F-011B.md) | 2026-08-01 | GM upload, replace, preview, and remove flow for one campaign-level Campaign Image is complete. |
 | F-011C | Campaign Waiting Image Display | Complete | Done | [F-011C.md](./F-011C.md) | 2026-08-01 | Player Display background rendering and live updates for the Campaign Image while the campaign waiting screen is active are complete. |
+| F-012 | Shared Area Templates | Proposed | Proposed | [F-012.md](./F-012.md) | 2026-08-08 | Decision-capture record for future GM-created visual spell/area templates; not yet planned for implementation. |
